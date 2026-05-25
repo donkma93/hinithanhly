@@ -1,0 +1,44 @@
+<?php
+
+namespace App\Models;
+
+use App\Models\Concerns\HasPublicId;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class Supplier extends Model
+{
+    use HasFactory;
+    use HasPublicId;
+
+    public const TYPES = [
+        'cho_tang' => 'Cho tặng',
+        'khach_si' => 'Khách sỉ',
+        'ncc_it_san_pham' => 'NCC ít sản phẩm',
+        'ncc_nhieu_san_pham' => 'NCC nhiều sản phẩm',
+        'hang_thu_mua' => 'Hàng thu mua',
+    ];
+
+    protected $fillable = [
+        'public_id',
+        'responsible_name',
+        'type',
+        'name',
+        'phone',
+        'bank_name',
+        'bank_account_name',
+        'bank_account_number',
+        'notes',
+    ];
+
+    public function consignmentNotes(): HasMany
+    {
+        return $this->hasMany(ConsignmentNote::class);
+    }
+
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class);
+    }
+}
