@@ -7,7 +7,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $staffRole = Role::findByName('staff', 'web');
+        $staffRole = Role::findOrCreate('staff', 'web');
 
         $staffRole->syncPermissions([
             'dashboard.view',
@@ -32,7 +32,14 @@ return new class extends Migration
 
     public function down(): void
     {
-        $staffRole = Role::findByName('staff', 'web');
+        $staffRole = Role::query()
+            ->where('name', 'staff')
+            ->where('guard_name', 'web')
+            ->first();
+
+        if (! $staffRole) {
+            return;
+        }
 
         $staffRole->syncPermissions([
             'dashboard.view',
