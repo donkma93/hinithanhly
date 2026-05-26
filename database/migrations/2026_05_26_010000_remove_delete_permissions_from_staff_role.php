@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Permission;
+use App\Support\PermissionCatalog;
 use Illuminate\Database\Migrations\Migration;
 use Spatie\Permission\Models\Role;
 
@@ -7,6 +9,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        foreach (PermissionCatalog::names() as $permissionName) {
+            Permission::findOrCreate($permissionName, 'web');
+        }
+
         $staffRole = Role::findOrCreate('staff', 'web');
 
         $staffRole->syncPermissions([
@@ -32,6 +38,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        foreach (PermissionCatalog::names() as $permissionName) {
+            Permission::findOrCreate($permissionName, 'web');
+        }
+
         $staffRole = Role::query()
             ->where('name', 'staff')
             ->where('guard_name', 'web')
