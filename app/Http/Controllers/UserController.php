@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
-use App\Models\Permission;
 use App\Models\User;
 use App\Support\PermissionCatalog;
 use Illuminate\Http\RedirectResponse;
@@ -20,18 +19,19 @@ class UserController extends Controller
         $this->middleware('permission:users.view|users.manage')->only('index');
         $this->middleware('permission:users.create|users.manage')->only('store');
         $this->middleware('permission:users.update|users.manage')->only('update');
-        $this->middleware('permission:users.delete|users.manage')->only('destroy');
+        $this->middleware('permission:users.delete')->only('destroy');
     }
 
     public function index(Request $request): View
     {
         $publicId = trim($request->string('public_id')->toString());
         $search = trim($request->string('search')->toString());
-        $permissions = Permission::query()->orderBy('name')->get(['id', 'name']);
+        $perPage = $this->resolvePerPage($request);
+        $permissions = Role::query()->orderBy('name')->get(['id', 'name']);
 
         return view('users.index', [
             'users' => User::query()
-                ->with(['roles:id,name', 'permissions:id,name'])
+                ->with(['roles.permissions:id,name'])
                 ->select(['id', 'public_id', 'name', 'email', 'created_at'])
                 ->when($publicId !== '', fn ($query) => $query->where('public_id', $publicId))
                 ->when($search !== '', fn ($query) => $query->where(function ($query) use ($search) {
@@ -39,7 +39,7 @@ class UserController extends Controller
                         ->orWhere('email', 'like', "%{$search}%");
                 }))
                 ->latest()
-                ->paginate(10)
+                ->paginate($perPage)
                 ->withQueryString(),
             'roles' => Role::query()->orderBy('name')->get(['id', 'name']),
             'permissions' => $permissions,
@@ -55,8 +55,6 @@ class UserController extends Controller
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'roles' => ['nullable', 'array'],
             'roles.*' => ['string', 'exists:roles,name'],
-            'permissions' => ['nullable', 'array'],
-            'permissions.*' => ['string', 'exists:permissions,name'],
         ]);
 
         $user = User::create([
@@ -67,7 +65,7 @@ class UserController extends Controller
 
         $roles = $data['roles'] ?? ['staff'];
         $user->syncRoles($roles);
-        $user->syncPermissions($data['permissions'] ?? []);
+        $user->syncPermissions([]);
 
         AuditLog::record([
             'user_id' => $request->user()?->id,
@@ -83,7 +81,6 @@ class UserController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'roles' => $roles,
-                'permissions' => $data['permissions'] ?? [],
             ],
         ]);
 
@@ -92,10 +89,10 @@ class UserController extends Controller
 
     public function edit(User $user): View
     {
-        $permissions = Permission::query()->orderBy('name')->get(['id', 'name']);
+        $permissions = Role::query()->orderBy('name')->get(['id', 'name']);
 
         return view('users.edit', [
-            'user' => $user->load(['roles:id,name', 'permissions:id,name']),
+            'user' => $user->load(['roles.permissions:id,name']),
             'roles' => Role::query()->orderBy('name')->get(['id', 'name']),
             'permissions' => $permissions,
             'permissionGroups' => PermissionCatalog::grouped($permissions),
@@ -110,8 +107,6 @@ class UserController extends Controller
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
             'roles' => ['nullable', 'array'],
             'roles.*' => ['string', 'exists:roles,name'],
-            'permissions' => ['nullable', 'array'],
-            'permissions.*' => ['string', 'exists:permissions,name'],
         ]);
 
         $user->name = $data['name'];
@@ -124,7 +119,7 @@ class UserController extends Controller
         $user->save();
         $roles = $data['roles'] ?? [];
         $user->syncRoles($roles);
-        $user->syncPermissions($data['permissions'] ?? []);
+        $user->syncPermissions([]);
 
         AuditLog::record([
             'user_id' => $request->user()?->id,
@@ -140,7 +135,6 @@ class UserController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'roles' => $roles,
-                'permissions' => $data['permissions'] ?? [],
             ],
         ]);
 

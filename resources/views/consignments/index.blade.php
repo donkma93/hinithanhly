@@ -2,9 +2,16 @@
     <x-slot name="header">
         <div>
             <h2 class="text-2xl font-semibold text-gray-900">Phiếu ký gửi</h2>
-            <p class="text-sm text-gray-500">Chọn người phụ trách, nhà cung cấp và ngày gửi để khởi tạo phiếu.</p>
+            <p class="text-sm text-gray-500">Nhập người phụ trách, chọn nhà cung cấp và ngày gửi để khởi tạo phiếu.</p>
         </div>
     </x-slot>
+
+    @php
+        $supplierOptions = $suppliers->map(fn ($supplier) => [
+            'value' => $supplier->id,
+            'label' => '#'.$supplier->public_id.' - '.$supplier->name,
+        ])->all();
+    @endphp
 
     <div class="py-10">
         <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
@@ -22,21 +29,18 @@
                             @csrf
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Người phụ trách</label>
-                                <select name="responsible_user_id" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" required>
-                                    <option value="">-- Chọn nhân viên --</option>
-                                    @foreach ($users as $user)
-                                        <option value="{{ $user->id }}" @selected(old('responsible_user_id') == $user->id)>#{{ $user->public_id }} - {{ $user->name }}</option>
-                                    @endforeach
-                                </select>
+                                <input name="responsible_name" value="{{ old('responsible_name') }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" placeholder="Nhập tên người phụ trách" required>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Nhà cung cấp</label>
-                                <select name="supplier_id" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" required>
-                                    <option value="">-- Chọn nhà cung cấp --</option>
-                                    @foreach ($suppliers as $supplier)
-                                        <option value="{{ $supplier->id }}" @selected(old('supplier_id') == $supplier->id)>#{{ $supplier->public_id }} - {{ $supplier->name }}</option>
-                                    @endforeach
-                                </select>
+                                <x-searchable-select
+                                    name="supplier_id"
+                                    :options="$supplierOptions"
+                                    :selected="old('supplier_id')"
+                                    placeholder="-- Chọn nhà cung cấp --"
+                                    search-placeholder="Tìm theo mã hoặc tên"
+                                    empty-text="Không có nhà cung cấp phù hợp"
+                                />
                             </div>
                             <div class="grid gap-4 sm:grid-cols-2">
                                 <div>
@@ -63,7 +67,8 @@
                 <div class="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-200 lg:col-span-2">
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <h3 class="text-lg font-semibold text-gray-900">Danh sách</h3>
-                        <form method="GET" action="{{ route('consignments.index') }}" class="flex items-center gap-2">
+                        <form method="GET" action="{{ route('consignments.index') }}" class="flex flex-wrap items-center gap-2">
+                            <x-per-page-select :value="request('per_page', 10)" />
                             <input name="public_id" value="{{ request('public_id') }}" class="w-64 rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Tìm bằng mã công khai">
                             <button class="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">Tìm</button>
                         </form>
@@ -75,6 +80,7 @@
                                     <th class="py-3 pr-4">Mã</th>
                                     <th class="py-3 pr-4">Nhà cung cấp</th>
                                     <th class="py-3 pr-4">Phụ trách</th>
+                                    <th class="py-3 pr-4">Lần gửi</th>
                                     <th class="py-3 pr-4">Ngày gửi</th>
                                     <th class="py-3 pr-4">SL</th>
                                     <th class="py-3 pr-4"></th>
@@ -85,14 +91,15 @@
                                     <tr>
                                         <td class="py-3 pr-4 font-medium text-slate-900">#{{ $consignment->public_id }}</td>
                                         <td class="py-3 pr-4 text-gray-600">{{ $consignment->supplier?->name ?? '---' }}</td>
-                                        <td class="py-3 pr-4 text-gray-600">{{ $consignment->responsibleUser?->name ?? '---' }}</td>
+                                        <td class="py-3 pr-4 text-gray-600">{{ $consignment->responsible_name ?: $consignment->responsibleUser?->name ?? '---' }}</td>
+                                        <td class="py-3 pr-4 text-gray-600">Lần {{ $consignment->send_round ?? 1 }}</td>
                                         <td class="py-3 pr-4 text-gray-600">{{ optional($consignment->sent_date)->format('d/m/Y') }}</td>
                                         <td class="py-3 pr-4 text-gray-600">{{ $consignment->quantity }}</td>
                                         <td class="py-3 pr-4 text-right">
                                             @canany(['consignments.update', 'consignments.manage'])
                                                 <a href="{{ route('consignments.edit', $consignment) }}" class="text-slate-900 hover:underline">Sửa</a>
                                             @endcanany
-                                            @canany(['consignments.delete', 'consignments.manage'])
+                                            @can('consignments.delete')
                                                 <span class="ms-4 inline-block align-middle">
                                                     <x-confirm-action
                                                         :name="'delete-consignment-'.$consignment->public_id"
@@ -103,11 +110,11 @@
                                                         trigger-text="Xoá"
                                                     />
                                                 </span>
-                                            @endcanany
+                                            @endcan
                                         </td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="6" class="py-8 text-center text-gray-500">Chưa có phiếu ký gửi nào.</td></tr>
+                                    <tr><td colspan="7" class="py-8 text-center text-gray-500">Chưa có phiếu ký gửi nào.</td></tr>
                                 @endforelse
                             </tbody>
                         </table>

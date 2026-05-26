@@ -3,7 +3,7 @@
         <div class="flex items-center justify-between gap-4">
             <div>
                 <h2 class="text-2xl font-semibold text-gray-900">Tài khoản</h2>
-                <p class="text-sm text-gray-500">Quản lý tài khoản, vai trò và quyền trực tiếp.</p>
+                <p class="text-sm text-gray-500">Quản lý tài khoản và quyền theo vai trò.</p>
             </div>
         </div>
     </x-slot>
@@ -18,7 +18,7 @@
 
             <div class="grid gap-6 lg:grid-cols-3">
                 <div class="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-200 lg:col-span-1">
-                    <h3 class="text-lg font-semibold text-gray-900">Thêm tài khoản</h3>
+                        <h3 class="text-lg font-semibold text-gray-900">Thêm tài khoản</h3>
                     <form method="POST" action="{{ route('users.store') }}" class="mt-4 space-y-4">
                         @csrf
                         <div>
@@ -54,25 +54,6 @@
                             </div>
                             @error('roles') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                         </div>
-                        <div>
-                            <p class="block text-sm font-medium text-gray-700">Quyền trực tiếp</p>
-                            <div class="mt-2 space-y-4">
-                                @foreach ($permissionGroups as $group)
-                                    <div class="rounded-2xl border border-gray-200 p-4">
-                                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">{{ $group['label'] }}</p>
-                                        <div class="mt-3 grid gap-2">
-                                            @foreach ($group['permissions'] as $permission)
-                                                <label class="flex items-center gap-2 text-sm text-gray-700">
-                                                    <input type="checkbox" name="permissions[]" value="{{ $permission['name'] }}" @checked(in_array($permission['name'], old('permissions', []))) class="rounded border-gray-300 text-slate-900 focus:ring-slate-900">
-                                                    <span>{{ $permission['label'] }}</span>
-                                                </label>
-                                            @endforeach
-                                        </div>
-                                    </div>
-                                @endforeach
-                            </div>
-                            @error('permissions') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
-                        </div>
                         <button class="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">Lưu tài khoản</button>
                     </form>
                 </div>
@@ -81,6 +62,7 @@
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <h3 class="text-lg font-semibold text-gray-900">Danh sách</h3>
                         <form method="GET" action="{{ route('users.index') }}" class="flex flex-wrap items-center gap-2">
+                            <x-per-page-select :value="request('per_page', 10)" />
                             <input name="public_id" value="{{ request('public_id') }}" class="w-36 rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Mã">
                             <input name="search" value="{{ request('search') }}" class="w-56 rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Tìm tên hoặc email">
                             <button class="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">Tìm</button>
@@ -93,12 +75,15 @@
                                     <th class="py-3 pr-4">Mã</th>
                                     <th class="py-3 pr-4">Tài khoản</th>
                                     <th class="py-3 pr-4">Vai trò</th>
-                                    <th class="py-3 pr-4">Quyền trực tiếp</th>
+                                    <th class="py-3 pr-4">Quyền hiệu lực</th>
                                     <th class="py-3 pr-4"></th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100">
                                 @forelse ($users as $user)
+                                    @php
+                                        $effectivePermissionNames = $user->getAllPermissions()->pluck('name')->unique()->values();
+                                    @endphp
                                     <tr class="align-top">
                                         <td class="py-3 pr-4 font-medium text-slate-900">#{{ $user->public_id }}</td>
                                         <td class="py-3 pr-4">
@@ -109,20 +94,24 @@
                                             {{ $user->roles->pluck('name')->join(', ') ?: '---' }}
                                         </td>
                                         <td class="py-3 pr-4 text-gray-600">
-                                            {{ $user->permissions->pluck('name')->join(', ') ?: '---' }}
+                                            {{ $effectivePermissionNames->join(', ') ?: '---' }}
                                         </td>
                                         <td class="py-3 pr-4 text-right">
-                                            <a href="{{ route('users.edit', $user) }}" class="text-slate-900 hover:underline">Sửa</a>
-                                            <span class="ms-4 inline-block align-middle">
-                                                <x-confirm-action
-                                                    :name="'delete-user-'.$user->public_id"
-                                                    :action="route('users.destroy', $user)"
-                                                    title="Xoá tài khoản"
-                                                    message="Bạn có chắc chắn muốn xoá tài khoản này? Hành động này không thể hoàn tác."
-                                                    confirm-text="Xoá"
-                                                    trigger-text="Xoá"
-                                                />
-                                            </span>
+                                            @canany(['users.update', 'users.manage'])
+                                                <a href="{{ route('users.edit', $user) }}" class="text-slate-900 hover:underline">Sửa</a>
+                                            @endcanany
+                                            @can('users.delete')
+                                                <span class="ms-4 inline-block align-middle">
+                                                    <x-confirm-action
+                                                        :name="'delete-user-'.$user->public_id"
+                                                        :action="route('users.destroy', $user)"
+                                                        title="Xoá tài khoản"
+                                                        message="Bạn có chắc chắn muốn xoá tài khoản này? Hành động này không thể hoàn tác."
+                                                        confirm-text="Xoá"
+                                                        trigger-text="Xoá"
+                                                    />
+                                                </span>
+                                            @endcan
                                         </td>
                                     </tr>
                                 @empty

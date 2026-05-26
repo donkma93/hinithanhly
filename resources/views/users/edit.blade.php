@@ -2,14 +2,14 @@
     <x-slot name="header">
         <div>
             <h2 class="text-2xl font-semibold text-gray-900">Sửa tài khoản</h2>
-            <p class="text-sm text-gray-500">Cập nhật thông tin, vai trò và quyền trực tiếp.</p>
+            <p class="text-sm text-gray-500">Cập nhật thông tin và vai trò của tài khoản.</p>
             <p class="mt-1 text-xs font-medium uppercase tracking-wide text-gray-400">Mã công khai: #{{ $user->public_id }}</p>
         </div>
     </x-slot>
 
     @php
         $selectedRoles = old('roles', $user->roles->pluck('name')->all());
-        $selectedPermissions = old('permissions', $user->permissions->pluck('name')->all());
+        $effectivePermissions = $user->getAllPermissions()->pluck('name')->unique()->values();
     @endphp
 
     <div class="py-10">
@@ -56,24 +56,10 @@
                         @error('roles') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
 
-                    <div>
-                        <p class="block text-sm font-medium text-gray-700">Quyền trực tiếp</p>
-                        <div class="mt-2 space-y-4">
-                            @foreach ($permissionGroups as $group)
-                                <div class="rounded-2xl border border-gray-200 p-4">
-                                    <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">{{ $group['label'] }}</p>
-                                    <div class="mt-3 grid gap-2 md:grid-cols-2">
-                                        @foreach ($group['permissions'] as $permission)
-                                            <label class="flex items-center gap-2 text-sm text-gray-700">
-                                                <input type="checkbox" name="permissions[]" value="{{ $permission['name'] }}" @checked(in_array($permission['name'], $selectedPermissions)) class="rounded border-gray-300 text-slate-900 focus:ring-slate-900">
-                                                <span>{{ $permission['label'] }}</span>
-                                            </label>
-                                        @endforeach
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                        @error('permissions') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                    <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                        <p class="text-sm font-semibold text-gray-900">Quyền hiệu lực</p>
+                        <p class="mt-1 text-xs text-gray-500">Đây là toàn bộ quyền người dùng có được từ vai trò đã gán.</p>
+                        <p class="mt-3 text-sm text-gray-700">{{ $effectivePermissions->join(', ') ?: '---' }}</p>
                     </div>
 
                     <div class="flex items-center gap-3">

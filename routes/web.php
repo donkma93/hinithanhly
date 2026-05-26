@@ -4,6 +4,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\ConsignmentNoteController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\RoleController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserController;
@@ -111,6 +112,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/permissions/{permission}/edit', [PermissionController::class, 'edit'])->middleware('permission:permissions.update|permissions.manage')->name('permissions.edit');
     Route::put('/permissions/{permission}', [PermissionController::class, 'update'])->middleware('permission:permissions.update|permissions.manage')->name('permissions.update');
     Route::delete('/permissions/{permission}', [PermissionController::class, 'destroy'])->middleware('permission:permissions.delete|permissions.manage')->name('permissions.destroy');
+
+    Route::get('/roles', [RoleController::class, 'index'])->middleware('permission:permissions.view|permissions.manage')->name('roles.index');
+    Route::get('/roles/{role}/edit', [RoleController::class, 'edit'])->middleware('permission:permissions.update|permissions.manage')->name('roles.edit');
+    Route::put('/roles/{role}', [RoleController::class, 'update'])->middleware('permission:permissions.update|permissions.manage')->name('roles.update');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

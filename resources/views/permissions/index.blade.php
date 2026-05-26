@@ -5,6 +5,12 @@
                 <h2 class="text-2xl font-semibold text-gray-900">Phân quyền</h2>
                 <p class="text-sm text-gray-500">Tạo, sửa và xoá quyền hệ thống. Thêm chức năng mới chỉ cần mở rộng danh sách này.</p>
             </div>
+                <div class="flex items-center gap-3">
+                    <a href="{{ route('roles.index') }}" class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Quản lý vai trò</a>
+                    <form method="GET" action="{{ route('permissions.index') }}">
+                        <x-per-page-select :value="request('per_page', 10)" />
+                    </form>
+                </div>
         </div>
     </x-slot>
 
@@ -33,7 +39,7 @@
                 <div class="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-200 lg:col-span-2">
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <h3 class="text-lg font-semibold text-gray-900">Danh sách quyền</h3>
-                        <div class="text-sm text-gray-500">{{ $permissions->count() }} quyền</div>
+                        <div class="text-sm text-gray-500">{{ $permissions->total() }} quyền</div>
                     </div>
 
                     <div class="mt-4 space-y-4">
@@ -52,20 +58,26 @@
                                             </div>
                                             <div class="flex items-center gap-3">
                                                 <a href="{{ route('permissions.edit', $permission['name']) }}" class="text-slate-900 hover:underline">Sửa</a>
-                                                <x-confirm-action
-                                                    :name="'delete-permission-'.$permission['name']"
-                                                    :action="route('permissions.destroy', $permission['name'])"
-                                                    title="Xoá quyền"
-                                                    message="Bạn có chắc chắn muốn xoá quyền này? Hành động này có thể ảnh hưởng đến vai trò và tài khoản đang dùng quyền đó."
-                                                    confirm-text="Xoá"
-                                                    trigger-text="Xoá"
-                                                />
+                                                @can('permissions.delete')
+                                                    <x-confirm-action
+                                                        :name="'delete-permission-'.$permission['name']"
+                                                        :action="route('permissions.destroy', $permission['name'])"
+                                                        title="Xoá quyền"
+                                                        message="Bạn có chắc chắn muốn xoá quyền này? Hành động này có thể ảnh hưởng đến vai trò và tài khoản đang dùng quyền đó."
+                                                        confirm-text="Xoá"
+                                                        trigger-text="Xoá"
+                                                    />
+                                                @endcan
                                             </div>
                                         </div>
                                     @endforeach
                                 </div>
                             </div>
                         @endforeach
+                    </div>
+
+                    <div class="mt-6">
+                        {{ $permissions->links() }}
                     </div>
                 </div>
             </div>

@@ -17,19 +17,20 @@ class CategoryController extends Controller
         $this->middleware('permission:categories.view')->only('index');
         $this->middleware('permission:categories.create|categories.manage')->only('store');
         $this->middleware('permission:categories.update|categories.manage')->only('update');
-        $this->middleware('permission:categories.delete|categories.manage')->only('destroy');
+        $this->middleware('permission:categories.delete')->only('destroy');
     }
 
     public function index(Request $request): View
     {
         $publicId = trim($request->string('public_id')->toString());
+        $perPage = $this->resolvePerPage($request);
 
         return view('categories.index', [
             'categories' => Category::query()
                 ->select(['id', 'public_id', 'name', 'description', 'is_active', 'created_at'])
                 ->when($publicId !== '', fn ($query) => $query->where('public_id', $publicId))
                 ->latest()
-                ->paginate(10)
+                ->paginate($perPage)
                 ->withQueryString(),
         ]);
     }

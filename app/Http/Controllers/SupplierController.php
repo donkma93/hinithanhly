@@ -17,19 +17,20 @@ class SupplierController extends Controller
         $this->middleware('permission:suppliers.view')->only('index');
         $this->middleware('permission:suppliers.create|suppliers.manage')->only('store');
         $this->middleware('permission:suppliers.update|suppliers.manage')->only('update');
-        $this->middleware('permission:suppliers.delete|suppliers.manage')->only('destroy');
+        $this->middleware('permission:suppliers.delete')->only('destroy');
     }
 
     public function index(Request $request): View
     {
         $publicId = trim($request->string('public_id')->toString());
+        $perPage = $this->resolvePerPage($request);
 
         return view('suppliers.index', [
             'suppliers' => Supplier::query()
                 ->select(['id', 'public_id', 'responsible_name', 'type', 'name', 'phone', 'bank_name', 'created_at'])
                 ->when($publicId !== '', fn ($query) => $query->where('public_id', $publicId))
                 ->latest()
-                ->paginate(10)
+                ->paginate($perPage)
                 ->withQueryString(),
             'bankOptions' => config('banks', []),
             'supplierTypes' => Supplier::TYPES,

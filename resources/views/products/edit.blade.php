@@ -7,37 +7,66 @@
         </div>
     </x-slot>
 
+    @php
+        $supplierOptions = $suppliers->map(fn ($supplier) => [
+            'value' => $supplier->id,
+            'label' => '#'.$supplier->public_id.' - '.$supplier->name,
+        ])->all();
+
+        $categoryOptions = $categories->map(fn ($category) => [
+            'value' => $category->id,
+            'label' => '#'.$category->public_id.' - '.$category->name,
+        ])->all();
+    @endphp
+
     <div class="py-10">
         <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
             <div class="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
                 <form method="POST" action="{{ route('products.update', $product) }}" enctype="multipart/form-data" class="space-y-4">
                     @csrf
                     @method('PUT')
-                    <div class="grid gap-4 sm:grid-cols-2">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Phiếu ký gửi</label>
-                            <select name="consignment_note_id" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" required>
-                                @foreach ($consignments as $consignment)
-                                    <option value="{{ $consignment->id }}" @selected(old('consignment_note_id', $product->consignment_note_id) == $consignment->id)>#{{ $consignment->id }} - {{ $consignment->sent_date?->format('d/m/Y') }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Nhà cung cấp</label>
-                            <select name="supplier_id" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" required>
-                                @foreach ($suppliers as $supplier)
-                                    <option value="{{ $supplier->id }}" @selected(old('supplier_id', $product->supplier_id) == $supplier->id)>{{ $supplier->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
+                    <x-image-upload-preview
+                        name="image"
+                        label="Ảnh sản phẩm"
+                        :current-url="$product->image_path ? asset('storage/' . $product->image_path) : null"
+                    />
+                    @php
+                        $selectedSupplierId = old('supplier_id', $product->supplier_id);
+                    @endphp
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Nhà cung cấp</label>
+                        <x-searchable-select
+                            name="supplier_id"
+                            :options="$supplierOptions"
+                            :selected="$selectedSupplierId"
+                            placeholder="-- Chọn NCC --"
+                            search-placeholder="Tìm theo mã hoặc tên"
+                            empty-text="Không có nhà cung cấp phù hợp"
+                        />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Phiếu ký gửi</label>
+                        <x-searchable-select
+                            name="consignment_note_id"
+                            :options="$consignmentOptions"
+                            :selected="old('consignment_note_id', $product->consignment_note_id)"
+                            placeholder="-- Chọn phiếu --"
+                            search-placeholder="Tìm theo lần gửi hoặc ngày gửi"
+                            empty-text="Không có phiếu phù hợp"
+                            depends-on="supplier_id"
+                            :dependency-value="$selectedSupplierId"
+                        />
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Danh mục</label>
-                        <select name="category_id" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" required>
-                            @foreach ($categories as $category)
-                                <option value="{{ $category->id }}" @selected(old('category_id', $product->category_id) == $category->id)>{{ $category->name }}</option>
-                            @endforeach
-                        </select>
+                        <x-searchable-select
+                            name="category_id"
+                            :options="$categoryOptions"
+                            :selected="old('category_id', $product->category_id)"
+                            placeholder="-- Chọn danh mục --"
+                            search-placeholder="Tìm theo mã hoặc tên"
+                            empty-text="Không có danh mục phù hợp"
+                        />
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Tên sản phẩm</label>
@@ -52,13 +81,6 @@
                             <label class="block text-sm font-medium text-gray-700">Số lượng</label>
                             <input type="number" min="1" name="quantity" value="{{ old('quantity', $product->quantity) }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" required>
                         </div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Ảnh mới</label>
-                        <input type="file" name="image" accept="image/*" capture="environment" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:rounded-xl file:border-0 file:bg-slate-900 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-slate-800">
-                        @if ($product->image_path)
-                            <p class="mt-2 text-sm text-gray-500">Ảnh hiện tại: {{ $product->image_path }}</p>
-                        @endif
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Ghi chú</label>

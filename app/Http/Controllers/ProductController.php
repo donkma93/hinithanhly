@@ -10,7 +10,10 @@ use App\Models\Supplier;
 use App\Repositories\Contracts\ProductRepositoryInterface;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class ProductController extends Controller
@@ -20,28 +23,54 @@ class ProductController extends Controller
         $this->middleware('permission:products.view')->only('index');
         $this->middleware('permission:products.create|products.manage')->only('store');
         $this->middleware('permission:products.update|products.manage')->only('update');
-        $this->middleware('permission:products.delete|products.manage')->only('destroy');
+        $this->middleware('permission:products.delete')->only('destroy');
     }
 
     public function index(Request $request): View
     {
         $publicId = trim($request->string('public_id')->toString());
+        $perPage = $this->resolvePerPage($request);
+
+        $products = Product::query()
+            ->select(['id', 'public_id', 'consignment_note_id', 'supplier_id', 'category_id', 'created_by_id', 'name', 'sale_price', 'quantity', 'image_path', 'description', 'created_at'])
+            ->with([
+                'category:id,public_id,name',
+                'supplier:id,public_id,name',
+                'consignmentNote:id,public_id,supplier_id,responsible_user_id,sent_date',
+                'consignmentNote.responsibleUser:id,public_id,name',
+            ])
+            ->when($publicId !== '', fn ($query) => $query->where('public_id', $publicId))
+            ->latest()
+            ->paginate($perPage)
+            ->withQueryString();
+
+        $sendSummaryMap = $this->resolveSendSummaries(
+            $products->getCollection()->pluck('supplier_id')->unique()->all()
+        );
+
+        $products->setCollection(
+            $products->getCollection()->map(function (Product $product) use ($sendSummaryMap): Product {
+                $sendSummary = $sendSummaryMap[$product->consignment_note_id] ?? [
+                    'round' => 1,
+                    'days' => 0,
+                    'label' => 'Lần 1 / 0 ngày / ---',
+                ];
+
+                $product->setAttribute('send_round', $sendSummary['round']);
+                $product->setAttribute('send_days', $sendSummary['days']);
+                $product->setAttribute('send_summary', $sendSummary['label']);
+
+                return $product;
+            })
+        );
 
         return view('products.index', [
-            'products' => Product::query()
-                ->select(['id', 'public_id', 'consignment_note_id', 'supplier_id', 'category_id', 'created_by_id', 'name', 'sale_price', 'quantity', 'image_path', 'description', 'created_at'])
-                ->with([
-                    'category:id,public_id,name',
-                    'supplier:id,public_id,name',
-                    'consignmentNote:id,public_id,sent_date',
-                ])
-                ->when($publicId !== '', fn ($query) => $query->where('public_id', $publicId))
-                ->latest()
-                ->paginate(10)
-                ->withQueryString(),
+            'products' => $products,
             'categories' => Category::query()->orderBy('name')->get(['id', 'public_id', 'name']),
             'suppliers' => Supplier::query()->orderBy('name')->get(['id', 'public_id', 'name']),
-            'consignments' => ConsignmentNote::query()->latest()->get(['id', 'public_id', 'supplier_id', 'sent_date']),
+            'consignmentOptions' => $this->buildConsignmentOptions(
+                ConsignmentNote::query()->get(['id', 'supplier_id', 'sent_date'])
+            ),
         ]);
     }
 
@@ -51,7 +80,7 @@ class ProductController extends Controller
         $data['created_by_id'] = $request->user()?->id;
 
         if ($request->hasFile('image')) {
-            $data['image_path'] = $request->file('image')->store('products', 'public');
+            $data['image_path'] = $this->storeOptimizedImage($request->file('image'));
         }
 
         $this->products->create($data);
@@ -83,7 +112,9 @@ class ProductController extends Controller
             'product' => $product,
             'categories' => Category::query()->orderBy('name')->get(['id', 'name']),
             'suppliers' => Supplier::query()->orderBy('name')->get(['id', 'name']),
-            'consignments' => ConsignmentNote::query()->latest()->get(['id', 'supplier_id', 'sent_date']),
+            'consignmentOptions' => $this->buildConsignmentOptions(
+                ConsignmentNote::query()->get(['id', 'supplier_id', 'sent_date'])
+            ),
         ]);
     }
 
@@ -96,7 +127,7 @@ class ProductController extends Controller
                 Storage::disk('public')->delete($product->image_path);
             }
 
-            $data['image_path'] = $request->file('image')->store('products', 'public');
+            $data['image_path'] = $this->storeOptimizedImage($request->file('image'));
         }
 
         $this->products->update($product->id, $data);
@@ -167,5 +198,156 @@ class ProductController extends Controller
             'description' => ['nullable', 'string'],
             'image' => ['nullable', 'image', 'max:5120'],
         ]);
+    }
+
+    /**
+     * @param  array<int>  $supplierIds
+     * @return array<int, int>
+     */
+    private function resolveSendSummaries(array $supplierIds): array
+    {
+        if ($supplierIds === []) {
+            return [];
+        }
+
+        $sendSummaries = [];
+
+        $consignmentNotes = ConsignmentNote::query()
+            ->whereIn('supplier_id', $supplierIds)
+            ->orderBy('supplier_id')
+            ->orderBy('sent_date')
+            ->orderBy('id')
+            ->get(['id', 'supplier_id', 'sent_date']);
+
+        $lastBySupplier = [];
+
+        foreach ($consignmentNotes as $note) {
+            $supplierId = (int) $note->supplier_id;
+            $sentDate = $note->sent_date;
+
+            if (! isset($lastBySupplier[$supplierId])) {
+                $sendSummaries[$note->id] = [
+                    'round' => 1,
+                    'days' => 0,
+                    'label' => 'Lần 1 / 0 ngày / '.$sentDate->format('d/m/Y'),
+                ];
+                $lastBySupplier[$supplierId] = [
+                    'date' => $sentDate,
+                    'round' => 1,
+                ];
+
+                continue;
+            }
+
+            $lastDate = $lastBySupplier[$supplierId]['date'];
+            $currentRound = $lastBySupplier[$supplierId]['round'];
+            $daysSincePrevious = $lastDate->diffInDays($sentDate);
+
+            if ($daysSincePrevious <= 15) {
+                $sendSummaries[$note->id] = [
+                    'round' => $currentRound,
+                    'days' => $daysSincePrevious,
+                    'label' => 'Lần '.$currentRound.' / '.$daysSincePrevious.' ngày / '.$sentDate->format('d/m/Y'),
+                ];
+            } else {
+                $currentRound++;
+                $sendSummaries[$note->id] = [
+                    'round' => $currentRound,
+                    'days' => $daysSincePrevious,
+                    'label' => 'Lần '.$currentRound.' / '.$daysSincePrevious.' ngày / '.$sentDate->format('d/m/Y'),
+                ];
+            }
+
+            $lastBySupplier[$supplierId] = [
+                'date' => $sentDate,
+                'round' => $currentRound,
+            ];
+        }
+
+        return $sendSummaries;
+    }
+
+    /**
+     * @return array<int, array{value:int,label:string}>
+     */
+    private function buildConsignmentOptions(Collection $consignments): array
+    {
+        $sendSummaries = $this->resolveSendSummaries(
+            $consignments->pluck('supplier_id')->unique()->all()
+        );
+
+        return $consignments
+            ->map(function (ConsignmentNote $consignment) use ($sendSummaries): array {
+                $summary = $sendSummaries[$consignment->id] ?? [
+                    'label' => 'Lần 1 / 0 ngày / '.optional($consignment->sent_date)->format('d/m/Y'),
+                ];
+
+                return [
+                    'value' => $consignment->id,
+                    'supplier_id' => $consignment->supplier_id,
+                    'label' => $summary['label'],
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    private function storeOptimizedImage(UploadedFile $image): string
+    {
+        $binary = file_get_contents($image->getRealPath());
+
+        if ($binary === false) {
+            return $image->store('products', 'public');
+        }
+
+        $source = imagecreatefromstring($binary);
+
+        if ($source === false) {
+            return $image->store('products', 'public');
+        }
+
+        $width = imagesx($source);
+        $height = imagesy($source);
+        $maxSize = 1600;
+        $scale = min(1, $maxSize / max($width, $height));
+        $targetWidth = max(1, (int) round($width * $scale));
+        $targetHeight = max(1, (int) round($height * $scale));
+
+        $target = imagecreatetruecolor($targetWidth, $targetHeight);
+
+        if ($target === false) {
+            imagedestroy($source);
+
+            return $image->store('products', 'public');
+        }
+
+        imagealphablending($target, false);
+        imagesavealpha($target, true);
+        $transparent = imagecolorallocatealpha($target, 0, 0, 0, 127);
+        imagefilledrectangle($target, 0, 0, $targetWidth, $targetHeight, $transparent);
+
+        imagecopyresampled($target, $source, 0, 0, 0, 0, $targetWidth, $targetHeight, $width, $height);
+
+        $fileName = Str::uuid()->toString().'.webp';
+        $storagePath = 'products/'.$fileName;
+        $fullPath = Storage::disk('public')->path($storagePath);
+
+        if (! imagewebp($target, $fullPath, 82)) {
+            $fileName = Str::uuid()->toString().'.jpg';
+            $storagePath = 'products/'.$fileName;
+            $fullPath = Storage::disk('public')->path($storagePath);
+
+            $background = imagecreatetruecolor($targetWidth, $targetHeight);
+            $white = imagecolorallocate($background, 255, 255, 255);
+            imagefill($background, 0, 0, $white);
+            imagecopy($background, $target, 0, 0, 0, 0, $targetWidth, $targetHeight);
+            imagejpeg($background, $fullPath, 82);
+            imagedestroy($background);
+        }
+
+        imagedestroy($target);
+        imagedestroy($source);
+
+        return $storagePath;
     }
 }

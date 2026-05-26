@@ -6,26 +6,39 @@
         </div>
     </x-slot>
 
+    @php
+        $userOptions = $users->map(fn ($user) => [
+            'value' => $user->id,
+            'label' => '#'.$user->public_id.' - '.$user->name,
+        ])->all();
+    @endphp
+
     <div class="py-10">
         <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
             <div class="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
-                <form method="GET" action="{{ route('logs.index') }}" class="grid gap-4 md:grid-cols-4">
+                <form method="GET" action="{{ route('logs.index') }}" class="grid gap-4 md:grid-cols-5">
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Mã log</label>
                         <input name="log_id" value="{{ request('log_id') }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" placeholder="Ví dụ: 123">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Người dùng</label>
-                        <select name="user_id" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900">
-                            <option value="">Tất cả</option>
-                            @foreach ($users as $user)
-                                <option value="{{ $user->id }}" @selected(request('user_id') == $user->id)>#{{ $user->public_id }} - {{ $user->name }}</option>
-                            @endforeach
-                        </select>
+                        <x-searchable-select
+                            name="user_id"
+                            :options="$userOptions"
+                            :selected="request('user_id')"
+                            placeholder="Tất cả người dùng"
+                            search-placeholder="Tìm theo mã hoặc tên"
+                            empty-text="Không có người dùng phù hợp"
+                        />
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Hành động</label>
                         <input name="action" value="{{ request('action') }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" placeholder="Ví dụ: products.store">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Mỗi trang</label>
+                        <x-per-page-select :value="request('per_page', 10)" />
                     </div>
                     <div class="flex items-end gap-3">
                         <button class="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">Lọc</button>

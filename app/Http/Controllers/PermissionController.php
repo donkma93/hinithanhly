@@ -9,6 +9,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Spatie\Permission\Models\Role;
 
 class PermissionController extends Controller
 {
@@ -17,16 +18,21 @@ class PermissionController extends Controller
         $this->middleware('permission:permissions.view|permissions.manage')->only('index');
         $this->middleware('permission:permissions.create|permissions.manage')->only('store');
         $this->middleware('permission:permissions.update|permissions.manage')->only('update');
-        $this->middleware('permission:permissions.delete|permissions.manage')->only('destroy');
+        $this->middleware('permission:permissions.delete')->only('destroy');
     }
 
     public function index(Request $request): View
     {
-        $permissions = Permission::query()->orderBy('name')->get(['id', 'name', 'guard_name', 'created_at']);
+        $perPage = $this->resolvePerPage($request);
+
+        $permissions = Permission::query()
+            ->orderBy('name')
+            ->paginate($perPage)
+            ->withQueryString();
 
         return view('permissions.index', [
             'permissions' => $permissions,
-            'permissionGroups' => PermissionCatalog::grouped($permissions),
+            'permissionGroups' => PermissionCatalog::grouped($permissions->getCollection()),
         ]);
     }
 
@@ -40,6 +46,8 @@ class PermissionController extends Controller
             'name' => $data['name'],
             'guard_name' => 'web',
         ]);
+
+        $this->syncCoreRolesWithPermission($permission->name);
 
         AuditLog::record([
             'user_id' => $request->user()?->id,
@@ -90,6 +98,14 @@ class PermissionController extends Controller
         ]);
 
         return redirect()->route('permissions.index')->with('status', 'Đã cập nhật quyền.');
+    }
+
+    private function syncCoreRolesWithPermission(string $permissionName): void
+    {
+        foreach (['admin', 'super-admin'] as $roleName) {
+            $role = Role::findByName($roleName, 'web');
+            $role->givePermissionTo($permissionName);
+        }
     }
 
     public function destroy(Request $request, Permission $permission): RedirectResponse

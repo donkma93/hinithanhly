@@ -7,6 +7,13 @@
         </div>
     </x-slot>
 
+    @php
+        $supplierOptions = $suppliers->map(fn ($supplier) => [
+            'value' => $supplier->id,
+            'label' => '#'.$supplier->public_id.' - '.$supplier->name,
+        ])->all();
+    @endphp
+
     <div class="py-10">
         <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
             <div class="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
@@ -15,21 +22,18 @@
                     @method('PUT')
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Người phụ trách</label>
-                        <select name="responsible_user_id" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" required>
-                            <option value="">-- Chọn nhân viên --</option>
-                            @foreach ($users as $user)
-                                <option value="{{ $user->id }}" @selected(old('responsible_user_id', $consignment->responsible_user_id) == $user->id)>{{ $user->name }}</option>
-                            @endforeach
-                        </select>
+                        <input name="responsible_name" value="{{ old('responsible_name', $consignment->responsible_name) }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" placeholder="Nhập tên người phụ trách" required>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Nhà cung cấp</label>
-                        <select name="supplier_id" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" required>
-                            <option value="">-- Chọn nhà cung cấp --</option>
-                            @foreach ($suppliers as $supplier)
-                                <option value="{{ $supplier->id }}" @selected(old('supplier_id', $consignment->supplier_id) == $supplier->id)>{{ $supplier->name }}</option>
-                            @endforeach
-                        </select>
+                        <x-searchable-select
+                            name="supplier_id"
+                            :options="$supplierOptions"
+                            :selected="old('supplier_id', $consignment->supplier_id)"
+                            placeholder="-- Chọn nhà cung cấp --"
+                            search-placeholder="Tìm theo mã hoặc tên"
+                            empty-text="Không có nhà cung cấp phù hợp"
+                        />
                     </div>
                     <div class="grid gap-4 sm:grid-cols-2">
                         <div>

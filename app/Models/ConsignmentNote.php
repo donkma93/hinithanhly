@@ -16,6 +16,7 @@ class ConsignmentNote extends Model
     protected $fillable = [
         'public_id',
         'responsible_user_id',
+        'responsible_name',
         'supplier_id',
         'sent_date',
         'quantity',
