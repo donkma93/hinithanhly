@@ -15,12 +15,13 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class ProductController extends Controller
 {
     public function __construct(private readonly ProductRepositoryInterface $products)
     {
-        $this->middleware('permission:products.view')->only('index');
+        $this->middleware('permission:products.view')->only(['index', 'labelIndex', 'printLabels', 'label', 'qr']);
         $this->middleware('permission:products.create|products.manage')->only('store');
         $this->middleware('permission:products.update|products.manage')->only('update');
         $this->middleware('permission:products.delete')->only('destroy');
@@ -116,6 +117,126 @@ class ProductController extends Controller
                 ConsignmentNote::query()->get(['id', 'supplier_id', 'sent_date'])
             ),
         ]);
+    }
+
+    public function labelIndex(Request $request): View
+    {
+        $term = trim($request->string('term')->toString());
+        $perPage = $this->resolvePerPage($request);
+
+        $products = Product::query()
+            ->select(['id', 'public_id', 'consignment_note_id', 'supplier_id', 'image_path', 'name', 'sale_price', 'quantity', 'created_at'])
+            ->with([
+                'supplier:id,public_id,name',
+                'consignmentNote:id,public_id,supplier_id,sent_date',
+            ])
+            ->when($term !== '', function ($query) use ($term): void {
+                $query->where(function ($innerQuery) use ($term): void {
+                    $innerQuery->where('name', 'like', '%'.$term.'%')
+                        ->orWhere('public_id', 'like', '%'.$term.'%')
+                        ->orWhereHas('supplier', function ($supplierQuery) use ($term): void {
+                            $supplierQuery->where('name', 'like', '%'.$term.'%')
+                                ->orWhere('public_id', 'like', '%'.$term.'%');
+                        });
+                });
+            })
+            ->latest()
+            ->paginate($perPage)
+            ->withQueryString();
+
+        $sendSummaryMap = $this->resolveSendSummaries(
+            $products->getCollection()->pluck('supplier_id')->unique()->all()
+        );
+
+        $products->setCollection(
+            $products->getCollection()->map(function (Product $product) use ($sendSummaryMap): Product {
+                $sendSummary = $sendSummaryMap[$product->consignment_note_id] ?? [
+                    'round' => 1,
+                    'days' => 0,
+                    'label' => 'Lần 1 / 0 ngày / ---',
+                ];
+
+                $product->setAttribute('send_round', $sendSummary['round']);
+                $product->setAttribute('send_days', $sendSummary['days']);
+                $product->setAttribute('send_summary', $sendSummary['label']);
+                $product->setAttribute('label_code', $this->buildLabelCode($product, $sendSummary['round']));
+                $product->setAttribute('qr_payload', (string) $product->id);
+
+                return $product;
+            })
+        );
+
+        return view('products.label-index', [
+            'products' => $products,
+        ]);
+    }
+
+    public function printLabels(Request $request): View
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'distinct', 'exists:products,id'],
+        ]);
+
+        $selectedIds = array_map('intval', $validated['ids']);
+
+        $products = Product::query()
+            ->select(['id', 'public_id', 'consignment_note_id', 'supplier_id', 'name', 'sale_price', 'quantity', 'created_at'])
+            ->with([
+                'supplier:id,public_id,name',
+                'consignmentNote:id,public_id,supplier_id,sent_date',
+            ])
+            ->whereIn('id', $selectedIds)
+            ->get()
+            ->sortBy(fn (Product $product): int => array_search($product->id, $selectedIds, true) ?: 0)
+            ->values();
+
+        $sendSummaryMap = $this->resolveSendSummaries(
+            $products->pluck('supplier_id')->unique()->all()
+        );
+
+        $products = $products->map(function (Product $product) use ($sendSummaryMap): Product {
+            $sendSummary = $sendSummaryMap[$product->consignment_note_id] ?? [
+                'round' => 1,
+                'days' => 0,
+                'label' => 'Lần 1 / 0 ngày / ---',
+            ];
+
+            $product->setAttribute('send_round', $sendSummary['round']);
+            $product->setAttribute('send_days', $sendSummary['days']);
+            $product->setAttribute('send_summary', $sendSummary['label']);
+            $product->setAttribute('label_code', $this->buildLabelCode($product, $sendSummary['round']));
+            $product->setAttribute('qr_payload', (string) $product->id);
+
+            return $product;
+        });
+
+        return view('products.label-print', [
+            'products' => $products,
+        ]);
+    }
+
+    public function label(Product $product): View
+    {
+        $qrData = $this->buildProductQrData($product);
+
+        return view('products.label', [
+            'product' => $product,
+            'sendSummary' => $qrData['sendSummary'],
+            'qrSvg' => QrCode::format('svg')->size(240)->margin(1)->generate($qrData['qrPayload']),
+            'qrPayload' => $qrData['labelCode'],
+        ]);
+    }
+
+    public function qr(Product $product)
+    {
+        $qrData = $this->buildProductQrData($product);
+
+        $svg = QrCode::format('svg')->size(320)->margin(1)->generate($qrData['qrPayload']);
+
+        return response($svg, 200)
+            ->header('Content-Type', 'image/svg+xml')
+            ->header('Content-Disposition', 'attachment; filename="product-'.$product->public_id.'-qr.svg"');
     }
 
     public function update(Request $request, Product $product): RedirectResponse
@@ -265,6 +386,45 @@ class ProductController extends Controller
         }
 
         return $sendSummaries;
+    }
+
+    /**
+     * @return array{round:int,days:int,label:string}
+     */
+    private function resolveProductSendSummary(Product $product): array
+    {
+        $sendSummaries = $this->resolveSendSummaries([(int) $product->supplier_id]);
+
+        return $sendSummaries[$product->consignment_note_id] ?? [
+            'round' => 1,
+            'days' => 0,
+            'label' => 'Lần 1 / 0 ngày / ---',
+        ];
+    }
+
+    /**
+     * @return array{sendSummary:array{round:int,days:int,label:string},qrPayload:string,labelCode:string}
+     */
+    private function buildProductQrData(Product $product): array
+    {
+        $product->loadMissing([
+            'supplier:id,public_id,name',
+            'consignmentNote:id,public_id,supplier_id,sent_date',
+        ]);
+
+        $sendSummary = $this->resolveProductSendSummary($product);
+        $labelCode = $this->buildLabelCode($product, $sendSummary['round']);
+
+        return [
+            'sendSummary' => $sendSummary,
+            'qrPayload' => (string) $product->id,
+            'labelCode' => $labelCode,
+        ];
+    }
+
+    private function buildLabelCode(Product $product, int $sendRound): string
+    {
+        return $product->id.'-'.$product->supplier_id.'-'.$sendRound;
     }
 
     /**

@@ -135,8 +135,11 @@
                                             <div class="text-xs text-gray-500">{{ $product->consignmentNote?->responsibleUser?->public_id ? '#'.$product->consignmentNote->responsibleUser->public_id : '' }}</div>
                                         </td>
                                         <td class="py-3 pr-4 text-right">
+                                            @can('products.view')
+                                                <a href="{{ route('products.label', $product) }}" target="_blank" rel="noopener" class="text-slate-900 hover:underline">In mã hàng</a>
+                                            @endcan
                                             @canany(['products.update', 'products.manage'])
-                                                <a href="{{ route('products.edit', $product) }}" class="text-slate-900 hover:underline">Sửa</a>
+                                                <a href="{{ route('products.edit', $product) }}" class="ms-4 text-slate-900 hover:underline">Sửa</a>
                                             @endcanany
                                             @can('products.delete')
                                                 <span class="ms-4 inline-block align-middle">
