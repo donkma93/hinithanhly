@@ -4,6 +4,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\ConsignmentNoteController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\SalesController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
@@ -29,8 +30,13 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function () {
-    return auth()->check() ? redirect()->route('dashboard') : redirect()->route('login');
+    return auth()->check() ? redirect()->route('dashboard') : view('sales');
 });
+
+Route::get('/ban-hang', [SalesController::class, 'index'])->name('sales.index');
+Route::get('/ban-hang/products/{code}', [SalesController::class, 'lookup'])
+    ->where('code', '[0-9\-]+')
+    ->name('sales.lookup');
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', function () {
@@ -128,6 +134,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/logs', [AuditLogController::class, 'index'])
         ->middleware('permission:logs.view')
         ->name('logs.index');
+
+    // Sales checkout endpoint (requires auth)
+    Route::post('/ban-hang/checkout', [SalesController::class, 'checkout'])->name('sales.checkout');
 });
 
 require __DIR__.'/auth.php';
