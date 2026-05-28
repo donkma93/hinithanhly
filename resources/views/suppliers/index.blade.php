@@ -7,6 +7,7 @@
     </x-slot>
 
     @php($bankOptions = $bankOptions ?? config('banks', []))
+    @php($supplierDiscountRates = $supplierDiscountRates ?? \App\Models\Setting::supplierDiscountRates())
 
     <div class="py-10">
         <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
@@ -31,7 +32,7 @@
                                 <select name="type" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" required>
                                     <option value="">-- Chọn loại --</option>
                                     @foreach ($supplierTypes as $value => $label)
-                                        <option value="{{ $value }}" @selected(old('type') === $value)>{{ $label }}</option>
+                                        <option value="{{ $value }}" @selected(old('type') === $value)>{{ $label }} ({{ $supplierDiscountRates[$value] ?? 0 }}%)</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -102,7 +103,7 @@
                                     <tr>
                                         <td class="py-3 pr-4 font-medium text-slate-900">#{{ $supplier->public_id }}</td>
                                         <td class="py-3 pr-4 font-medium text-gray-900">{{ $supplier->name }}</td>
-                                        <td class="py-3 pr-4 text-gray-600">{{ \App\Models\Supplier::TYPES[$supplier->type] ?? $supplier->type }}</td>
+                                        <td class="py-3 pr-4 text-gray-600">{{ \App\Models\Supplier::TYPES[$supplier->type] ?? $supplier->type }} ({{ $supplierDiscountRates[$supplier->type] ?? 0 }}%)</td>
                                         <td class="py-3 pr-4 text-gray-600">{{ $supplier->responsible_name ?: '---' }}</td>
                                         <td class="py-3 pr-4 text-gray-600">{{ $supplier->bank_name ?: '---' }}</td>
                                         <td class="py-3 pr-4 text-right">

@@ -8,6 +8,7 @@
     </x-slot>
 
     @php($bankOptions = $bankOptions ?? config('banks', []))
+    @php($supplierDiscountRates = $supplierDiscountRates ?? \App\Models\Setting::supplierDiscountRates())
 
     <div class="py-10">
         <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
@@ -24,7 +25,7 @@
                         <select name="type" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" required>
                             <option value="">-- Chọn loại --</option>
                             @foreach ($supplierTypes as $value => $label)
-                                <option value="{{ $value }}" @selected(old('type', $supplier->type) === $value)>{{ $label }}</option>
+                                <option value="{{ $value }}" @selected(old('type', $supplier->type) === $value)>{{ $label }} ({{ $supplierDiscountRates[$value] ?? 0 }}%)</option>
                             @endforeach
                         </select>
                     </div>

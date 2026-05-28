@@ -9,6 +9,9 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\View\View;
 
 class SalesController extends Controller
@@ -59,9 +62,19 @@ class SalesController extends Controller
             'items' => ['required', 'array'],
             'items.*.id' => ['required', 'integer'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
+            'payment_token' => ['nullable', 'string'],
         ]);
 
         $items = $data['items'];
+        $paymentToken = $data['payment_token'] ?? null;
+
+        // If a payment token is provided, verify it exists and matches
+        if ($paymentToken) {
+            $cached = Cache::pull("sales.payment.{$paymentToken}");
+            if (!$cached || !isset($cached['items']) || $cached['items'] !== $items) {
+                return response()->json(['message' => 'Mã thanh toán không hợp lệ hoặc đã hết hạn.'], 422);
+            }
+        }
 
         $payloadItems = [];
         $total = 0;
@@ -121,6 +134,72 @@ class SalesController extends Controller
             DB::rollBack();
             return response()->json(['message' => 'Lỗi khi chốt hoá đơn. Vui lòng thử lại.'], 500);
         }
+    }
+
+    /**
+     * Create a payment QR for bank transfer and cache the payload until
+     * the cashier confirms payment.
+     */
+    public function createPayment(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'items' => ['required', 'array'],
+            'items.*.id' => ['required', 'integer'],
+            'items.*.quantity' => ['required', 'integer', 'min:1'],
+        ]);
+
+        $items = $data['items'];
+
+        // compute total
+        $total = 0;
+        foreach ($items as $item) {
+            $product = Product::find($item['id']);
+            if (!$product) {
+                return response()->json(['message' => "Sản phẩm ID {$item['id']} không tồn tại."], 422);
+            }
+            $total += $product->sale_price * (int)$item['quantity'];
+        }
+
+        // Build payment payload (prefer settings saved in DB, fallback to env)
+        $bankCode = \App\Models\Setting::resolveBankCode(\App\Models\Setting::get('bank_name', env('APP_BANK_NAME', '')));
+        $bankName = \App\Models\Setting::resolveBankLabel($bankCode);
+        $accountNumber = \App\Models\Setting::get('bank_account', env('APP_BANK_ACCOUNT', '000000000'));
+        $accountName = \App\Models\Setting::get('bank_account_name', env('APP_BANK_ACCOUNT_NAME', config('app.name')));
+
+        if ($bankCode === '' || $accountNumber === '' || $accountName === '') {
+            return response()->json([
+                'message' => 'Vui lòng cấu hình đầy đủ ngân hàng, số tài khoản và tên chủ tài khoản trong phần Cài đặt.',
+            ], 422);
+        }
+
+        $paymentReference = Str::uuid()->toString();
+
+        $paymentContent = sprintf('Thanh toán %s', $paymentReference);
+        $qrUrl = sprintf(
+            'https://img.vietqr.io/image/%s-%s-compact2.png?amount=%s&addInfo=%s&accountName=%s',
+            rawurlencode($bankCode),
+            rawurlencode($accountNumber),
+            rawurlencode((string) round($total)),
+            rawurlencode($paymentContent),
+            rawurlencode($accountName)
+        );
+
+        $payload = "Ngân hàng: {$bankName}\nSố tài khoản: {$accountNumber}\nChủ tài khoản: {$accountName}\nSố tiền: " . number_format($total, 0, ',', '.') . " ₫\nNội dung: {$paymentContent}";
+
+        $token = Str::random(24);
+
+        Cache::put("sales.payment.{$token}", [
+            'items' => $items,
+            'total' => $total,
+            'reference' => $paymentReference,
+        ], now()->addMinutes(30));
+
+        return response()->json([
+            'qr_url' => $qrUrl,
+            'payload' => $payload,
+            'payment_token' => $token,
+            'total' => (float)$total,
+        ]);
     }
 
     private function findProductByCode(string $code): ?Product

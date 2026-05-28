@@ -262,12 +262,14 @@
             const items = Array.from(cart.values()).map(item => ({ id: Number(item.id), quantity: 1 }));
             // If you need quantities >1, extend the UI to capture them; current cart stores single qty per scan.
 
-            setStatus('Đang gửi yêu cầu chốt hoá đơn...');
+            // First, request a payment QR payload from the server. The
+            // cashier will ask the customer to transfer and then confirm.
+            setStatus('Chuẩn bị mã QR chuyển khoản...', 'info');
 
             try {
                 const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
-                const response = await fetch(@json(url('/ban-hang/checkout')), {
+                const createResp = await fetch(@json(url('/ban-hang/create-payment')), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -277,31 +279,106 @@
                     body: JSON.stringify({ items }),
                 });
 
-                if (response.status === 401) {
+                if (createResp.status === 401) {
                     setStatus('Vui lòng đăng nhập để hoàn tất hoá đơn.', 'warning');
                     focusScanner();
                     return;
                 }
 
-                const payload = await response.json().catch(() => ({}));
+                const createPayload = await createResp.json().catch(() => ({}));
 
-                if (!response.ok) {
-                    setStatus(payload.message || 'Lỗi khi chốt hoá đơn.', 'error');
+                if (!createResp.ok) {
+                    setStatus(createPayload.message || 'Không thể tạo mã QR.', 'error');
                     focusScanner();
                     return;
                 }
 
-                cart.clear();
-                renderCart();
-                lastProductEmpty.classList.remove('hidden');
-                lastProductBox.classList.add('hidden');
-                setStatus(payload.message || 'Chốt hoá đơn thành công.', 'success');
-                focusScanner();
+                // Show modal with QR
+                showPaymentModal(createPayload.qr_url, createPayload.payload, createPayload.payment_token, createPayload.total);
+                setStatus('Hiển thị mã QR. Chờ xác nhận chuyển tiền.', 'info');
             } catch (err) {
-                setStatus('Lỗi khi chốt hoá đơn.', 'error');
+                setStatus('Lỗi khi tạo mã QR.', 'error');
                 focusScanner();
             }
         });
+
+        /* Payment modal handling */
+        const paymentModal = document.createElement('div');
+        paymentModal.id = 'payment-modal';
+        paymentModal.style.display = 'none';
+        paymentModal.innerHTML = `
+            <div id="payment-modal-backdrop" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:60;">
+                <div style="background:white;border-radius:12px;padding:20px;max-width:420px;width:90%;box-shadow:0 10px 30px rgba(0,0,0,0.2);">
+                    <h3 style="font-weight:600;margin-bottom:12px;">Mã QR chuyển khoản</h3>
+                    <div id="payment-qr-container" style="text-align:center;margin-bottom:12px;"></div>
+                    <pre id="payment-payload" style="white-space:pre-wrap;background:#f7f7f7;padding:8px;border-radius:6px;margin-bottom:12px;font-size:13px;color:#333;"></pre>
+                    <div style="display:flex;gap:8px;justify-content:flex-end;">
+                        <button id="payment-cancel" type="button" style="padding:8px 12px;border-radius:8px;border:1px solid #ddd;background:#fff;">Hủy</button>
+                        <button id="payment-confirm" type="button" style="padding:8px 12px;border-radius:8px;background:#10b981;color:#fff;border:none;">Tôi đã chuyển tiền</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(paymentModal);
+
+        const showPaymentModal = (qrUrl, payloadText, paymentToken, total) => {
+            const container = document.getElementById('payment-qr-container');
+            const payloadEl = document.getElementById('payment-payload');
+            const modal = document.getElementById('payment-modal');
+
+            if (qrUrl) {
+                container.innerHTML = `<img src="${qrUrl}" alt="Mã QR chuyển khoản" style="width:100%;max-width:320px;margin:0 auto;display:block;" />`;
+            } else {
+                container.innerHTML = `<div style="padding:24px;border-radius:8px;background:#f3f4f6;color:#111;">${payloadText.replace(/\n/g, '<br/>')}</div>`;
+            }
+
+            payloadEl.textContent = `Tổng: ${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 }).format(total)} ₫\n${payloadText}`;
+
+            paymentModal.style.display = 'block';
+
+            document.getElementById('payment-cancel').onclick = () => {
+                paymentModal.style.display = 'none';
+                focusScanner();
+            };
+
+            document.getElementById('payment-confirm').onclick = async () => {
+                paymentModal.style.display = 'none';
+                setStatus('Xác nhận thanh toán...', 'info');
+
+                try {
+                    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+                    const checkoutResp = await fetch(@json(url('/ban-hang/checkout')), {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': token,
+                        },
+                        body: JSON.stringify({ items, payment_token: paymentToken }),
+                    });
+
+                    const payload = await checkoutResp.json().catch(() => ({}));
+
+                    if (!checkoutResp.ok) {
+                        setStatus(payload.message || 'Lỗi khi chốt hoá đơn.', 'error');
+                        focusScanner();
+                        return;
+                    }
+
+                    cart.clear();
+                    renderCart();
+                    lastProductEmpty.classList.remove('hidden');
+                    lastProductBox.classList.add('hidden');
+                    setStatus(payload.message || 'Chốt hoá đơn thành công.', 'success');
+                    focusScanner();
+                } catch (err) {
+                    setStatus('Lỗi khi chốt hoá đơn.', 'error');
+                    focusScanner();
+                }
+            };
+        };
 
         scannerInput.addEventListener('blur', () => {
             // Allow other inputs (e.g. the login form) to keep focus when

@@ -81,6 +81,12 @@ class PermissionCatalog
                     'permissions.manage' => 'Quản lý phân quyền',
                 ],
             ],
+                'settings' => [
+                    'label' => 'Cài đặt',
+                    'permissions' => [
+                        'settings.manage' => 'Quản lý cài đặt',
+                    ],
+                ],
         ];
     }
 

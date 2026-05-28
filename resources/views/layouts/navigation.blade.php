@@ -65,6 +65,11 @@
                         <span>Vai trò</span>
                     </a>
                 @endcanany
+                @can('settings.manage')
+                    <a href="{{ route('settings.payment.edit') }}" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition {{ request()->routeIs('settings.*') ? 'bg-white text-slate-950' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
+                        <span>Cài đặt</span>
+                    </a>
+                @endcan
                 <a href="{{ route('profile.edit') }}" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-slate-300 transition hover:bg-white/10 hover:text-white">
                     <span>Hồ sơ</span>
                 </a>

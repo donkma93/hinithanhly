@@ -136,7 +136,17 @@ Route::middleware(['auth'])->group(function () {
         ->name('logs.index');
 
     // Sales checkout endpoint (requires auth)
+    Route::post('/ban-hang/create-payment', [SalesController::class, 'createPayment'])->name('sales.createPayment');
     Route::post('/ban-hang/checkout', [SalesController::class, 'checkout'])->name('sales.checkout');
+
+    // Settings (payment)
+    Route::get('/settings/payment', [\App\Http\Controllers\SettingsController::class, 'editPayment'])
+        ->middleware('permission:settings.manage')
+        ->name('settings.payment.edit');
+
+    Route::post('/settings/payment', [\App\Http\Controllers\SettingsController::class, 'updatePayment'])
+        ->middleware('permission:settings.manage')
+        ->name('settings.payment.update');
 });
 
 require __DIR__.'/auth.php';

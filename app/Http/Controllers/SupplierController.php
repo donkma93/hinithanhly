@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
+use App\Models\Setting;
 use App\Models\Supplier;
 use App\Repositories\Contracts\SupplierRepositoryInterface;
 use Illuminate\Http\RedirectResponse;
@@ -34,6 +35,7 @@ class SupplierController extends Controller
                 ->withQueryString(),
             'bankOptions' => config('banks', []),
             'supplierTypes' => Supplier::TYPES,
+            'supplierDiscountRates' => Setting::supplierDiscountRates(),
         ]);
     }
 
@@ -77,6 +79,7 @@ class SupplierController extends Controller
             'supplier' => $supplier,
             'bankOptions' => config('banks', []),
             'supplierTypes' => Supplier::TYPES,
+            'supplierDiscountRates' => Setting::supplierDiscountRates(),
         ]);
     }
 
