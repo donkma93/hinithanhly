@@ -304,7 +304,26 @@
         });
 
         scannerInput.addEventListener('blur', () => {
-            window.setTimeout(focusScanner, 0);
+            // Allow other inputs (e.g. the login form) to keep focus when
+            // the user explicitly focuses them on mobile. Only restore
+            // focus to the scanner if nothing else sensible is focused.
+            window.setTimeout(() => {
+                const active = document.activeElement;
+
+                // If something other than the document/body is focused and
+                // it's an interactive field, don't steal focus back.
+                if (active && active !== document.body && active !== document.documentElement) {
+                    try {
+                        if (typeof active.closest === 'function' && active.closest('input, textarea, select, [contenteditable]')) {
+                            return;
+                        }
+                    } catch (e) {
+                        // If any error, fall back to refocusing the scanner.
+                    }
+                }
+
+                focusScanner();
+            }, 0);
         });
 
         document.addEventListener('pointerdown', (event) => {
@@ -323,6 +342,12 @@
         });
 
         renderCart();
-        focusScanner();
+
+        // If the page already contains an element with `autofocus` (for
+        // example the login email field), prefer that element and do not
+        // immediately steal focus for the scanner. Otherwise, focus the scanner.
+        if (!document.querySelector('input[autofocus], textarea[autofocus], select[autofocus], [autofocus]')) {
+            focusScanner();
+        }
     });
 </script>
