@@ -23,6 +23,7 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Người phụ trách</label>
                         <input name="responsible_name" value="{{ old('responsible_name', $consignment->responsible_name) }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" placeholder="Nhập tên người phụ trách" required>
+                        @error('responsible_name') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Nhà cung cấp</label>
@@ -34,20 +35,24 @@
                             search-placeholder="Tìm theo mã hoặc tên"
                             empty-text="Không có nhà cung cấp phù hợp"
                         />
+                        @error('supplier_id') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
                     <div class="grid gap-4 sm:grid-cols-2">
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Ngày gửi</label>
                             <input type="date" name="sent_date" value="{{ old('sent_date', optional($consignment->sent_date)->format('Y-m-d')) }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" required>
+                            @error('sent_date') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Số lượng gửi</label>
                             <input type="number" min="1" name="quantity" value="{{ old('quantity', $consignment->quantity) }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" required>
+                            @error('quantity') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
                         </div>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Ghi chú</label>
                         <textarea name="notes" rows="5" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900">{{ old('notes', $consignment->notes) }}</textarea>
+                        @error('notes') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
                     <div class="flex items-center gap-3">
                         <button class="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">Cập nhật</button>
