@@ -3,10 +3,10 @@
         <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
                 <h2 class="text-2xl font-semibold text-gray-900">In mã hàng</h2>
-                <p class="text-sm text-gray-500">Trang in QR cho sản phẩm {{ $product->name }}.</p>
+                <p class="text-sm text-gray-500">Trang in mã vạch cho sản phẩm {{ $product->name }}.</p>
             </div>
             <div class="no-print flex gap-2">
-                <a href="{{ route('products.qr', $product) }}" class="rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700">Tải SVG</a>
+                <a href="{{ route('products.barcode', $product) }}" class="rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700">Tải SVG</a>
                 <button type="button" onclick="window.print()" class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white">In trang này</button>
                 <a href="{{ route('products.index') }}" class="rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700">Quay lại</a>
             </div>
@@ -61,15 +61,15 @@
                         </dl>
 
                         <div class="rounded-2xl bg-amber-50 p-4 text-sm text-amber-900 ring-1 ring-amber-100">
-                            QR này chứa thông tin mã sản phẩm, mã nhà cung cấp và lần gửi để hỗ trợ in/tra cứu nhanh.
+                            Mã vạch này chứa thông tin mã sản phẩm để hỗ trợ tra cứu nhanh.
                         </div>
                     </div>
 
                     <div class="flex flex-col items-center justify-center rounded-3xl bg-slate-950 p-6 text-center text-white">
                         <div class="rounded-2xl bg-white p-4 shadow-lg">
-                            {!! $qrSvg !!}
+                            {!! $barcodeSvg !!}
                         </div>
-                        <p class="mt-4 text-xs uppercase tracking-[0.2em] text-slate-300">{{ $qrPayload }}</p>
+                        <p class="mt-4 text-xs uppercase tracking-[0.2em] text-slate-300">{{ $barcodePayload }}</p>
                         <p class="mt-3 text-2xl font-semibold text-white">{{ number_format((float) $product->sale_price, 0, ',', '.') }} đ</p>
                     </div>
                 </div>

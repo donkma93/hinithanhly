@@ -15,13 +15,13 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Picqer\Barcode\BarcodeGeneratorSVG;
 
 class ProductController extends Controller
 {
     public function __construct(private readonly ProductRepositoryInterface $products)
     {
-        $this->middleware('permission:products.view')->only(['index', 'labelIndex', 'printLabels', 'label', 'qr']);
+        $this->middleware('permission:products.view')->only(['index', 'labelIndex', 'printLabels', 'label', 'barcode']);
         $this->middleware('permission:products.create|products.manage')->only('store');
         $this->middleware('permission:products.update|products.manage')->only('update');
         $this->middleware('permission:products.delete')->only('destroy');
@@ -160,7 +160,7 @@ class ProductController extends Controller
                 $product->setAttribute('send_days', $sendSummary['days']);
                 $product->setAttribute('send_summary', $sendSummary['label']);
                 $product->setAttribute('label_code', $this->buildLabelCode($product, $sendSummary['round']));
-                $product->setAttribute('qr_payload', (string) $product->id);
+                $product->setAttribute('barcode_payload', (string) $product->id);
 
                 return $product;
             })
@@ -206,7 +206,8 @@ class ProductController extends Controller
             $product->setAttribute('send_days', $sendSummary['days']);
             $product->setAttribute('send_summary', $sendSummary['label']);
             $product->setAttribute('label_code', $this->buildLabelCode($product, $sendSummary['round']));
-            $product->setAttribute('qr_payload', (string) $product->id);
+            $product->setAttribute('barcode_payload', (string) $product->id);
+            $product->setAttribute('barcode_svg', $this->generateBarcode((string) $product->id));
 
             return $product;
         });
@@ -218,25 +219,25 @@ class ProductController extends Controller
 
     public function label(Product $product): View
     {
-        $qrData = $this->buildProductQrData($product);
+        $barcodeData = $this->buildProductBarcodeData($product);
 
         return view('products.label', [
             'product' => $product,
-            'sendSummary' => $qrData['sendSummary'],
-            'qrSvg' => QrCode::format('svg')->size(240)->margin(1)->generate($qrData['qrPayload']),
-            'qrPayload' => $qrData['labelCode'],
+            'sendSummary' => $barcodeData['sendSummary'],
+            'barcodeSvg' => $this->generateBarcode($barcodeData['barcodePayload']),
+            'barcodePayload' => $barcodeData['labelCode'],
         ]);
     }
 
-    public function qr(Product $product)
+    public function barcode(Product $product)
     {
-        $qrData = $this->buildProductQrData($product);
+        $barcodeData = $this->buildProductBarcodeData($product);
 
-        $svg = QrCode::format('svg')->size(320)->margin(1)->generate($qrData['qrPayload']);
+        $svg = $this->generateBarcode($barcodeData['barcodePayload']);
 
         return response($svg, 200)
             ->header('Content-Type', 'image/svg+xml')
-            ->header('Content-Disposition', 'attachment; filename="product-'.$product->public_id.'-qr.svg"');
+            ->header('Content-Disposition', 'attachment; filename="product-'.$product->public_id.'-barcode.svg"');
     }
 
     public function update(Request $request, Product $product): RedirectResponse
@@ -403,9 +404,9 @@ class ProductController extends Controller
     }
 
     /**
-     * @return array{sendSummary:array{round:int,days:int,label:string},qrPayload:string,labelCode:string}
+     * @return array{sendSummary:array{round:int,days:int,label:string},barcodePayload:string,labelCode:string}
      */
-    private function buildProductQrData(Product $product): array
+    private function buildProductBarcodeData(Product $product): array
     {
         $product->loadMissing([
             'supplier:id,public_id,name',
@@ -417,9 +418,15 @@ class ProductController extends Controller
 
         return [
             'sendSummary' => $sendSummary,
-            'qrPayload' => (string) $product->id,
+            'barcodePayload' => (string) $product->id,
             'labelCode' => $labelCode,
         ];
+    }
+
+    private function generateBarcode(string $value): string
+    {
+        $generator = new BarcodeGeneratorSVG();
+        return $generator->getBarcode($value, BarcodeGeneratorSVG::TYPE_CODE_128);
     }
 
     private function buildLabelCode(Product $product, int $sendRound): string
@@ -487,6 +494,12 @@ class ProductController extends Controller
         imagefilledrectangle($target, 0, 0, $targetWidth, $targetHeight, $transparent);
 
         imagecopyresampled($target, $source, 0, 0, 0, 0, $targetWidth, $targetHeight, $width, $height);
+
+        // Ensure the products directory exists
+        $productsDir = Storage::disk('public')->path('products');
+        if (! is_dir($productsDir)) {
+            mkdir($productsDir, 0755, true);
+        }
 
         $fileName = Str::uuid()->toString().'.webp';
         $storagePath = 'products/'.$fileName;

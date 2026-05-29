@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>In QR</title>
+    <title>In Mã vạch</title>
     <style>
         @page {
             size: auto;
@@ -31,8 +31,8 @@
             padding: 4mm;
         }
 
-        .qr {
-            width: 34mm;
+        .barcode {
+            width: 80mm;
             height: 34mm;
             display: flex;
             align-items: center;
@@ -42,15 +42,15 @@
             margin: 0 auto;
         }
 
-        .qr-block {
+        .barcode-block {
             display: flex;
             flex-direction: column;
             align-items: center;
             width: 100%;
         }
 
-        .qr-top,
-        .qr-bottom {
+        .barcode-top,
+        .barcode-bottom {
             font-size: 10pt;
             line-height: 1;
             color: #000;
@@ -59,11 +59,11 @@
             white-space: nowrap;
         }
 
-        .qr-bottom {
+        .barcode-bottom {
             margin-top: 2mm;
         }
 
-        .qr svg {
+        .barcode svg {
             width: 100%;
             height: 100%;
             display: block;
@@ -79,10 +79,10 @@
 <body>
     <div class="sheet">
         @foreach ($products as $product)
-            <div class="qr-block">
-                <div class="qr-top">{{ $product->id }} - {{ $product->supplier_id }} - {{ $product->send_round }}</div>
-                <div class="qr">{!! QrCode::format('svg')->size(320)->margin(0)->generate($product->qr_payload) !!}</div>
-                <div class="qr-bottom">{{ number_format($product->sale_price ?? 0, 0, ',', '.') }} đ</div>
+            <div class="barcode-block">
+                <div class="barcode-top">{{ $product->id }} - {{ $product->supplier_id }} - {{ $product->send_round }}</div>
+                <div class="barcode">{!! $product->barcode_svg !!}</div>
+                <div class="barcode-bottom">{{ number_format($product->sale_price ?? 0, 0, ',', '.') }} đ</div>
             </div>
         @endforeach
     </div>

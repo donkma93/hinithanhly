@@ -105,7 +105,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/in-ma-hang', [ProductController::class, 'labelIndex'])->name('product-labels.index');
     Route::post('/in-ma-hang/in', [ProductController::class, 'printLabels'])->name('product-labels.print');
     Route::post('/products', [ProductController::class, 'store'])->name('products.store');
-    Route::get('/products/{product}/qr', [ProductController::class, 'qr'])->name('products.qr');
+    Route::get('/products/{product}/barcode', [ProductController::class, 'barcode'])->name('products.barcode');
     Route::get('/products/{product}/label', [ProductController::class, 'label'])->name('products.label');
     Route::get('/products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
     Route::put('/products/{product}', [ProductController::class, 'update'])->name('products.update');

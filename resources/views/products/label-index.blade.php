@@ -3,7 +3,7 @@
         <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
                 <h2 class="text-2xl font-semibold text-gray-900">In Mã hàng</h2>
-                <p class="text-sm text-gray-500">Chọn nhiều sản phẩm, rồi bấm In Mã hàng để tạo tem QR hàng loạt.</p>
+                <p class="text-sm text-gray-500">Chọn nhiều sản phẩm, rồi bấm In Mã hàng để tạo tem mã vạch hàng loạt.</p>
             </div>
             <div class="no-print flex gap-2">
                 <span class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-800">Bấm In Mã hàng để mở trang tem, sau đó chọn máy in trong hộp thoại in của trình duyệt</span>
