@@ -34,6 +34,8 @@ Route::get('/', function () {
 });
 
 Route::get('/ban-hang', [SalesController::class, 'index'])->name('sales.index');
+Route::get('/ban-hang/products/search', [SalesController::class, 'search'])
+    ->name('sales.search');
 Route::get('/ban-hang/products/{code}', [SalesController::class, 'lookup'])
     ->where('code', '[0-9\-]+')
     ->name('sales.lookup');

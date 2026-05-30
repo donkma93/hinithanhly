@@ -25,8 +25,15 @@ trait HasPublicId
         return 'public_id';
     }
 
+    public function getPublicIdDisplayAttribute(): string
+    {
+        $publicId = (string) ($this->public_id ?? '');
+
+        return ltrim($publicId, '0') ?: '0';
+    }
+
     protected static function formatPublicId(int|string $id): string
     {
-        return str_pad((string) $id, 6, '0', STR_PAD_LEFT);
+        return (string) $id;
     }
 }

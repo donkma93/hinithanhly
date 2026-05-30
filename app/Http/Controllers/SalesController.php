@@ -21,6 +21,67 @@ class SalesController extends Controller
         return view('sales');
     }
 
+    public function search(Request $request): JsonResponse
+    {
+        $queryText = trim($request->string('query')->toString());
+
+        if ($queryText === '') {
+            return response()->json([
+                'items' => [],
+            ]);
+        }
+
+        $normalizedQuery = preg_replace('/\s+/', '', $queryText) ?? $queryText;
+        $trimmedDigits = ltrim($normalizedQuery, '0');
+
+        $products = Product::query()
+            ->select(['id', 'public_id', 'category_id', 'supplier_id', 'name', 'sale_price', 'quantity', 'image_path'])
+            ->with([
+                'supplier:id,public_id,name',
+                'category:id,public_id,name',
+            ])
+            ->where(function ($query) use ($normalizedQuery, $trimmedDigits): void {
+                $query->where('name', 'like', '%'.$normalizedQuery.'%')
+                    ->orWhere('public_id', 'like', '%'.$normalizedQuery.'%')
+                    ->orWhere('id', 'like', '%'.$normalizedQuery.'%');
+
+                if ($trimmedDigits !== '' && $trimmedDigits !== $normalizedQuery) {
+                    $query->orWhere('public_id', 'like', $trimmedDigits.'%')
+                        ->orWhereRaw("TRIM(LEADING '0' FROM public_id) LIKE ?", [$trimmedDigits.'%']);
+                }
+            })
+            ->orderByRaw('CASE WHEN public_id = ? THEN 0 WHEN public_id LIKE ? THEN 1 ELSE 2 END', [
+                $normalizedQuery,
+                $normalizedQuery.'%',
+            ])
+            ->limit(8)
+            ->get()
+            ->map(function (Product $product): array {
+                return [
+                    'id' => $product->id,
+                    'public_id' => $product->public_id,
+                    'public_id_display' => $product->public_id_display,
+                    'name' => $product->name,
+                    'sale_price' => (float) $product->sale_price,
+                    'sale_price_text' => number_format((float) $product->sale_price, 0, ',', '.') . ' ₫',
+                    'quantity' => (int) $product->quantity,
+                    'image_url' => $this->resolveImageUrl($product->image_path),
+                    'supplier' => $product->supplier ? [
+                        'public_id_display' => $product->supplier->public_id_display,
+                        'name' => $product->supplier->name,
+                    ] : null,
+                    'category' => $product->category ? [
+                        'public_id_display' => $product->category->public_id_display,
+                        'name' => $product->category->name,
+                    ] : null,
+                ];
+            });
+
+        return response()->json([
+            'items' => $products,
+        ]);
+    }
+
     public function lookup(Request $request, string $code): JsonResponse
     {
         $product = $this->findProductByCode($code);
@@ -39,18 +100,21 @@ class SalesController extends Controller
         return response()->json([
             'id' => $product->id,
             'public_id' => $product->public_id,
+            'public_id_display' => $product->public_id_display,
             'name' => $product->name,
             'sale_price' => (float) $product->sale_price,
             'sale_price_text' => number_format((float) $product->sale_price, 0, ',', '.') . ' ₫',
             'quantity' => (int) $product->quantity,
             'description' => $product->description,
-            'image_url' => $product->image_path ? Storage::disk('public')->url($product->image_path) : null,
+            'image_url' => $this->resolveImageUrl($product->image_path),
             'category' => $product->category ? [
                 'public_id' => $product->category->public_id,
+                'public_id_display' => $product->category->public_id_display,
                 'name' => $product->category->name,
             ] : null,
             'supplier' => $product->supplier ? [
                 'public_id' => $product->supplier->public_id,
+                'public_id_display' => $product->supplier->public_id_display,
                 'name' => $product->supplier->name,
             ] : null,
         ]);
@@ -256,5 +320,18 @@ class SalesController extends Controller
         }
 
         return null;
+    }
+
+    private function resolveImageUrl(?string $imagePath): ?string
+    {
+        if (! $imagePath) {
+            return null;
+        }
+
+        if (! Storage::disk('public')->exists($imagePath)) {
+            return null;
+        }
+
+        return asset('storage/'.$imagePath);
     }
 }

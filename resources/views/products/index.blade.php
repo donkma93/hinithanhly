@@ -9,13 +9,13 @@
     @php
         $supplierOptions = $suppliers->map(fn ($supplier) => [
             'value' => $supplier->id,
-            'label' => '#'.$supplier->public_id.' - '.$supplier->name,
+            'label' => '#'.$supplier->public_id_display.' - '.$supplier->name,
         ])->all();
         $supplierTypeMap = $suppliers->mapWithKeys(fn ($supplier) => [(string) $supplier->id => $supplier->type])->all();
 
         $categoryOptions = $categories->map(fn ($category) => [
             'value' => $category->id,
-            'label' => '#'.$category->public_id.' - '.$category->name,
+            'label' => '#'.$category->public_id_display.' - '.$category->name,
         ])->all();
     @endphp
 
@@ -126,7 +126,22 @@
                     @endcanany
                 </div>
 
-                <div class="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-200 lg:col-span-2">
+                <div
+                    class="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-200 lg:col-span-2"
+                    x-data="{
+                        imageZoomOpen: false,
+                        imageZoomSrc: '',
+                        imageZoomAlt: '',
+                        openImageZoom(src, alt) {
+                            this.imageZoomSrc = src;
+                            this.imageZoomAlt = alt;
+                            this.imageZoomOpen = true;
+                        },
+                        closeImageZoom() {
+                            this.imageZoomOpen = false;
+                        },
+                    }"
+                >
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <h3 class="text-lg font-semibold text-gray-900">Danh sách</h3>
                         <form method="GET" action="{{ route('products.index') }}" class="flex flex-wrap items-center gap-2">
@@ -139,37 +154,50 @@
                         <table class="min-w-full divide-y divide-gray-200 text-sm">
                             <thead class="text-left text-xs uppercase tracking-wide text-gray-500">
                                 <tr>
-                                    <th class="py-3 pr-4">ID sản phẩm</th>
+                                    <th class="py-3 pr-4">Mã hàng</th>
+                                    <th class="py-3 pr-4">Mã NCC</th>
                                     <th class="py-3 pr-4">Ảnh</th>
-                                    <th class="py-3 pr-4">Tên</th>
-                                    <th class="py-3 pr-4">Phiếu ký gửi</th>
-                                    <th class="py-3 pr-4">Số lượng</th>
-                                    <th class="py-3 pr-4">Người phụ trách</th>
-                                    <th class="py-3 pr-4">Hoạt động</th>
+                                    <th class="py-3 pr-4">Tên sản phẩm</th>
+                                    <th class="py-3 pr-4">Giá</th>
+                                    <th class="py-3 pr-4">Tồn kho</th>
+                                    <th class="py-3 pr-4">Lần gửi</th>
+                                    <th class="py-3 pr-4">Danh mục</th>
+                                    <th class="py-3 pr-4 text-right">Thao tác</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100">
                                 @forelse ($products as $product)
                                     <tr>
-                                        <td class="py-3 pr-4 font-medium text-slate-900">#{{ $product->public_id }}</td>
+                                        <td class="py-3 pr-4 font-medium text-slate-900">#{{ $product->public_id_display }}</td>
+                                        <td class="py-3 pr-4 text-gray-600">
+                                            <div class="font-medium text-gray-900">{{ $product->supplier?->public_id ? '#'.$product->supplier->public_id_display : '---' }}</div>
+                                            <div class="text-xs text-gray-500">{{ $product->supplier?->name ?? '---' }}</div>
+                                        </td>
                                         <td class="py-3 pr-4">
                                             @if ($product->image_path)
-                                                <img src="{{ asset('storage/' . $product->image_path) }}" alt="{{ $product->name }}" class="h-14 w-14 rounded-xl object-cover ring-1 ring-gray-200">
+                                                <button
+                                                    type="button"
+                                                    class="group block"
+                                                    @click="openImageZoom(@js(asset('storage/' . $product->image_path)), @js($product->name))"
+                                                >
+                                                    <img src="{{ asset('storage/' . $product->image_path) }}" alt="{{ $product->name }}" class="h-14 w-14 rounded-xl object-cover ring-1 ring-gray-200 transition group-hover:scale-105 group-hover:ring-slate-400">
+                                                </button>
                                             @else
-                                                <div class="flex h-14 w-14 items-center justify-center rounded-xl bg-slate-100 text-xs font-semibold text-slate-500 ring-1 ring-gray-200">No ảnh</div>
+                                                <div class="flex h-14 w-14 items-center justify-center rounded-xl bg-slate-100 text-xs font-semibold text-slate-500 ring-1 ring-gray-200">Không ảnh</div>
                                             @endif
                                         </td>
                                         <td class="py-3 pr-4 font-medium text-gray-900">{{ $product->name }}</td>
-                                        <td class="py-3 pr-4 text-gray-600">
-                                            <div class="font-medium text-gray-900">{{ $product->consignmentNote?->public_id ? '#'.$product->consignmentNote->public_id : '---' }}</div>
-                                            <div class="text-xs text-gray-500">{{ $product->send_summary ?? '---' }}</div>
-                                        </td>
+                                        <td class="py-3 pr-4 text-gray-600">{{ number_format($product->sale_price ?? 0, 0, ',', '.') }} đ</td>
                                         <td class="py-3 pr-4 text-gray-600">{{ $product->quantity }}</td>
                                         <td class="py-3 pr-4 text-gray-600">
-                                            <div class="font-medium text-gray-900">{{ $product->consignmentNote?->responsibleUser?->name ?? '---' }}</div>
-                                            <div class="text-xs text-gray-500">{{ $product->consignmentNote?->responsibleUser?->public_id ? '#'.$product->consignmentNote->responsibleUser->public_id : '' }}</div>
+                                            <div class="font-medium text-gray-900">Lần {{ $product->send_round ?? 1 }}</div>
+                                            <div class="text-xs text-gray-500">{{ $product->send_summary ?? '---' }}</div>
                                         </td>
-                                        <td class="py-3 pr-4 text-right">
+                                        <td class="py-3 pr-4 text-gray-600">
+                                            <div class="font-medium text-gray-900">{{ $product->category?->public_id ? '#'.$product->category->public_id_display : '---' }}</div>
+                                            <div class="text-xs text-gray-500">{{ $product->category?->name ?? '---' }}</div>
+                                        </td>
+                                        <td class="py-3 pr-4 text-right whitespace-nowrap">
                                             @can('products.view')
                                                 <a href="{{ route('products.label', $product) }}" target="_blank" rel="noopener" class="text-slate-900 hover:underline">In mã hàng</a>
                                             @endcan
@@ -191,12 +219,26 @@
                                         </td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="8" class="py-8 text-center text-gray-500">Chưa có sản phẩm nào.</td></tr>
+                                    <tr><td colspan="9" class="py-8 text-center text-gray-500">Chưa có sản phẩm nào.</td></tr>
                                 @endforelse
                             </tbody>
                         </table>
                     </div>
                     <div class="mt-4">{{ $products->links() }}</div>
+
+                    <div
+                        x-cloak
+                        x-show="imageZoomOpen"
+                        x-transition.opacity
+                        class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4"
+                        @click.self="closeImageZoom()"
+                        @keydown.escape.window="closeImageZoom()"
+                    >
+                        <div class="relative w-full max-w-5xl overflow-hidden rounded-3xl bg-white shadow-2xl">
+                            <button type="button" class="absolute right-3 top-3 z-10 rounded-full bg-white/90 px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-slate-200 hover:bg-white" @click="closeImageZoom()">Đóng</button>
+                            <img :src="imageZoomSrc" :alt="imageZoomAlt" class="max-h-[85vh] w-full bg-slate-950 object-contain">
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

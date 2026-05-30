@@ -3,7 +3,7 @@
         <div>
             <h2 class="text-2xl font-semibold text-gray-900">Sửa nhà cung cấp</h2>
             <p class="text-sm text-gray-500">Cập nhật tên người phụ trách, loại NCC và ngân hàng.</p>
-            <p class="mt-1 text-xs font-medium uppercase tracking-wide text-gray-400">Mã công khai: #{{ $supplier->public_id }}</p>
+            <p class="mt-1 text-xs font-medium uppercase tracking-wide text-gray-400">Mã công khai: #{{ $supplier->public_id_display }}</p>
         </div>
     </x-slot>
 

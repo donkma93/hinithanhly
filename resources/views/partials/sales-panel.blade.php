@@ -23,16 +23,19 @@
     <main class="mt-4 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
         <section class="space-y-4">
             <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-                <label for="scanner-input" class="block text-sm font-medium text-slate-700">Ô quét mã</label>
+                <label for="scanner-input" class="block text-sm font-medium text-slate-700">Ô quét mã hoặc tìm sản phẩm</label>
                 <div class="mt-2 flex gap-2">
-                    <input id="scanner-input" type="text" inputmode="text" autocomplete="off" placeholder="Quét hoặc nhập mã rồi nhấn Enter"
+                    <div class="relative flex-1">
+                        <input id="scanner-input" type="text" inputmode="text" autocomplete="off" placeholder="Quét mã hoặc nhập tên sản phẩm"
                         class="h-12 flex-1 rounded-xl border-slate-300 px-4 text-lg outline-none ring-0 focus:border-slate-900 focus:ring-1 focus:ring-slate-900" />
+                        <div id="suggestions-panel" class="absolute left-0 right-0 top-full z-20 mt-2 hidden overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl ring-1 ring-slate-200"></div>
+                    </div>
                     <button id="clear-scan-button" type="button" class="rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700">
                         Xóa
                     </button>
                 </div>
                 <p id="status-box" class="mt-3 rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600 ring-1 ring-slate-200">
-                    Sẵn sàng nhận mã.
+                    Sẵn sàng nhận mã hoặc tên sản phẩm.
                 </p>
             </div>
 
@@ -46,9 +49,15 @@
                 </div>
                 <div id="last-product-box" class="hidden px-4 py-4">
                     <div class="flex items-start justify-between gap-4 rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
-                        <div>
-                            <p id="preview-name" class="text-base font-semibold">--</p>
-                            <p id="preview-code" class="mt-1 text-sm text-slate-500">--</p>
+                        <div class="flex min-w-0 items-center gap-3">
+                            <div class="flex h-14 w-14 flex-none items-center justify-center overflow-hidden rounded-xl bg-white ring-1 ring-slate-200">
+                                <img id="preview-image" alt="Ảnh sản phẩm" class="hidden h-full w-full object-cover">
+                                <span id="preview-image-fallback" class="text-[10px] font-semibold uppercase text-slate-400">No ảnh</span>
+                            </div>
+                            <div class="min-w-0">
+                                <p id="preview-name" class="truncate text-base font-semibold">--</p>
+                                <p id="preview-code" class="mt-1 text-sm text-slate-500">--</p>
+                            </div>
                         </div>
                         <p id="preview-price" class="text-lg font-semibold text-slate-900">--</p>
                     </div>
@@ -90,6 +99,7 @@
         const baseUrl = @json(url('/ban-hang/products'));
         const scannerInput = document.getElementById('scanner-input');
         const clearScanButton = document.getElementById('clear-scan-button');
+        const suggestionsPanel = document.getElementById('suggestions-panel');
         const resetCartButton = document.getElementById('reset-cart-button');
         const checkoutButton = document.getElementById('checkout-button');
         const statusBox = document.getElementById('status-box');
@@ -100,14 +110,103 @@
         const previewName = document.getElementById('preview-name');
         const previewCode = document.getElementById('preview-code');
         const previewPrice = document.getElementById('preview-price');
+        const previewImage = document.getElementById('preview-image');
+        const previewImageFallback = document.getElementById('preview-image-fallback');
         const itemsCountInline = document.getElementById('items-count-inline');
         const subtotalInline = document.getElementById('subtotal-inline');
         const cartState = document.getElementById('cart-state');
 
         const moneyFormatter = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 });
         const cart = new Map();
+        let suggestionAbortController = null;
+        let suggestionTimer = null;
 
         const focusScanner = () => window.requestAnimationFrame(() => scannerInput.focus());
+
+        const normalizeSearchTerm = (value) => String(value || '').trim();
+
+        const looksLikeProductCode = (value) => /^[0-9\-]+$/.test(normalizeSearchTerm(value));
+
+        const hideSuggestions = () => {
+            suggestionsPanel.classList.add('hidden');
+            suggestionsPanel.innerHTML = '';
+        };
+
+        const renderSuggestions = (items, query) => {
+            const cleanQuery = normalizeSearchTerm(query);
+
+            if (!cleanQuery || !items.length) {
+                hideSuggestions();
+                return;
+            }
+
+            suggestionsPanel.innerHTML = items.map((item) => `
+                <button type="button" data-product-id="${item.id}" class="flex w-full items-center gap-3 border-b border-slate-100 px-4 py-3 text-left last:border-b-0 hover:bg-slate-50">
+                    <div class="flex h-12 w-12 flex-none items-center justify-center overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200">
+                        ${item.image_url ? `<img src="${item.image_url}" alt="${item.name}" class="h-full w-full object-cover">` : '<span class="text-[10px] font-semibold uppercase text-slate-400">No ảnh</span>'}
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center justify-between gap-3">
+                            <p class="truncate font-semibold text-slate-900">${item.name}</p>
+                            <span class="shrink-0 text-sm font-semibold text-slate-900">${item.sale_price_text}</span>
+                        </div>
+                        <p class="mt-1 text-sm text-slate-500">Mã: #${item.public_id_display} · Tồn kho: ${item.quantity}</p>
+                        <p class="mt-1 text-xs text-slate-400">${item.supplier ? `${item.supplier.name}${item.supplier.public_id_display ? ' · #' + item.supplier.public_id_display : ''}` : ''}${item.category ? `${item.supplier ? ' · ' : ''}${item.category.name}${item.category.public_id_display ? ' · #' + item.category.public_id_display : ''}` : ''}</p>
+                    </div>
+                </button>
+            `).join('');
+
+            suggestionsPanel.classList.remove('hidden');
+
+            suggestionsPanel.querySelectorAll('[data-product-id]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const id = Number(button.getAttribute('data-product-id'));
+                    const product = items.find((entry) => Number(entry.id) === id);
+
+                    if (product) {
+                        addProduct(product);
+                        scannerInput.value = '';
+                        hideSuggestions();
+                    }
+                });
+            });
+        };
+
+        const fetchSuggestions = async (query) => {
+            const cleanQuery = normalizeSearchTerm(query);
+
+            if (!cleanQuery) {
+                hideSuggestions();
+                return;
+            }
+
+            if (suggestionAbortController) {
+                suggestionAbortController.abort();
+            }
+
+            suggestionAbortController = new AbortController();
+
+            try {
+                const response = await fetch(`${@json(url('/ban-hang/products/search'))}?query=${encodeURIComponent(cleanQuery)}`, {
+                    headers: { Accept: 'application/json' },
+                    signal: suggestionAbortController.signal,
+                });
+
+                if (!response.ok) {
+                    hideSuggestions();
+                    return;
+                }
+
+                const payload = await response.json().catch(() => ({}));
+                renderSuggestions(payload.items || [], cleanQuery);
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    return;
+                }
+
+                hideSuggestions();
+            }
+        };
 
         const setStatus = (message, tone = 'info') => {
             statusBox.textContent = message;
@@ -130,8 +229,18 @@
             lastProductEmpty.classList.add('hidden');
             lastProductBox.classList.remove('hidden');
             previewName.textContent = product.name || '--';
-            previewCode.textContent = `Mã: ${product.public_id || product.id}`;
+            previewCode.textContent = `Mã: ${product.public_id_display || product.public_id || product.id}`;
             previewPrice.textContent = product.sale_price_text || formatMoney(product.sale_price);
+
+            if (product.image_url) {
+                previewImage.src = product.image_url;
+                previewImage.classList.remove('hidden');
+                previewImageFallback.classList.add('hidden');
+            } else {
+                previewImage.removeAttribute('src');
+                previewImage.classList.add('hidden');
+                previewImageFallback.classList.remove('hidden');
+            }
         };
 
         const renderCart = () => {
@@ -153,9 +262,14 @@
             cartItemsContainer.classList.remove('hidden');
             cartItemsContainer.innerHTML = items.map((item) => `
                 <div class="flex items-center justify-between gap-3 px-4 py-3">
-                    <div class="min-w-0">
-                        <p class="truncate font-medium">${item.name}</p>
-                        <p class="text-sm text-slate-500">${item.public_id || item.id}</p>
+                    <div class="flex min-w-0 items-center gap-3">
+                        <div class="flex h-12 w-12 flex-none items-center justify-center overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200">
+                            ${item.image_url ? `<img src="${item.image_url}" alt="${item.name}" class="h-full w-full object-cover">` : '<span class="text-[10px] font-semibold uppercase text-slate-400">No ảnh</span>'}
+                        </div>
+                        <div class="min-w-0">
+                            <p class="truncate font-medium">${item.name}</p>
+                            <p class="text-sm text-slate-500">${item.public_id_display || item.public_id || item.id}</p>
+                        </div>
                     </div>
                     <div class="flex items-center gap-3">
                         <p class="font-semibold">${formatMoney(item.sale_price)}</p>
@@ -233,12 +347,43 @@
             }
 
             event.preventDefault();
-            lookupProduct(scannerInput.value);
+            hideSuggestions();
+
+            if (looksLikeProductCode(scannerInput.value)) {
+                lookupProduct(scannerInput.value);
+            } else {
+                fetchSuggestions(scannerInput.value);
+            }
+
             scannerInput.value = '';
+        });
+
+        scannerInput.addEventListener('input', () => {
+            window.clearTimeout(suggestionTimer);
+
+            const cleanValue = normalizeSearchTerm(scannerInput.value);
+
+            if (!cleanValue) {
+                hideSuggestions();
+                return;
+            }
+
+            suggestionTimer = window.setTimeout(() => {
+                fetchSuggestions(cleanValue);
+            }, 180);
+        });
+
+        scannerInput.addEventListener('focus', () => {
+            const cleanValue = normalizeSearchTerm(scannerInput.value);
+
+            if (cleanValue) {
+                fetchSuggestions(cleanValue);
+            }
         });
 
         clearScanButton.addEventListener('click', () => {
             scannerInput.value = '';
+            hideSuggestions();
             setStatus('Đã xóa nội dung ô quét.', 'warning');
             focusScanner();
         });
@@ -248,6 +393,7 @@
             renderCart();
             lastProductEmpty.classList.remove('hidden');
             lastProductBox.classList.add('hidden');
+            hideSuggestions();
             setStatus('Đã làm mới hóa đơn.', 'warning');
             focusScanner();
         });
@@ -371,6 +517,7 @@
                     renderCart();
                     lastProductEmpty.classList.remove('hidden');
                     lastProductBox.classList.add('hidden');
+                    hideSuggestions();
                     setStatus(payload.message || 'Chốt hoá đơn thành công.', 'success');
                     focusScanner();
                 } catch (err) {
@@ -404,7 +551,7 @@
         });
 
         document.addEventListener('pointerdown', (event) => {
-            if (event.target instanceof HTMLElement && event.target.closest('input, button, a, textarea, select')) {
+            if (event.target instanceof HTMLElement && event.target.closest('#suggestions-panel, #suggestions-panel *, input, button, a, textarea, select')) {
                 return;
             }
 

@@ -101,7 +101,7 @@
                             <tbody class="divide-y divide-gray-100">
                                 @forelse ($suppliers as $supplier)
                                     <tr>
-                                        <td class="py-3 pr-4 font-medium text-slate-900">#{{ $supplier->public_id }}</td>
+                                        <td class="py-3 pr-4 font-medium text-slate-900">#{{ $supplier->public_id_display }}</td>
                                         <td class="py-3 pr-4 font-medium text-gray-900">{{ $supplier->name }}</td>
                                         <td class="py-3 pr-4 text-gray-600">{{ \App\Models\Supplier::TYPES[$supplier->type] ?? $supplier->type }} ({{ $supplierDiscountRates[$supplier->type] ?? 0 }}%)</td>
                                         <td class="py-3 pr-4 text-gray-600">{{ $supplier->responsible_name ?: '---' }}</td>
