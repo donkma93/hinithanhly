@@ -56,7 +56,7 @@
                         name="image"
                         label="Ảnh sản phẩm"
                         :current-url="$product->image_path ? asset('storage/' . $product->image_path) : null"
-                        helper-text="Kích thước tối đa 10MB. Định dạng chấp nhận: JPEG, PNG, WEBP. Trên điện thoại, trình duyệt có thể mở camera trực tiếp hoặc chọn ảnh từ bộ nhớ thiết bị."
+                        helper-text="Ảnh sẽ được tối ưu tự động trên trình duyệt (resize và nén) trước khi upload. Bạn vẫn có thể chọn ảnh từ camera hoặc thư viện thiết bị."
                     />
                     @error('image') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
                     @php

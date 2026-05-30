@@ -360,8 +360,9 @@ class ProductController extends Controller
             'sale_price' => ['required', 'numeric', 'min:0'],
             'quantity' => ['required', 'integer', 'min:1'],
             'description' => ['nullable', 'string'],
-            // Allow larger uploads from mobile devices (10MB) and validate image
-            'image' => ['nullable', 'image', 'max:10240'],
+            // No hard server-side size limit here; client will optimize before upload.
+            // Server still validates that the uploaded file is an image.
+            'image' => ['nullable', 'image'],
         ]);
 
         $supplier = Supplier::query()->findOrFail($data['supplier_id']);
