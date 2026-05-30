@@ -56,7 +56,9 @@
                         name="image"
                         label="Ảnh sản phẩm"
                         :current-url="$product->image_path ? asset('storage/' . $product->image_path) : null"
+                        helper-text="Kích thước tối đa 10MB. Định dạng chấp nhận: JPEG, PNG, WEBP. Trên điện thoại, trình duyệt có thể mở camera trực tiếp hoặc chọn ảnh từ bộ nhớ thiết bị."
                     />
+                    @error('image') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
                     @php
                         $selectedSupplierId = old('supplier_id', $product->supplier_id);
                     @endphp
@@ -102,24 +104,29 @@
                             search-placeholder="Tìm theo mã hoặc tên"
                             empty-text="Không có danh mục phù hợp"
                         />
+                        @error('category_id') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Tên sản phẩm</label>
                         <input name="name" value="{{ old('name', $product->name) }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" required>
+                        @error('name') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
                     <div class="grid gap-4 sm:grid-cols-2">
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Giá bán</label>
                             <input type="number" step="0.01" name="sale_price" value="{{ old('sale_price', $product->sale_price) }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" required>
+                            @error('sale_price') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Số lượng</label>
                             <input type="number" min="1" name="quantity" value="{{ old('quantity', $product->quantity) }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" required>
+                            @error('quantity') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
                         </div>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Ghi chú</label>
                         <textarea name="description" rows="5" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900">{{ old('description', $product->description) }}</textarea>
+                        @error('description') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
                     <div class="flex items-center gap-3">
                         <button class="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">Cập nhật</button>

@@ -360,7 +360,8 @@ class ProductController extends Controller
             'sale_price' => ['required', 'numeric', 'min:0'],
             'quantity' => ['required', 'integer', 'min:1'],
             'description' => ['nullable', 'string'],
-            'image' => ['nullable', 'image', 'max:5120'],
+            // Allow larger uploads from mobile devices (10MB) and validate image
+            'image' => ['nullable', 'image', 'max:10240'],
         ]);
 
         $supplier = Supplier::query()->findOrFail($data['supplier_id']);

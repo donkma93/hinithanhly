@@ -27,6 +27,16 @@
                 </div>
             @endif
 
+                @if ($errors->any())
+                    <div class="rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700 ring-1 ring-red-200">
+                        <ul class="list-disc pl-5">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
             <div class="grid gap-6 lg:grid-cols-3">
                 <div
                     class="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-200 lg:col-span-1"
@@ -59,7 +69,12 @@
                         <h3 class="text-lg font-semibold text-gray-900">Thêm sản phẩm</h3>
                         <form method="POST" action="{{ route('products.store') }}" enctype="multipart/form-data" class="mt-4 space-y-4">
                             @csrf
-                            <x-image-upload-preview name="image" label="Ảnh sản phẩm" />
+                            <x-image-upload-preview
+                                name="image"
+                                label="Ảnh sản phẩm"
+                                helper-text="Kích thước tối đa 10MB. Định dạng chấp nhận: JPEG, PNG, WEBP. Trên điện thoại, trình duyệt có thể mở camera trực tiếp hoặc chọn ảnh từ bộ nhớ thiết bị."
+                            />
+                            @error('image') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Nhà cung cấp</label>
                                 <x-searchable-select
@@ -99,24 +114,29 @@
                                     search-placeholder="Tìm theo mã hoặc tên"
                                     empty-text="Không có danh mục phù hợp"
                                 />
+                                @error('category_id') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Tên sản phẩm</label>
                                 <input name="name" value="{{ old('name') }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" required>
+                                @error('name') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
                             </div>
                             <div class="grid gap-4 sm:grid-cols-2">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700">Giá bán</label>
                                     <input type="number" step="0.01" name="sale_price" value="{{ old('sale_price', 0) }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" required>
+                                    @error('sale_price') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700">Số lượng</label>
                                     <input type="number" min="1" name="quantity" value="{{ old('quantity', 1) }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" required>
+                                    @error('quantity') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
                                 </div>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Ghi chú</label>
                                 <textarea name="description" rows="4" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900">{{ old('description') }}</textarea>
+                                @error('description') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
                             </div>
                             <button class="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">Lưu sản phẩm</button>
                         </form>
