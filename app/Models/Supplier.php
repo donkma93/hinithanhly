@@ -53,6 +53,11 @@ class Supplier extends Model
         return $this->hasMany(Product::class);
     }
 
+    public function payments(): HasMany
+    {
+        return $this->hasMany(SupplierPayment::class);
+    }
+
     public static function typeRequiresManualConsignment(?string $type): bool
     {
         return in_array($type, self::MANUAL_CONSIGNMENT_TYPES, true);

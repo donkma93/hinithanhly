@@ -601,7 +601,7 @@ class ProductController extends Controller
 
         $width = imagesx($source);
         $height = imagesy($source);
-        $maxSize = 1600;
+        $maxSize = 1200;
         $scale = min(1, $maxSize / max($width, $height));
         $targetWidth = max(1, (int) round($width * $scale));
         $targetHeight = max(1, (int) round($height * $scale));
@@ -631,7 +631,7 @@ class ProductController extends Controller
         $storagePath = 'products/'.$fileName;
         $fullPath = Storage::disk('public')->path($storagePath);
 
-        if (! imagewebp($target, $fullPath, 82)) {
+        if (! imagewebp($target, $fullPath, 60)) {
             $fileName = Str::uuid()->toString().'.jpg';
             $storagePath = 'products/'.$fileName;
             $fullPath = Storage::disk('public')->path($storagePath);
@@ -640,7 +640,7 @@ class ProductController extends Controller
             $white = imagecolorallocate($background, 255, 255, 255);
             imagefill($background, 0, 0, $white);
             imagecopy($background, $target, 0, 0, 0, 0, $targetWidth, $targetHeight);
-            imagejpeg($background, $fullPath, 82);
+            imagejpeg($background, $fullPath, 60);
             imagedestroy($background);
         }
 

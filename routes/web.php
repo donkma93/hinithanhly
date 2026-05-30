@@ -3,8 +3,11 @@
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\ConsignmentNoteController;
+use App\Http\Controllers\RevenueController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\SalesController;
+use App\Http\Controllers\SoldProductController;
+use App\Http\Controllers\SupplierPaymentController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
@@ -112,6 +115,24 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
     Route::put('/products/{product}', [ProductController::class, 'update'])->name('products.update');
     Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
+
+    Route::get('/sales-records', [SoldProductController::class, 'index'])
+        ->middleware('permission:sales.records.view')
+        ->name('sold-products.index');
+
+    Route::get('/doanh-thu', [RevenueController::class, 'index'])
+        ->middleware('role:admin|super-admin')
+        ->name('revenue.index');
+
+    Route::get('/thanh-toan-nha-cung-cap', [SupplierPaymentController::class, 'index'])
+        ->middleware('role:admin|super-admin')
+        ->name('supplier-payments.index');
+    Route::post('/thanh-toan-nha-cung-cap/create-payment', [SupplierPaymentController::class, 'createPayment'])
+        ->middleware('role:admin|super-admin')
+        ->name('supplier-payments.create-payment');
+    Route::post('/thanh-toan-nha-cung-cap/confirm', [SupplierPaymentController::class, 'confirmPayment'])
+        ->middleware('role:admin|super-admin')
+        ->name('supplier-payments.confirm');
 
     Route::get('/users', [UserController::class, 'index'])->middleware('permission:users.view|users.manage')->name('users.index');
     Route::post('/users', [UserController::class, 'store'])->middleware('permission:users.create|users.manage')->name('users.store');

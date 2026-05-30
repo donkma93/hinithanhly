@@ -55,6 +55,18 @@ class PermissionCatalog
                     'products.manage' => 'Quản lý sản phẩm',
                 ],
             ],
+            'sold-products' => [
+                'label' => 'Sản phẩm đã bán',
+                'permissions' => [
+                    'sales.records.view' => 'Xem sản phẩm đã bán',
+                ],
+            ],
+            'revenue' => [
+                'label' => 'Doanh thu',
+                'permissions' => [
+                    'sales.revenue.view' => 'Xem doanh thu',
+                ],
+            ],
             'logs' => [
                 'label' => 'Nhật ký',
                 'permissions' => [

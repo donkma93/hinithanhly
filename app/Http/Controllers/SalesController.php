@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\Sale;
+use App\Models\SaleItem;
 use App\Models\AuditLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
@@ -126,11 +128,18 @@ class SalesController extends Controller
             'items' => ['required', 'array'],
             'items.*.id' => ['required', 'integer'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
+            'payment_method' => ['required', 'in:cash,transfer'],
             'payment_token' => ['nullable', 'string'],
         ]);
 
         $items = $data['items'];
+        $paymentMethod = $data['payment_method'];
         $paymentToken = $data['payment_token'] ?? null;
+        $paymentReference = null;
+
+        if ($paymentMethod === 'transfer' && $paymentToken === null) {
+            return response()->json(['message' => 'Vui lòng tạo mã QR chuyển khoản trước khi chốt hoá đơn.'], 422);
+        }
 
         // If a payment token is provided, verify it exists and matches
         if ($paymentToken) {
@@ -138,17 +147,20 @@ class SalesController extends Controller
             if (!$cached || !isset($cached['items']) || $cached['items'] !== $items) {
                 return response()->json(['message' => 'Mã thanh toán không hợp lệ hoặc đã hết hạn.'], 422);
             }
+
+            $paymentReference = $cached['reference'] ?? null;
         }
 
         $payloadItems = [];
         $total = 0;
 
-        DB::beginTransaction();
         try {
+            DB::beginTransaction();
+
             foreach ($items as $item) {
                 $product = Product::lockForUpdate()->find($item['id']);
 
-                if (!$product) {
+                if (! $product) {
                     DB::rollBack();
                     return response()->json(['message' => "Sản phẩm ID {$item['id']} không tồn tại."], 422);
                 }
@@ -169,11 +181,33 @@ class SalesController extends Controller
                 $payloadItems[] = [
                     'id' => $product->id,
                     'public_id' => $product->public_id,
+                    'public_id_display' => $product->public_id_display,
                     'name' => $product->name,
                     'quantity' => $qty,
                     'unit_price' => (float) $product->sale_price,
                     'line_total' => (float) $lineTotal,
                 ];
+            }
+
+            $sale = Sale::create([
+                'user_id' => auth()->id(),
+                'payment_method' => $paymentMethod,
+                'payment_reference' => $paymentMethod === 'transfer' ? $paymentReference : null,
+                'total_amount' => $total,
+                'items_count' => count($payloadItems),
+                'completed_at' => now(),
+            ]);
+
+            foreach ($payloadItems as $payloadItem) {
+                SaleItem::create([
+                    'sale_id' => $sale->id,
+                    'product_id' => $payloadItem['id'],
+                    'product_public_id' => $payloadItem['public_id'],
+                    'product_name' => $payloadItem['name'],
+                    'quantity' => $payloadItem['quantity'],
+                    'unit_price' => $payloadItem['unit_price'],
+                    'line_total' => $payloadItem['line_total'],
+                ]);
             }
 
             $audit = AuditLog::record([
@@ -186,6 +220,10 @@ class SalesController extends Controller
                 'ip_address' => $request->ip(),
                 'user_agent' => $request->userAgent(),
                 'payload' => [
+                    'sale_id' => $sale->id,
+                    'sale_public_id' => $sale->public_id,
+                    'payment_method' => $paymentMethod,
+                    'payment_reference' => $sale->payment_reference,
                     'items' => $payloadItems,
                     'total' => $total,
                 ],
@@ -193,7 +231,13 @@ class SalesController extends Controller
 
             DB::commit();
 
-            return response()->json(['message' => 'Chốt hoá đơn thành công.', 'audit_id' => $audit->id]);
+            return response()->json([
+                'message' => 'Chốt hoá đơn thành công.',
+                'audit_id' => $audit->id,
+                'sale_id' => $sale->id,
+                'sale_public_id' => $sale->public_id,
+                'payment_method' => $sale->payment_method,
+            ]);
         } catch (\Throwable $e) {
             DB::rollBack();
             return response()->json(['message' => 'Lỗi khi chốt hoá đơn. Vui lòng thử lại.'], 500);

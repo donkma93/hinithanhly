@@ -86,8 +86,15 @@
                     <span>Tạm tính</span>
                     <strong id="subtotal-inline">0 ₫</strong>
                 </div>
+                <div class="mt-4">
+                    <label for="payment-method-select" class="block text-sm font-medium text-slate-700">Phương thức thanh toán</label>
+                    <select id="payment-method-select" class="mt-2 w-full rounded-xl border-slate-300 px-4 py-3 text-sm focus:border-slate-900 focus:ring-slate-900">
+                        <option value="cash">Tiền mặt</option>
+                        <option value="transfer">Chuyển khoản</option>
+                    </select>
+                </div>
                 <button id="checkout-button" type="button" class="mt-4 w-full rounded-xl bg-emerald-500 px-4 py-3 font-semibold text-white">
-                    Hoàn tất tạm tính
+                    Hoàn tất bán hàng
                 </button>
             </div>
         </aside>
@@ -102,6 +109,7 @@
         const suggestionsPanel = document.getElementById('suggestions-panel');
         const resetCartButton = document.getElementById('reset-cart-button');
         const checkoutButton = document.getElementById('checkout-button');
+        const paymentMethodSelect = document.getElementById('payment-method-select');
         const statusBox = document.getElementById('status-box');
         const cartItemsContainer = document.getElementById('cart-items');
         const cartEmpty = document.getElementById('cart-empty');
@@ -225,6 +233,50 @@
 
         const formatMoney = (value) => `${moneyFormatter.format(Number(value ?? 0))} ₫`;
 
+        const buildCheckoutItems = () => Array.from(cart.values()).map((item) => ({
+            id: Number(item.id),
+            quantity: Number(item.cart_quantity || 0),
+        }));
+
+        const completeCheckout = async (paymentMethod, paymentToken = null) => {
+            const items = buildCheckoutItems();
+
+            try {
+                const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+                const checkoutResp = await fetch(@json(url('/ban-hang/checkout')), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': token,
+                    },
+                    body: JSON.stringify({ items, payment_method: paymentMethod, payment_token: paymentToken }),
+                });
+
+                const payload = await checkoutResp.json().catch(() => ({}));
+
+                if (!checkoutResp.ok) {
+                    setStatus(payload.message || 'Lỗi khi chốt hoá đơn.', 'error');
+                    focusScanner();
+                    return false;
+                }
+
+                cart.clear();
+                renderCart();
+                lastProductEmpty.classList.remove('hidden');
+                lastProductBox.classList.add('hidden');
+                hideSuggestions();
+                setStatus(payload.message || 'Chốt hoá đơn thành công.', 'success');
+                focusScanner();
+                return true;
+            } catch (err) {
+                setStatus('Lỗi khi chốt hoá đơn.', 'error');
+                focusScanner();
+                return false;
+            }
+        };
+
         const renderLastProduct = (product) => {
             lastProductEmpty.classList.add('hidden');
             lastProductBox.classList.remove('hidden');
@@ -245,9 +297,9 @@
 
         const renderCart = () => {
             const items = Array.from(cart.values());
-            const subtotal = items.reduce((sum, item) => sum + Number(item.sale_price || 0), 0);
+            const subtotal = items.reduce((sum, item) => sum + (Number(item.sale_price || 0) * Number(item.cart_quantity || 0)), 0);
 
-            itemsCountInline.textContent = String(items.length);
+            itemsCountInline.textContent = String(items.reduce((sum, item) => sum + Number(item.cart_quantity || 0), 0));
             subtotalInline.textContent = formatMoney(subtotal);
             cartState.textContent = items.length ? 'Đang tính tiền' : 'Chờ quét';
 
@@ -272,7 +324,10 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-3">
-                        <p class="font-semibold">${formatMoney(item.sale_price)}</p>
+                        <div class="text-right">
+                            <p class="font-semibold">${formatMoney(item.sale_price * Number(item.cart_quantity || 0))}</p>
+                            <p class="text-xs text-slate-500">SL: ${Number(item.cart_quantity || 0)} × ${formatMoney(item.sale_price)}</p>
+                        </div>
                         <button type="button" data-remove-id="${item.id}" class="rounded-lg border border-slate-300 px-3 py-1 text-sm text-slate-600">
                             Xóa
                         </button>
@@ -292,23 +347,31 @@
         };
 
         const addProduct = (product) => {
-            if (cart.has(Number(product.id))) {
-                setStatus('Mã này đã có trong hóa đơn. Hãy xóa dòng cũ nếu cần quét lại.', 'warning');
-                focusScanner();
-                return;
-            }
+            const productId = Number(product.id);
+            const currentItem = cart.get(productId);
+            const currentQuantity = Number(currentItem?.cart_quantity || 0);
+            const stockQuantity = Number(product.quantity || 0);
 
-            if (Number(product.quantity) <= 0) {
+            if (stockQuantity <= 0) {
                 setStatus('Sản phẩm này hiện đã hết hàng.', 'error');
                 renderLastProduct(product);
                 focusScanner();
                 return;
             }
 
-            cart.set(Number(product.id), product);
+            if (currentQuantity >= stockQuantity) {
+                setStatus(`Sản phẩm này chỉ còn ${stockQuantity} trong kho, không thể thêm nữa.`, 'warning');
+                renderLastProduct(product);
+                focusScanner();
+                return;
+            }
+
+            const nextItem = currentItem ? { ...currentItem, cart_quantity: currentQuantity + 1 } : { ...product, cart_quantity: 1 };
+
+            cart.set(productId, nextItem);
             renderLastProduct(product);
             renderCart();
-            setStatus(`Đã thêm ${product.name}.`, 'success');
+            setStatus(currentItem ? `Đã tăng số lượng ${product.name} lên ${currentQuantity + 1}.` : `Đã thêm ${product.name}.`, 'success');
             focusScanner();
         };
 
@@ -405,7 +468,15 @@
                 return;
             }
 
-            const items = Array.from(cart.values()).map(item => ({ id: Number(item.id), quantity: 1 }));
+            const paymentMethod = paymentMethodSelect?.value || 'cash';
+
+            if (paymentMethod === 'cash') {
+                setStatus('Đang chốt hoá đơn tiền mặt...', 'info');
+                await completeCheckout('cash');
+                return;
+            }
+
+            const items = buildCheckoutItems();
             // If you need quantities >1, extend the UI to capture them; current cart stores single qty per scan.
 
             // First, request a payment QR payload from the server. The
@@ -492,38 +563,7 @@
                 paymentModal.style.display = 'none';
                 setStatus('Xác nhận thanh toán...', 'info');
 
-                try {
-                    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-
-                    const checkoutResp = await fetch(@json(url('/ban-hang/checkout')), {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': token,
-                        },
-                        body: JSON.stringify({ items, payment_token: paymentToken }),
-                    });
-
-                    const payload = await checkoutResp.json().catch(() => ({}));
-
-                    if (!checkoutResp.ok) {
-                        setStatus(payload.message || 'Lỗi khi chốt hoá đơn.', 'error');
-                        focusScanner();
-                        return;
-                    }
-
-                    cart.clear();
-                    renderCart();
-                    lastProductEmpty.classList.remove('hidden');
-                    lastProductBox.classList.add('hidden');
-                    hideSuggestions();
-                    setStatus(payload.message || 'Chốt hoá đơn thành công.', 'success');
-                    focusScanner();
-                } catch (err) {
-                    setStatus('Lỗi khi chốt hoá đơn.', 'error');
-                    focusScanner();
-                }
+                await completeCheckout('transfer', paymentToken);
             };
         };
 
