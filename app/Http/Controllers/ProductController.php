@@ -603,10 +603,8 @@ class ProductController extends Controller
 
         $width = imagesx($source);
         $height = imagesy($source);
-        $maxSize = 1200;
-        $scale = min(1, $maxSize / max($width, $height));
-        $targetWidth = max(1, (int) round($width * $scale));
-        $targetHeight = max(1, (int) round($height * $scale));
+        $targetWidth = max(1, $width);
+        $targetHeight = max(1, $height);
 
         $target = imagecreatetruecolor($targetWidth, $targetHeight);
 
