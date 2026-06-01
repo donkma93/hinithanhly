@@ -638,8 +638,30 @@ class ProductController extends Controller
 
     private function storeOptimizedImage(UploadedFile $image): string
     {
-        Storage::disk('public')->makeDirectory('products');
+        try {
+            Storage::disk('public')->makeDirectory('products');
 
-        return $image->store('products', 'public');
+            $ext = $image->getClientOriginalExtension() ?: $image->extension();
+            $filename = (string) Str::uuid().'.'.$ext;
+
+            // storeAs returns the relative path within the disk
+            $path = $image->storeAs('products', $filename, 'public');
+
+            if (! $path) {
+                throw new \RuntimeException('Failed to store uploaded image (storeAs returned falsy).');
+            }
+
+            return $path;
+        } catch (\Throwable $e) {
+            Log::error('Failed to store product image', [
+                'message' => $e->getMessage(),
+                'exception' => $e,
+                'clientName' => $image->getClientOriginalName(),
+                'clientMime' => $image->getClientMimeType(),
+                'size' => $image->getSize(),
+            ]);
+
+            throw $e;
+        }
     }
 }

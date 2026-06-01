@@ -69,7 +69,7 @@
         type="file"
         name="{{ $name }}"
         accept="image/*"
-        class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:rounded-xl file:border-0 file:bg-slate-900 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-slate-800 hidden"
+        class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:rounded-xl file:border-0 file:bg-slate-900 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-slate-800 sr-only"
         @change="handleChange($event)"
     >
     <p class="mt-2 text-xs text-gray-500">{{ $helperText }}</p>
