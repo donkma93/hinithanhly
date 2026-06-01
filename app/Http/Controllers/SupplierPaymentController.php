@@ -31,6 +31,56 @@ class SupplierPaymentController extends Controller
 
         $summary = $supplier ? $this->buildSummary($supplier, $startDate, $endDate) : null;
 
+        // Aggregate sales by supplier for the selected period
+        $aggregates = \App\Models\SaleItem::query()
+            ->join('products', 'sale_items.product_id', '=', 'products.id')
+            ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+            ->whereNotNull('sales.completed_at')
+            ->whereBetween('sales.completed_at', [$startDate, $endDate])
+            ->groupBy('products.supplier_id')
+            ->selectRaw('products.supplier_id as supplier_id, SUM(sale_items.line_total) as gross_amount, SUM(sale_items.quantity) as units_sold, COUNT(*) as line_items')
+            ->get()
+            ->keyBy('supplier_id');
+
+        $supplierDiscountRates = Setting::supplierDiscountRates();
+
+        $suppliersWithTotals = Supplier::query()->orderBy('name')
+            ->get(['id', 'public_id', 'name', 'type', 'bank_name', 'bank_account_name', 'bank_account_number'])
+            ->map(function (Supplier $s) use ($aggregates, $supplierDiscountRates, $startDate, $endDate) {
+                $agg = $aggregates->get($s->id);
+                $gross = $agg ? (float) $agg->gross_amount : 0.0;
+                $units = $agg ? (int) $agg->units_sold : 0;
+                $lineItems = $agg ? (int) $agg->line_items : 0;
+                $discountRate = isset($supplierDiscountRates[$s->type]) ? (float) $supplierDiscountRates[$s->type] : 0.0;
+                $discountAmount = round($gross * $discountRate / 100, 2);
+                $payable = max(0, round($gross - $discountAmount, 2));
+
+                return [
+                    'supplier' => $s,
+                    'gross_amount' => $gross,
+                    'units_sold' => $units,
+                    'line_items' => $lineItems,
+                    'discount_rate' => $discountRate,
+                    'discount_amount' => $discountAmount,
+                    'payable_amount' => $payable,
+                ];
+            });
+
+        $showAll = $request->boolean('show_all', false);
+
+        if (! $showAll) {
+            $suppliersWithTotals = $suppliersWithTotals->filter(fn ($info) => (float) $info['payable_amount'] > 0)->values();
+        }
+
+        // Determine which suppliers already have a recorded payment for this exact period
+        $existingPayments = SupplierPayment::query()
+            ->whereBetween('period_from', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+            ->whereBetween('period_to', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+            ->whereNotNull('paid_at')
+            ->get()
+            ->groupBy('supplier_id')
+            ->map(fn($grp) => $grp->first());
+
         $payments = SupplierPayment::query()
             ->select(['id', 'public_id', 'supplier_id', 'user_id', 'payment_reference', 'period_from', 'period_to', 'gross_amount', 'discount_rate', 'discount_amount', 'payable_amount', 'bank_name', 'bank_account_name', 'bank_account_number', 'paid_at', 'created_at'])
             ->with(['supplier:id,public_id,name,type', 'handledBy:id,public_id,name'])
@@ -45,6 +95,9 @@ class SupplierPaymentController extends Controller
                 ->get(['id', 'public_id', 'name', 'type', 'bank_name', 'bank_account_name', 'bank_account_number']),
             'selectedSupplier' => $supplier,
             'summary' => $summary,
+            'suppliersWithTotals' => $suppliersWithTotals,
+            'showAll' => $showAll,
+            'existingPayments' => $existingPayments,
             'payments' => $payments,
             'startDate' => $startDate,
             'endDate' => $endDate,

@@ -31,33 +31,28 @@
                             </form>
                         </div>
 
-                        <div class="mt-5 grid gap-4 md:grid-cols-2">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Nhà cung cấp</label>
-                                <form id="supplier-payment-filter" method="GET" action="{{ route('supplier-payments.index') }}" class="mt-1 space-y-4 rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                                    <input type="hidden" name="per_page" value="{{ request('per_page', 10) }}">
-                                    <div>
-                                        <select name="supplier_id" class="w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" required>
-                                            <option value="">-- Chọn nhà cung cấp --</option>
-                                            @foreach ($suppliers as $supplier)
-                                                <option value="{{ $supplier->id }}" @selected((string) request('supplier_id', $selectedSupplier?->id) === (string) $supplier->id)>
-                                                    #{{ $supplier->public_id_display }} - {{ $supplier->name }} ({{ $supplierDiscountRates[$supplier->type] ?? 0 }}%)
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div class="grid gap-3 sm:grid-cols-2">
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700">Từ ngày</label>
-                                            <input type="date" name="from" value="{{ request('from', $startDate->format('Y-m-d')) }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900">
+                            <div class="mt-5 grid gap-4 md:grid-cols-2">
+                                <div>
+                                    <form id="supplier-payment-filter" method="GET" action="{{ route('supplier-payments.index') }}" class="mt-1 space-y-4 rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                                        <input type="hidden" name="per_page" value="{{ request('per_page', 10) }}">
+                                        <div class="grid gap-3 sm:grid-cols-2">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700">Từ ngày</label>
+                                                <input type="date" name="from" value="{{ request('from', $startDate->format('Y-m-d')) }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900">
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700">Đến ngày</label>
+                                                <input type="date" name="to" value="{{ request('to', $endDate->format('Y-m-d')) }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900">
+                                            </div>
                                         </div>
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700">Đến ngày</label>
-                                            <input type="date" name="to" value="{{ request('to', $endDate->format('Y-m-d')) }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900">
+                                        <div class="flex items-center gap-3">
+                                            <label class="inline-flex items-center text-sm">
+                                                <input type="checkbox" name="show_all" value="1" class="mr-2" @checked(request()->boolean('show_all'))>
+                                                Hiện tất cả nhà cung cấp
+                                            </label>
                                         </div>
-                                    </div>
-                                </form>
-                            </div>
+                                    </form>
+                                </div>
 
                             <div class="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
                                 @if ($selectedSupplier && $summary)
@@ -76,11 +71,53 @@
                             </div>
                         </div>
 
-                        <div class="mt-5 flex items-center justify-end gap-3">
-                            <button id="create-supplier-payment-button" type="button" class="rounded-xl bg-emerald-500 px-5 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-emerald-300" @disabled(! $selectedSupplier || ! $summary || (float) $summary['gross_amount'] <= 0)>
-                                Tạo QR thanh toán
-                            </button>
+                        <div class="mt-6">
+                            <h4 class="text-sm font-semibold text-gray-900">Danh sách nhà cung cấp trong khoảng</h4>
+                            <div class="mt-3 overflow-x-auto">
+                                <table class="min-w-full text-sm">
+                                    <thead class="text-left text-xs uppercase text-gray-500">
+                                        <tr>
+                                            <th class="py-2 pr-4">Nhà cung cấp</th>
+                                            <th class="py-2 pr-4">Doanh số</th>
+                                            <th class="py-2 pr-4">Chiết khấu</th>
+                                            <th class="py-2 pr-4">Thanh toán</th>
+                                            <th class="py-2 pr-4">Trạng thái</th>
+                                            <th class="py-2 pr-4"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($suppliersWithTotals as $info)
+                                            @php
+                                                $s = $info['supplier'];
+                                                $existing = $existingPayments[$s->id] ?? null;
+                                            @endphp
+                                            <tr>
+                                                <td class="py-2 pr-4 font-medium text-gray-900">#{{ $s->public_id_display }} - {{ $s->name }}</td>
+                                                <td class="py-2 pr-4 text-gray-600">{{ number_format((float) $info['gross_amount'], 0, ',', '.') }} đ</td>
+                                                <td class="py-2 pr-4 text-gray-600">{{ $info['discount_rate'] }}% (-{{ number_format((float) $info['discount_amount'], 0, ',', '.') }} đ)</td>
+                                                <td class="py-2 pr-4 text-gray-900">{{ number_format((float) $info['payable_amount'], 0, ',', '.') }} đ</td>
+                                                <td class="py-2 pr-4 text-gray-600">
+                                                    @if ($existing)
+                                                        <span class="inline-flex items-center rounded-full bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-800">Đã thanh toán</span>
+                                                    @elseif ((float) $info['payable_amount'] <= 0)
+                                                        <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700">Không cần thanh toán</span>
+                                                    @else
+                                                        <span class="inline-flex items-center rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-800">Chưa thanh toán</span>
+                                                    @endif
+                                                </td>
+                                                <td class="py-2 pr-4">
+                                                    <button data-supplier-id="{{ $s->id }}" type="button" class="create-supplier-payment-button rounded-xl bg-emerald-500 px-3 py-2 text-xs font-semibold text-white" @disabled($existing || (float) $info['payable_amount'] <= 0)>
+                                                        Tạo QR
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
+
+                        
                     </div>
 
                     <div class="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
@@ -213,6 +250,50 @@
 
             createButton?.addEventListener('click', async () => {
                 const payload = getFilterPayload();
+
+                try {
+                    const response = await fetch(@json(route('supplier-payments.create-payment')), {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken,
+                        },
+                        body: JSON.stringify(payload),
+                    });
+
+                    const result = await response.json().catch(() => ({}));
+
+                    if (!response.ok) {
+                        alert(result.message || 'Không thể tạo QR thanh toán.');
+                        return;
+                    }
+
+                    tokenInput.value = result.payment_token || '';
+                    modalSubtitle.textContent = `${result.supplier_name || 'Nhà cung cấp'} - ${Number(result.total || 0).toLocaleString('vi-VN')} đ`;
+                    qrImage.src = result.qr_url;
+                    payloadBox.textContent = result.payload || '';
+                    openModal();
+                } catch (error) {
+                    alert('Không thể tạo QR thanh toán.');
+                }
+            });
+
+            // Support per-supplier Create QR buttons in the supplier list
+            document.addEventListener('click', async (e) => {
+                const btn = (e.target && e.target.closest) ? e.target.closest('.create-supplier-payment-button') : null;
+
+                if (!btn) return;
+
+                const supplierId = btn.getAttribute('data-supplier-id');
+
+                if (!supplierId) return;
+
+                const payload = {
+                    supplier_id: Number(supplierId),
+                    from: filterForm.querySelector('[name="from"]').value,
+                    to: filterForm.querySelector('[name="to"]').value,
+                };
 
                 try {
                     const response = await fetch(@json(route('supplier-payments.create-payment')), {
