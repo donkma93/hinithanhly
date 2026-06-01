@@ -22,7 +22,7 @@
 @endphp
 
 <div
-    class="relative"
+    class="relative w-full min-w-0"
     x-data="searchableSelect({
         name: @js($name),
         options: @js($normalizedOptions),
@@ -40,7 +40,7 @@
 
     <button
         type="button"
-        class="mt-1 flex w-full items-center justify-between rounded-xl border border-gray-300 bg-white px-4 py-3 text-left text-sm shadow-sm transition focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+        class="mt-1 flex w-full min-w-0 items-center justify-between rounded-xl border border-gray-300 bg-white px-4 py-3 text-left text-sm shadow-sm transition focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
         @click="toggleMenu()"
         :aria-expanded="open.toString()"
         :disabled="Boolean(dependsOn) && !dependencyValue"
@@ -61,7 +61,7 @@
         x-transition:leave="transition ease-in duration-100"
         x-transition:leave-start="opacity-100 translate-y-0 scale-100"
         x-transition:leave-end="opacity-0 translate-y-1 scale-95"
-        class="absolute z-30 mt-2 w-full overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl"
+        class="absolute z-30 mt-2 w-full max-w-full overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl"
         style="display: none;"
     >
         <div class="border-b border-gray-100 p-3">

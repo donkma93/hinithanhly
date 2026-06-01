@@ -8,6 +8,8 @@ use App\Models\Supplier;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
@@ -48,6 +50,32 @@ class ConsignmentWorkflowRulesTest extends TestCase
         $this->assertSame($user->id, $product->consignmentNote->responsible_user_id);
         $this->assertSame(2, $product->consignmentNote->quantity);
         $this->assertNotSame('', (string) $product->consignmentNote->public_id);
+    }
+
+    public function test_product_creation_stores_uploaded_image_without_client_side_compression(): void
+    {
+        Storage::fake('public');
+
+        $this->signInAsAdmin();
+        $category = $this->createCategory();
+        $supplier = $this->createSupplier('cho_tang', 'NCC cho tang');
+
+        $response = $this->post(route('products.store'), [
+            'supplier_id' => $supplier->id,
+            'category_id' => $category->id,
+            'name' => 'Ao khoac',
+            'sale_price' => 250000,
+            'quantity' => 1,
+            'description' => 'Upload anh lon',
+            'image' => UploadedFile::fake()->image('ao-khoac.jpg', 4000, 3000),
+        ]);
+
+        $response->assertRedirect(route('products.index'));
+
+        $product = Product::query()->sole();
+
+        $this->assertNotNull($product->image_path);
+        Storage::disk('public')->assertExists($product->image_path);
     }
 
     public function test_manual_supplier_types_still_require_an_explicit_consignment_note(): void

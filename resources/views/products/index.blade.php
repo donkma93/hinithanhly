@@ -19,8 +19,8 @@
         ])->all();
     @endphp
 
-    <div class="py-10">
-        <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+    <div class="py-6 sm:py-10">
+        <div class="mx-auto max-w-7xl space-y-6 px-3 sm:px-6 lg:px-8">
             @if (session('status'))
                 <div class="rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 ring-1 ring-emerald-200">
                     {{ session('status') }}
@@ -37,9 +37,9 @@
                     </div>
                 @endif
 
-            <div class="grid gap-6 lg:grid-cols-3">
+            <div class="grid gap-6 xl:grid-cols-5">
                 <div
-                    class="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-200 lg:col-span-1"
+                    class="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-gray-200 sm:p-6 xl:col-span-2"
                     x-data="{
                         supplierTypes: @js($supplierTypeMap),
                         manualTypes: @js(\App\Models\Supplier::MANUAL_CONSIGNMENT_TYPES),
@@ -147,7 +147,7 @@
                 </div>
 
                 <div
-                    class="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-200 lg:col-span-2"
+                    class="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-gray-200 sm:p-6 xl:col-span-3"
                     x-data="{
                         imageZoomOpen: false,
                         imageZoomSrc: '',
@@ -164,9 +164,9 @@
                 >
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <h3 class="text-lg font-semibold text-gray-900">Danh sách</h3>
-                        <form method="GET" action="{{ route('products.index') }}" class="flex flex-wrap items-center gap-2">
+                        <form method="GET" action="{{ route('products.index') }}" class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
                             <x-per-page-select :value="request('per_page', 10)" />
-                            <input name="public_id" value="{{ request('public_id') }}" class="w-64 rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Tìm bằng mã công khai">
+                            <input name="public_id" value="{{ request('public_id') }}" class="w-full rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900 sm:w-64" placeholder="Tìm bằng mã công khai">
                             <button class="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">Tìm</button>
                         </form>
                     </div>

@@ -20,10 +20,10 @@
         ])->all();
     @endphp
 
-    <div class="py-10">
-        <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+    <div class="py-6 sm:py-10">
+        <div class="mx-auto max-w-3xl px-3 sm:px-6 lg:px-8">
             <div
-                class="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-200"
+                class="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-gray-200 sm:p-6"
                 x-data="{
                     supplierTypes: @js($supplierTypeMap),
                     manualTypes: @js(\App\Models\Supplier::MANUAL_CONSIGNMENT_TYPES),
@@ -56,7 +56,7 @@
                         name="image"
                         label="Ảnh sản phẩm"
                         :current-url="$product->image_path ? asset('storage/' . $product->image_path) : null"
-                        helper-text="Ảnh sẽ được tối ưu tự động trên trình duyệt (resize và nén) trước khi upload. Bạn vẫn có thể chọn ảnh từ camera hoặc thư viện thiết bị."
+                        helper-text="Bạn có thể chụp ảnh hoặc chọn từ thư viện trên mọi thiết bị."
                     />
                     @error('image') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
                     @php
@@ -128,7 +128,7 @@
                         <textarea name="description" rows="5" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900">{{ old('description', $product->description) }}</textarea>
                         @error('description') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
-                    <div class="flex items-center gap-3">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
                         <button class="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">Cập nhật</button>
                         <a href="{{ route('products.index') }}" class="text-sm font-medium text-gray-600 hover:text-gray-900">Quay lại</a>
                     </div>
