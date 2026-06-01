@@ -38,12 +38,8 @@
                             <label class="block text-sm font-medium text-gray-700">Số điện thoại</label>
                             <input name="phone" value="{{ old('phone', $supplier->phone) }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900">
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Chủ tài khoản</label>
-                            <input name="bank_account_name" value="{{ old('bank_account_name', $supplier->bank_account_name) }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900">
-                        </div>
                     </div>
-                    <div class="grid gap-4 sm:grid-cols-2">
+                    <div id="supplier-bank-fields-edit" class="grid gap-4 sm:grid-cols-2">
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Ngân hàng</label>
                             <select name="bank_name" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900">
@@ -58,6 +54,13 @@
                             <input name="bank_account_number" value="{{ old('bank_account_number', $supplier->bank_account_number) }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900">
                         </div>
                     </div>
+                    <div id="supplier-bank-name-field-edit">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Chủ tài khoản</label>
+                            <input name="bank_account_name" value="{{ old('bank_account_name', $supplier->bank_account_name) }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900">
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-500">Chỉ nhà cung cấp <strong>NCC ít sản phẩm</strong> cần nhập đầy đủ thông tin ngân hàng.</p>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Ghi chú</label>
                         <textarea name="notes" rows="5" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900">{{ old('notes', $supplier->notes) }}</textarea>
@@ -67,6 +70,30 @@
                         <a href="{{ route('suppliers.index') }}" class="text-sm font-medium text-gray-600 hover:text-gray-900">Quay lại</a>
                     </div>
                 </form>
+                <script>
+                    document.addEventListener('DOMContentLoaded', () => {
+                        const typeSelect = document.querySelector('select[name="type"]');
+                        const bankFields = document.getElementById('supplier-bank-fields-edit');
+                        const bankNameField = document.getElementById('supplier-bank-name-field-edit');
+                        const bankInputs = [
+                            document.querySelector('select[name="bank_name"]'),
+                            document.querySelector('input[name="bank_account_number"]'),
+                            document.querySelector('input[name="bank_account_name"]'),
+                        ].filter(Boolean);
+
+                        const toggleBankFields = () => {
+                            const needsBank = typeSelect?.value === 'ncc_it_san_pham';
+                            bankFields.classList.toggle('hidden', !needsBank);
+                            bankNameField.classList.toggle('hidden', !needsBank);
+                            bankInputs.forEach((input) => {
+                                input.required = needsBank;
+                            });
+                        };
+
+                        typeSelect?.addEventListener('change', toggleBankFields);
+                        toggleBankFields();
+                    });
+                </script>
             </div>
         </div>
     </div>

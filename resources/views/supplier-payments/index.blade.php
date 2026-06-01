@@ -23,7 +23,8 @@
                                 <p class="text-sm text-gray-500">Chọn nhà cung cấp và khoảng thời gian để tính tiền cần thanh toán.</p>
                             </div>
                             <form method="GET" action="{{ route('supplier-payments.index') }}" class="flex flex-wrap items-center gap-2">
-                                <input type="hidden" name="supplier_id" value="{{ request('supplier_id', $selectedSupplier?->id) }}">
+                                <input type="hidden" name="search" value="{{ request('search', $search ?? '') }}">
+                                <input type="hidden" name="supplier_type" value="{{ request('supplier_type', $supplierType ?? '') }}">
                                 <input type="hidden" name="from" value="{{ request('from', $startDate->format('Y-m-d')) }}">
                                 <input type="hidden" name="to" value="{{ request('to', $endDate->format('Y-m-d')) }}">
                                 <x-per-page-select :value="request('per_page', 10)" />
@@ -35,6 +36,23 @@
                                 <div>
                                     <form id="supplier-payment-filter" method="GET" action="{{ route('supplier-payments.index') }}" class="mt-1 space-y-4 rounded-2xl border border-gray-200 bg-gray-50 p-4">
                                         <input type="hidden" name="per_page" value="{{ request('per_page', 10) }}">
+                                        <div class="grid gap-3 sm:grid-cols-2">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700">Tìm kiếm NCC</label>
+                                                <input type="text" name="search" value="{{ request('search', $search ?? '') }}" placeholder="Mã, tên hoặc người phụ trách" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900">
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700">Phân loại NCC</label>
+                                                <select name="supplier_type" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900">
+                                                    <option value="">-- Tất cả phân loại --</option>
+                                                    @foreach (\App\Models\Supplier::ACTIVE_TYPES as $typeValue => $typeLabel)
+                                                        <option value="{{ $typeValue }}" @selected((string) request('supplier_type', $supplierType ?? '') === (string) $typeValue)>
+                                                            {{ $typeLabel }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                        </div>
                                         <div class="grid gap-3 sm:grid-cols-2">
                                             <div>
                                                 <label class="block text-sm font-medium text-gray-700">Từ ngày</label>
@@ -58,7 +76,7 @@
                                 @if ($selectedSupplier && $summary)
                                     <div class="space-y-3 text-sm text-slate-700">
                                         <div class="flex items-center justify-between"><span>Nhà cung cấp</span><strong>{{ $selectedSupplier->name }}</strong></div>
-                                        <div class="flex items-center justify-between"><span>Loại</span><strong>{{ \App\Models\Supplier::TYPES[$selectedSupplier->type] ?? $selectedSupplier->type }}</strong></div>
+                                        <div class="flex items-center justify-between"><span>Loại</span><strong>{{ \App\Models\Supplier::labelForType($selectedSupplier->type) }}</strong></div>
                                         <div class="flex items-center justify-between"><span>Tỷ lệ chiết khấu</span><strong>{{ $summary['discount_rate'] }}%</strong></div>
                                         <div class="flex items-center justify-between"><span>Doanh số gốc</span><strong>{{ number_format((float) $summary['gross_amount'], 0, ',', '.') }} đ</strong></div>
                                         <div class="flex items-center justify-between"><span>Chiết khấu</span><strong>- {{ number_format((float) $summary['discount_amount'], 0, ',', '.') }} đ</strong></div>
@@ -165,7 +183,7 @@
                         <div class="mt-4 space-y-3 text-sm text-gray-600">
                             <div class="flex items-center justify-between"><span>Mã</span><strong class="text-gray-900">#{{ $selectedSupplier->public_id_display }}</strong></div>
                             <div class="flex items-center justify-between"><span>Tên</span><strong class="text-gray-900">{{ $selectedSupplier->name }}</strong></div>
-                            <div class="flex items-center justify-between"><span>Loại</span><strong class="text-gray-900">{{ \App\Models\Supplier::TYPES[$selectedSupplier->type] ?? $selectedSupplier->type }}</strong></div>
+                            <div class="flex items-center justify-between"><span>Loại</span><strong class="text-gray-900">{{ \App\Models\Supplier::labelForType($selectedSupplier->type) }}</strong></div>
                             <div class="flex items-center justify-between"><span>Chiết khấu</span><strong class="text-gray-900">{{ $supplierDiscountRates[$selectedSupplier->type] ?? 0 }}%</strong></div>
                             <div class="flex items-center justify-between"><span>Ngân hàng</span><strong class="text-gray-900">{{ $selectedSupplier->bank_name ?: '---' }}</strong></div>
                             <div class="flex items-center justify-between"><span>Số tài khoản</span><strong class="text-gray-900">{{ $selectedSupplier->bank_account_number ?: '---' }}</strong></div>

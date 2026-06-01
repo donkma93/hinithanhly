@@ -72,6 +72,24 @@ class SupplierPaymentController extends Controller
             $suppliersWithTotals = $suppliersWithTotals->filter(fn ($info) => (float) $info['payable_amount'] > 0)->values();
         }
 
+        $search = trim((string) $request->string('search'));
+        $supplierType = trim((string) $request->string('supplier_type'));
+
+        if ($search !== '') {
+            $searchLower = mb_strtolower($search);
+
+            $suppliersWithTotals = $suppliersWithTotals->filter(function (array $info) use ($searchLower) {
+                $supplier = $info['supplier'];
+                $haystack = mb_strtolower(trim($supplier->name.' '.$supplier->public_id_display.' '.$supplier->responsible_name));
+
+                return str_contains($haystack, $searchLower);
+            })->values();
+        }
+
+        if ($supplierType !== '') {
+            $suppliersWithTotals = $suppliersWithTotals->filter(fn (array $info) => (string) $info['supplier']->type === $supplierType)->values();
+        }
+
         // Determine which suppliers already have a recorded payment for this exact period
         $existingPayments = SupplierPayment::query()
             ->whereBetween('period_from', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
@@ -97,6 +115,8 @@ class SupplierPaymentController extends Controller
             'summary' => $summary,
             'suppliersWithTotals' => $suppliersWithTotals,
             'showAll' => $showAll,
+            'search' => $search,
+            'supplierType' => $supplierType,
             'existingPayments' => $existingPayments,
             'payments' => $payments,
             'startDate' => $startDate,

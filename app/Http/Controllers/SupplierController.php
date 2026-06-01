@@ -34,23 +34,31 @@ class SupplierController extends Controller
                 ->paginate($perPage)
                 ->withQueryString(),
             'bankOptions' => config('banks', []),
-            'supplierTypes' => Supplier::TYPES,
+            'supplierTypes' => Supplier::ACTIVE_TYPES,
             'supplierDiscountRates' => Setting::supplierDiscountRates(),
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
+        $requiresBankDetails = Supplier::requiresBankDetails($request->input('type'));
+
         $data = $request->validate([
             'responsible_name' => ['nullable', 'string', 'max:255'],
-            'type' => ['required', Rule::in(array_keys(Supplier::TYPES))],
+            'type' => ['required', Rule::in(array_keys(Supplier::ACTIVE_TYPES))],
             'name' => ['required', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:30'],
-            'bank_name' => ['nullable', 'string', 'max:255'],
-            'bank_account_name' => ['nullable', 'string', 'max:255'],
-            'bank_account_number' => ['nullable', 'string', 'max:255'],
+            'bank_name' => [Rule::requiredIf($requiresBankDetails), 'nullable', 'string', 'max:255'],
+            'bank_account_name' => [Rule::requiredIf($requiresBankDetails), 'nullable', 'string', 'max:255'],
+            'bank_account_number' => [Rule::requiredIf($requiresBankDetails), 'nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string'],
         ]);
+
+        if (! $requiresBankDetails) {
+            $data['bank_name'] = null;
+            $data['bank_account_name'] = null;
+            $data['bank_account_number'] = null;
+        }
 
         $this->suppliers->create($data);
 
@@ -75,26 +83,43 @@ class SupplierController extends Controller
 
     public function edit(Supplier $supplier): View
     {
+        $supplierTypes = $supplier->type === 'ncc_nhieu_san_pham'
+            ? ['ncc_nhieu_san_pham' => 'NCC nhiều sản phẩm (ngừng sử dụng)'] + Supplier::ACTIVE_TYPES
+            : Supplier::ACTIVE_TYPES;
+
         return view('suppliers.edit', [
             'supplier' => $supplier,
             'bankOptions' => config('banks', []),
-            'supplierTypes' => Supplier::TYPES,
+            'supplierTypes' => $supplierTypes,
             'supplierDiscountRates' => Setting::supplierDiscountRates(),
         ]);
     }
 
     public function update(Request $request, Supplier $supplier): RedirectResponse
     {
+        $requiresBankDetails = Supplier::requiresBankDetails($request->input('type'));
+        $allowedTypes = array_keys(Supplier::ACTIVE_TYPES);
+
+        if ($supplier->type === 'ncc_nhieu_san_pham') {
+            $allowedTypes[] = 'ncc_nhieu_san_pham';
+        }
+
         $data = $request->validate([
             'responsible_name' => ['nullable', 'string', 'max:255'],
-            'type' => ['required', Rule::in(array_keys(Supplier::TYPES))],
+            'type' => ['required', Rule::in($allowedTypes)],
             'name' => ['required', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:30'],
-            'bank_name' => ['nullable', 'string', 'max:255'],
-            'bank_account_name' => ['nullable', 'string', 'max:255'],
-            'bank_account_number' => ['nullable', 'string', 'max:255'],
+            'bank_name' => [Rule::requiredIf($requiresBankDetails), 'nullable', 'string', 'max:255'],
+            'bank_account_name' => [Rule::requiredIf($requiresBankDetails), 'nullable', 'string', 'max:255'],
+            'bank_account_number' => [Rule::requiredIf($requiresBankDetails), 'nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string'],
         ]);
+
+        if (! $requiresBankDetails) {
+            $data['bank_name'] = null;
+            $data['bank_account_name'] = null;
+            $data['bank_account_number'] = null;
+        }
 
         $this->suppliers->update($supplier->id, $data);
 

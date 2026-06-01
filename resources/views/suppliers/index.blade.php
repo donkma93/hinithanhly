@@ -45,12 +45,8 @@
                                     <label class="block text-sm font-medium text-gray-700">Số điện thoại</label>
                                     <input name="phone" value="{{ old('phone') }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900">
                                 </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700">Chủ tài khoản</label>
-                                    <input name="bank_account_name" value="{{ old('bank_account_name') }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900">
-                                </div>
                             </div>
-                            <div class="grid gap-4 sm:grid-cols-2">
+                            <div id="supplier-bank-fields" class="grid gap-4 sm:grid-cols-2">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700">Ngân hàng</label>
                                     <select name="bank_name" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900">
@@ -65,12 +61,46 @@
                                     <input name="bank_account_number" value="{{ old('bank_account_number') }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900">
                                 </div>
                             </div>
+                            <div id="supplier-bank-name-field">
+                                <div class="mt-4">
+                                    <label class="block text-sm font-medium text-gray-700">Chủ tài khoản</label>
+                                    <input name="bank_account_name" value="{{ old('bank_account_name') }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900">
+                                </div>
+                            </div>
+                            <p class="text-xs text-gray-500">Chỉ nhà cung cấp <strong>NCC ít sản phẩm</strong> cần nhập đầy đủ thông tin ngân hàng.</p>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Ghi chú</label>
                                 <textarea name="notes" rows="4" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900">{{ old('notes') }}</textarea>
                             </div>
                             <button class="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">Lưu nhà cung cấp</button>
                         </form>
+                        <script>
+                            document.addEventListener('DOMContentLoaded', () => {
+                                const typeSelect = document.querySelector('select[name="type"]');
+                                const bankFields = document.getElementById('supplier-bank-fields');
+                                const bankNameField = document.getElementById('supplier-bank-name-field');
+                                const bankInputs = [
+                                    document.querySelector('select[name="bank_name"]'),
+                                    document.querySelector('input[name="bank_account_number"]'),
+                                    document.querySelector('input[name="bank_account_name"]'),
+                                ].filter(Boolean);
+
+                                const toggleBankFields = () => {
+                                    const needsBank = typeSelect?.value === 'ncc_it_san_pham';
+                                    bankFields.classList.toggle('hidden', !needsBank);
+                                    bankNameField.classList.toggle('hidden', !needsBank);
+                                    bankInputs.forEach((input) => {
+                                        input.required = needsBank;
+                                        if (!needsBank) {
+                                            input.value = input.value;
+                                        }
+                                    });
+                                };
+
+                                typeSelect?.addEventListener('change', toggleBankFields);
+                                toggleBankFields();
+                            });
+                        </script>
                     @else
                         <h3 class="text-lg font-semibold text-gray-900">Thêm nhà cung cấp</h3>
                         <p class="mt-3 text-sm text-gray-500">Bạn chỉ có quyền xem nhà cung cấp.</p>
@@ -103,7 +133,7 @@
                                     <tr>
                                         <td class="py-3 pr-4 font-medium text-slate-900">#{{ $supplier->public_id_display }}</td>
                                         <td class="py-3 pr-4 font-medium text-gray-900">{{ $supplier->name }}</td>
-                                        <td class="py-3 pr-4 text-gray-600">{{ \App\Models\Supplier::TYPES[$supplier->type] ?? $supplier->type }} ({{ $supplierDiscountRates[$supplier->type] ?? 0 }}%)</td>
+                                        <td class="py-3 pr-4 text-gray-600">{{ \App\Models\Supplier::labelForType($supplier->type) }} ({{ $supplierDiscountRates[$supplier->type] ?? 0 }}%)</td>
                                         <td class="py-3 pr-4 text-gray-600">{{ $supplier->responsible_name ?: '---' }}</td>
                                         <td class="py-3 pr-4 text-gray-600">{{ $supplier->bank_name ?: '---' }}</td>
                                         <td class="py-3 pr-4 text-right">
