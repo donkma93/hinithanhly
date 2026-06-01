@@ -589,64 +589,8 @@ class ProductController extends Controller
 
     private function storeOptimizedImage(UploadedFile $image): string
     {
-        $binary = file_get_contents($image->getRealPath());
+        Storage::disk('public')->makeDirectory('products');
 
-        if ($binary === false) {
-            return $image->store('products', 'public');
-        }
-
-        $source = imagecreatefromstring($binary);
-
-        if ($source === false) {
-            return $image->store('products', 'public');
-        }
-
-        $width = imagesx($source);
-        $height = imagesy($source);
-        $targetWidth = max(1, $width);
-        $targetHeight = max(1, $height);
-
-        $target = imagecreatetruecolor($targetWidth, $targetHeight);
-
-        if ($target === false) {
-            imagedestroy($source);
-
-            return $image->store('products', 'public');
-        }
-
-        imagealphablending($target, false);
-        imagesavealpha($target, true);
-        $transparent = imagecolorallocatealpha($target, 0, 0, 0, 127);
-        imagefilledrectangle($target, 0, 0, $targetWidth, $targetHeight, $transparent);
-
-        imagecopyresampled($target, $source, 0, 0, 0, 0, $targetWidth, $targetHeight, $width, $height);
-
-        // Ensure the products directory exists
-        $productsDir = Storage::disk('public')->path('products');
-        if (! is_dir($productsDir)) {
-            mkdir($productsDir, 0755, true);
-        }
-
-        $fileName = Str::uuid()->toString().'.webp';
-        $storagePath = 'products/'.$fileName;
-        $fullPath = Storage::disk('public')->path($storagePath);
-
-        if (! imagewebp($target, $fullPath, 60)) {
-            $fileName = Str::uuid()->toString().'.jpg';
-            $storagePath = 'products/'.$fileName;
-            $fullPath = Storage::disk('public')->path($storagePath);
-
-            $background = imagecreatetruecolor($targetWidth, $targetHeight);
-            $white = imagecolorallocate($background, 255, 255, 255);
-            imagefill($background, 0, 0, $white);
-            imagecopy($background, $target, 0, 0, 0, 0, $targetWidth, $targetHeight);
-            imagejpeg($background, $fullPath, 60);
-            imagedestroy($background);
-        }
-
-        imagedestroy($target);
-        imagedestroy($source);
-
-        return $storagePath;
+        return $image->store('products', 'public');
     }
 }
