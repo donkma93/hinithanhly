@@ -23,13 +23,22 @@ class SupplierController extends Controller
 
     public function index(Request $request): View
     {
-        $publicId = trim($request->string('public_id')->toString());
+        $keyword = trim($request->string('public_id')->toString());
         $perPage = $this->resolvePerPage($request);
 
+        $suppliersQuery = Supplier::query()
+            ->select(['id', 'public_id', 'responsible_name', 'type', 'name', 'phone', 'bank_name', 'created_at']);
+
+        if ($keyword !== '') {
+            $suppliersQuery->where(function ($query) use ($keyword) {
+                $query->where('public_id', $keyword)
+                    ->orWhere('name', 'like', '%'.$keyword.'%')
+                    ->orWhere('responsible_name', 'like', '%'.$keyword.'%');
+            });
+        }
+
         return view('suppliers.index', [
-            'suppliers' => Supplier::query()
-                ->select(['id', 'public_id', 'responsible_name', 'type', 'name', 'phone', 'bank_name', 'created_at'])
-                ->when($publicId !== '', fn ($query) => $query->where('public_id', $publicId))
+            'suppliers' => $suppliersQuery
                 ->latest()
                 ->paginate($perPage)
                 ->withQueryString(),

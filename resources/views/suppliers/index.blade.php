@@ -110,10 +110,9 @@
                 <div class="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-200 lg:col-span-2">
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <h3 class="text-lg font-semibold text-gray-900">Danh sách</h3>
-                        <form method="GET" action="{{ route('suppliers.index') }}" class="flex flex-wrap items-center gap-2">
+                        <form id="supplier-search-form" method="GET" action="{{ route('suppliers.index') }}" class="flex flex-wrap items-center gap-2">
                             <x-per-page-select :value="request('per_page', 10)" />
-                            <input name="public_id" value="{{ request('public_id') }}" class="w-64 rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Tìm bằng mã công khai">
-                            <button class="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">Tìm</button>
+                            <input name="public_id" value="{{ request('public_id') }}" class="w-72 rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Tìm bằng mã công khai, tên hoặc người phụ trách">
                         </form>
                     </div>
                     <div class="mt-4 overflow-x-auto">
@@ -165,4 +164,22 @@
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('supplier-search-form');
+            const input = form?.querySelector('input[name="public_id"]');
+            let timer = null;
+
+            const submitForm = () => {
+                if (!form) return;
+                form.requestSubmit ? form.requestSubmit() : form.submit();
+            };
+
+            input?.addEventListener('input', () => {
+                window.clearTimeout(timer);
+                timer = window.setTimeout(submitForm, 300);
+            });
+        });
+    </script>
 </x-app-layout>
