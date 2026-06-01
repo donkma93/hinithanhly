@@ -13,6 +13,10 @@
         ];
     @endphp
 
+    @php
+        $supplierDiscountRates = \App\Models\Setting::supplierDiscountRates();
+    @endphp
+
     <div class="py-10">
         <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
             <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
@@ -68,6 +72,43 @@
                                     <td class="py-3 pr-4 text-gray-600">{{ $paymentLabels[$sale->payment_method] ?? $sale->payment_method }}</td>
                                     <td class="py-3 pr-4 text-gray-900">{{ number_format((float) $sale->total_amount, 0, ',', '.') }} đ</td>
                                     <td class="py-3 pr-4 text-gray-600">{{ $sale->cashier?->name ?? '---' }}</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="5" class="bg-gray-50 px-4 py-3">
+                                        <div class="text-sm text-gray-700">Sản phẩm đã bán:</div>
+                                        <div class="mt-2 overflow-x-auto">
+                                            <table class="min-w-full text-sm">
+                                                <thead class="text-left text-xs uppercase text-gray-500">
+                                                    <tr>
+                                                        <th class="py-2 pr-4">Sản phẩm</th>
+                                                        <th class="py-2 pr-4">Nhà cung cấp</th>
+                                                        <th class="py-2 pr-4">Loại NCC (Chiết khấu)</th>
+                                                        <th class="py-2 pr-4">Số lượng</th>
+                                                        <th class="py-2 pr-4">Thành tiền</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @forelse ($sale->items as $item)
+                                                        @php
+                                                            $product = $item->product;
+                                                            $supplier = $product?->supplier;
+                                                            $supplierType = $supplier?->type ?? null;
+                                                            $discountRate = $supplierType ? ($supplierDiscountRates[$supplierType] ?? 0) : 0;
+                                                        @endphp
+                                                        <tr>
+                                                            <td class="py-2 pr-4 font-medium text-gray-900">{{ $product?->name ?? $item->product_name }}</td>
+                                                            <td class="py-2 pr-4 text-gray-600">{{ $supplier?->name ?? '---' }}</td>
+                                                            <td class="py-2 pr-4 text-gray-600">{{ $supplier?->type ? (\App\Models\Supplier::TYPES[$supplier->type] ?? $supplier->type) : '---' }} ({{ $discountRate }}%)</td>
+                                                            <td class="py-2 pr-4 text-gray-600">{{ $item->quantity }}</td>
+                                                            <td class="py-2 pr-4 text-gray-900">{{ number_format((float) $item->line_total, 0, ',', '.') }} đ</td>
+                                                        </tr>
+                                                    @empty
+                                                        <tr><td colspan="5" class="py-3 text-gray-500">Không có sản phẩm.</td></tr>
+                                                    @endforelse
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </td>
                                 </tr>
                             @empty
                                 <tr><td colspan="5" class="py-8 text-center text-gray-500">Chưa có doanh thu trong khoảng thời gian này.</td></tr>

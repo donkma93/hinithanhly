@@ -31,7 +31,10 @@ class RevenueController extends Controller
 
         $sales = (clone $baseQuery)
             ->select(['id', 'public_id', 'user_id', 'payment_method', 'payment_reference', 'total_amount', 'items_count', 'completed_at', 'created_at'])
-            ->with(['cashier:id,public_id,name'])
+            ->with([
+                'cashier:id,public_id,name',
+                'items.product.supplier:id,public_id,name,type'
+            ])
             ->latest('completed_at')
             ->paginate($perPage)
             ->withQueryString();
