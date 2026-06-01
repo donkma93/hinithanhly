@@ -15,6 +15,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Picqer\Barcode\BarcodeGeneratorSVG;
@@ -83,6 +84,30 @@ class ProductController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        // Pre-check uploaded file for PHP upload errors to log helpful diagnostics
+        if ($request->hasFile('image')) {
+            $file = $request->file('image');
+            $error = $file->getError();
+            if ($error !== UPLOAD_ERR_OK) {
+                Log::error('Product image upload error (store)', [
+                    'error_code' => $error,
+                    'file_info' => is_object($file) ? [
+                        'clientName' => $file->getClientOriginalName(),
+                        'clientMime' => $file->getClientMimeType(),
+                        'size' => $file->getSize(),
+                    ] : null,
+                    'files' => $_FILES,
+                ]);
+
+                return redirect()->back()->withInput()->withErrors(['image' => 'File upload error (code '.$error.'). Vui lòng thử lại.']);
+            }
+        } else {
+            // If client attempted upload but no file present, log raw FILES for diagnostics
+            if (! empty($_FILES)) {
+                Log::warning('No image file detected in request, but $_FILES is not empty (store)', ['files' => $_FILES]);
+            }
+        }
+
         $validated = $this->validatedData($request);
         $data = $validated['data'];
         $supplier = $validated['supplier'];
@@ -271,6 +296,30 @@ class ProductController extends Controller
 
     public function update(Request $request, Product $product): RedirectResponse
     {
+        // Pre-check uploaded file for PHP upload errors to log helpful diagnostics
+        if ($request->hasFile('image')) {
+            $file = $request->file('image');
+            $error = $file->getError();
+            if ($error !== UPLOAD_ERR_OK) {
+                Log::error('Product image upload error (update)', [
+                    'error_code' => $error,
+                    'product_id' => $product->id,
+                    'file_info' => is_object($file) ? [
+                        'clientName' => $file->getClientOriginalName(),
+                        'clientMime' => $file->getClientMimeType(),
+                        'size' => $file->getSize(),
+                    ] : null,
+                    'files' => $_FILES,
+                ]);
+
+                return redirect()->back()->withInput()->withErrors(['image' => 'File upload error (code '.$error.'). Vui lòng thử lại.']);
+            }
+        } else {
+            if (! empty($_FILES)) {
+                Log::warning('No image file detected in request, but $_FILES is not empty (update)', ['files' => $_FILES, 'product_id' => $product->id]);
+            }
+        }
+
         $validated = $this->validatedData($request);
         $data = $validated['data'];
         $supplier = $validated['supplier'];
