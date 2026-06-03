@@ -3,22 +3,44 @@
     'label' => 'Ảnh sản phẩm',
     'currentUrl' => null,
     'helperText' => 'Bạn có thể chụp ảnh hoặc chọn từ thư viện thiết bị.',
+    'maxUploadSizeBytes' => 536870912,
 ])
 
 <div
     x-data="{
         previewUrl: @js($currentUrl),
         defaultPreviewUrl: @js($currentUrl),
+        selectedFileSize: null,
+        maxUploadSizeBytes: @js((int) $maxUploadSizeBytes),
+        formatBytes(bytes) {
+            if (!bytes && bytes !== 0) {
+                return '---';
+            }
+
+            const units = ['B', 'KB', 'MB', 'GB'];
+            let size = Number(bytes);
+            let unitIndex = 0;
+
+            while (size >= 1024 && unitIndex < units.length - 1) {
+                size /= 1024;
+                unitIndex += 1;
+            }
+
+            const precision = unitIndex === 0 ? 0 : 1;
+            return `${size.toFixed(precision)} ${units[unitIndex]}`;
+        },
         async handleChange(event) {
             const input = event.target;
             const file = input.files?.[0];
 
             if (!file) {
                 this.previewUrl = this.defaultPreviewUrl;
+                this.selectedFileSize = null;
                 return;
             }
 
             this.previewUrl = URL.createObjectURL(file);
+            this.selectedFileSize = file.size;
         },
         startCamera() {
             const cameraInput = document.createElement('input');
@@ -73,6 +95,12 @@
         @change="handleChange($event)"
     >
     <p class="mt-2 text-xs text-gray-500">{{ $helperText }}</p>
+    <p class="mt-1 text-xs text-gray-500">
+        Dung lượng đã chọn:
+        <span x-text="selectedFileSize !== null ? formatBytes(selectedFileSize) : 'Chưa chọn ảnh'"></span>
+        <span class="mx-1">/</span>
+        Tối đa: <span x-text="formatBytes(maxUploadSizeBytes)"></span>
+    </p>
 
     <template x-if="previewUrl">
         <div class="mt-3 overflow-hidden rounded-2xl border border-gray-200 bg-gray-50">
