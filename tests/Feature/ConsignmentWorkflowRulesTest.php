@@ -115,6 +115,50 @@ class ConsignmentWorkflowRulesTest extends TestCase
         $this->assertDatabaseCount('consignment_notes', 0);
     }
 
+    public function test_product_index_searches_by_product_code_supplier_code_and_product_name(): void
+    {
+        $this->signInAsAdmin();
+        $category = $this->createCategory();
+        $supplierA = $this->createSupplier('cho_tang', 'NCC A');
+        $supplierB = $this->createSupplier('khach_si', 'NCC B');
+
+        $this->post(route('products.store'), [
+            'supplier_id' => $supplierA->id,
+            'category_id' => $category->id,
+            'name' => 'Ao so mi xanh',
+            'sale_price' => 120000,
+            'quantity' => 1,
+            'description' => null,
+        ])->assertRedirect(route('products.index'));
+
+        $this->post(route('products.store'), [
+            'supplier_id' => $supplierB->id,
+            'category_id' => $category->id,
+            'name' => 'Quan tay den',
+            'sale_price' => 220000,
+            'quantity' => 1,
+            'description' => null,
+        ])->assertRedirect(route('products.index'));
+
+        $productA = Product::query()->where('name', 'Ao so mi xanh')->sole();
+        $productB = Product::query()->where('name', 'Quan tay den')->sole();
+
+        $responseByProductCode = $this->get(route('products.index', ['q' => $productA->public_id]));
+        $responseByProductCode->assertOk();
+        $responseByProductCode->assertSee('Ao so mi xanh');
+        $responseByProductCode->assertDontSee('Quan tay den');
+
+        $responseBySupplierCode = $this->get(route('products.index', ['q' => $supplierB->public_id]));
+        $responseBySupplierCode->assertOk();
+        $responseBySupplierCode->assertSee('Quan tay den');
+        $responseBySupplierCode->assertDontSee('Ao so mi xanh');
+
+        $responseByName = $this->get(route('products.index', ['q' => 'ao so mi']));
+        $responseByName->assertOk();
+        $responseByName->assertSee('Ao so mi xanh');
+        $responseByName->assertDontSee('Quan tay den');
+    }
+
     private function signInAsAdmin(): User
     {
         $user = User::factory()->create([

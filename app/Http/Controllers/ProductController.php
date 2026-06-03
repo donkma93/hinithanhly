@@ -32,7 +32,8 @@ class ProductController extends Controller
 
     public function index(Request $request): View
     {
-        $publicId = trim($request->string('public_id')->toString());
+        $search = trim((string) $request->input('q', $request->input('public_id', '')));
+        $search = ltrim($search, '#');
         $perPage = $this->resolvePerPage($request);
 
         $products = Product::query()
@@ -43,7 +44,16 @@ class ProductController extends Controller
                 'consignmentNote:id,public_id,supplier_id,responsible_user_id,sent_date',
                 'consignmentNote.responsibleUser:id,public_id,name',
             ])
-            ->when($publicId !== '', fn ($query) => $query->where('public_id', $publicId))
+            ->when($search !== '', function ($query) use ($search): void {
+                $query->where(function ($innerQuery) use ($search): void {
+                    $innerQuery->where('public_id', 'like', '%'.$search.'%')
+                        ->orWhere('name', 'like', '%'.$search.'%')
+                        ->orWhereHas('supplier', function ($supplierQuery) use ($search): void {
+                            $supplierQuery->where('public_id', 'like', '%'.$search.'%')
+                                ->orWhere('name', 'like', '%'.$search.'%');
+                        });
+                });
+            })
             ->latest()
             ->paginate($perPage)
             ->withQueryString();
