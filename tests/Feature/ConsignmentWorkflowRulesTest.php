@@ -79,6 +79,83 @@ class ConsignmentWorkflowRulesTest extends TestCase
         Storage::disk('public')->assertExists($product->image_path);
     }
 
+    public function test_product_creation_accepts_an_image_from_the_camera_input(): void
+    {
+        Storage::fake('public');
+
+        $this->signInAsAdmin();
+        $category = $this->createCategory();
+        $supplier = $this->createSupplier('cho_tang', 'NCC cho tang');
+
+        $response = $this->post(route('products.store'), [
+            'supplier_id' => $supplier->id,
+            'category_id' => $category->id,
+            'name' => 'Ao khoac chup tu camera',
+            'sale_price' => 260000,
+            'quantity' => 1,
+            'description' => 'Upload anh tu camera',
+            'camera_image' => UploadedFile::fake()->image('ao-khoac-camera.jpg', 4000, 3000),
+        ]);
+
+        $response->assertRedirect(route('products.index'));
+
+        $product = Product::query()->sole();
+
+        $this->assertNotNull($product->image_path);
+        Storage::disk('public')->assertExists($product->image_path);
+    }
+
+    public function test_product_update_accepts_an_image_from_the_camera_input(): void
+    {
+        Storage::fake('public');
+
+        $user = $this->signInAsAdmin();
+        $category = $this->createCategory();
+        $supplier = $this->createSupplier('cho_tang', 'NCC cho tang');
+        $consignment = ConsignmentNote::create([
+            'responsible_user_id' => $user->id,
+            'responsible_name' => $user->name,
+            'supplier_id' => $supplier->id,
+            'sent_date' => now()->toDateString(),
+            'quantity' => 1,
+            'notes' => ConsignmentNote::AUTO_GENERATED_NOTE_MARKER,
+        ]);
+        $oldImagePath = 'products/existing-camera-image.jpg';
+
+        Storage::disk('public')->put($oldImagePath, 'old-image');
+
+        $product = Product::create([
+            'consignment_note_id' => $consignment->id,
+            'supplier_id' => $supplier->id,
+            'category_id' => $category->id,
+            'created_by_id' => $user->id,
+            'name' => 'Ao khoac cu',
+            'sale_price' => 250000,
+            'quantity' => 1,
+            'image_path' => $oldImagePath,
+            'description' => 'Anh cu',
+        ]);
+
+        $response = $this->put(route('products.update', $product), [
+            'supplier_id' => $supplier->id,
+            'category_id' => $category->id,
+            'name' => 'Ao khoac moi',
+            'sale_price' => 275000,
+            'quantity' => 2,
+            'description' => 'Cap nhat anh tu camera',
+            'camera_image' => UploadedFile::fake()->image('ao-khoac-moi.jpg', 3000, 2500),
+        ]);
+
+        $response->assertRedirect(route('products.index'));
+
+        $product->refresh();
+
+        $this->assertSame('Ao khoac moi', $product->name);
+        $this->assertNotSame($oldImagePath, $product->image_path);
+        Storage::disk('public')->assertMissing($oldImagePath);
+        Storage::disk('public')->assertExists($product->image_path);
+    }
+
     public function test_product_creation_requires_a_category_selection(): void
     {
         $this->signInAsAdmin();

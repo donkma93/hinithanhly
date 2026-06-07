@@ -229,9 +229,12 @@ class ProductController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        if ($response = $this->preflightImageUpload($request, 'store')) {
+            return $response;
+        }
+
         // Pre-check uploaded file for PHP upload errors to log helpful diagnostics
-        if ($request->hasFile('image')) {
-            $file = $request->file('image');
+        if ($file = $this->resolveUploadedImage($request)) {
             $error = $file->getError();
             if ($error !== UPLOAD_ERR_OK) {
                 Log::error('Product image upload error (store)', [
@@ -248,7 +251,7 @@ class ProductController extends Controller
             }
         } else {
             // If client attempted upload but no file present, log raw FILES for diagnostics
-            if (! empty($_FILES)) {
+            if ($this->requestHasUnexpectedImageFileEntries()) {
                 Log::warning('No image file detected in request, but $_FILES is not empty (store)', ['files' => $_FILES]);
             }
         }
@@ -258,8 +261,10 @@ class ProductController extends Controller
         $supplier = $validated['supplier'];
         $data['created_by_id'] = $request->user()?->id;
 
-        if ($request->hasFile('image')) {
-            $data['image_path'] = $this->storeOptimizedImage($request->file('image'));
+        $image = $this->resolveUploadedImage($request);
+
+        if ($image instanceof UploadedFile) {
+            $data['image_path'] = $this->storeOptimizedImage($image);
         }
 
         $result = DB::transaction(function () use ($data, $request, $supplier): array {
@@ -447,9 +452,12 @@ class ProductController extends Controller
 
     public function update(Request $request, Product $product): RedirectResponse
     {
+        if ($response = $this->preflightImageUpload($request, 'update', $product)) {
+            return $response;
+        }
+
         // Pre-check uploaded file for PHP upload errors to log helpful diagnostics
-        if ($request->hasFile('image')) {
-            $file = $request->file('image');
+        if ($file = $this->resolveUploadedImage($request)) {
             $error = $file->getError();
             if ($error !== UPLOAD_ERR_OK) {
                 Log::error('Product image upload error (update)', [
@@ -466,7 +474,7 @@ class ProductController extends Controller
                 return redirect()->back()->withInput()->withErrors(['image' => 'File upload error (code '.$error.'). Vui lòng thử lại.']);
             }
         } else {
-            if (! empty($_FILES)) {
+            if ($this->requestHasUnexpectedImageFileEntries()) {
                 Log::warning('No image file detected in request, but $_FILES is not empty (update)', ['files' => $_FILES, 'product_id' => $product->id]);
             }
         }
@@ -475,12 +483,14 @@ class ProductController extends Controller
         $data = $validated['data'];
         $supplier = $validated['supplier'];
 
-        if ($request->hasFile('image')) {
+        $image = $this->resolveUploadedImage($request);
+
+        if ($image instanceof UploadedFile) {
             if ($product->image_path) {
                 Storage::disk('public')->delete($product->image_path);
             }
 
-            $data['image_path'] = $this->storeOptimizedImage($request->file('image'));
+            $data['image_path'] = $this->storeOptimizedImage($image);
         }
 
         $result = DB::transaction(function () use ($data, $product, $request, $supplier): array {
@@ -579,6 +589,111 @@ class ProductController extends Controller
         return redirect()->route('products.index')->with('status', 'Đã đưa sản phẩm vào thùng rác.');
     }
 
+    private function preflightImageUpload(Request $request, string $context, ?Product $product = null): ?RedirectResponse
+    {
+        $image = $this->resolveUploadedImage($request);
+
+        if ($image instanceof UploadedFile && ! $image->isValid()) {
+            $this->logInvalidImageUpload($image, $context, $product);
+
+            return redirect()->back()->withInput()->withErrors([
+                'image' => $this->imageUploadErrorMessage($image->getError()),
+            ]);
+        }
+
+        if ($image instanceof UploadedFile) {
+            return null;
+        }
+
+        foreach (['camera_image', 'image'] as $field) {
+            $candidate = $request->file($field);
+
+            if (! $candidate instanceof UploadedFile) {
+                continue;
+            }
+
+            if ($candidate->isValid()) {
+                continue;
+            }
+
+            $this->logInvalidImageUpload($candidate, $context, $product, $field);
+
+            return redirect()->back()->withInput()->withErrors([
+                'image' => $this->imageUploadErrorMessage($candidate->getError()),
+            ]);
+        }
+
+        if ($this->requestHasUnexpectedImageFileEntries()) {
+            Log::warning('No image file detected in request, but $_FILES is not empty ('.$context.')', array_filter([
+                'files' => $_FILES,
+                'product_id' => $product?->id,
+            ], static fn ($value) => $value !== null));
+        }
+
+        return null;
+    }
+
+    private function resolveUploadedImage(Request $request): ?UploadedFile
+    {
+        $image = $request->file('image');
+
+        if ($image instanceof UploadedFile) {
+            return $image;
+        }
+
+        $cameraImage = $request->file('camera_image');
+
+        return $cameraImage instanceof UploadedFile ? $cameraImage : null;
+    }
+
+    private function logInvalidImageUpload(UploadedFile $image, string $context, ?Product $product = null, string $field = 'image'): void
+    {
+        Log::error('Product image upload error ('.$context.')', array_filter([
+            'field' => $field,
+            'error_code' => $image->getError(),
+            'product_id' => $product?->id,
+            'file_info' => [
+                'clientName' => $image->getClientOriginalName(),
+                'clientMime' => $image->getClientMimeType(),
+                'size' => $image->getSize(),
+            ],
+            'files' => $_FILES,
+        ], static fn ($value) => $value !== null));
+    }
+
+    private function imageUploadErrorMessage(int $errorCode): string
+    {
+        return match ($errorCode) {
+            UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => 'Ảnh vượt quá giới hạn tải lên. Vui lòng chọn ảnh nhỏ hơn rồi thử lại.',
+            UPLOAD_ERR_PARTIAL => 'Ảnh tải lên chưa hoàn tất. Vui lòng thử lại.',
+            UPLOAD_ERR_NO_FILE => 'Chưa có ảnh nào được chọn để tải lên.',
+            UPLOAD_ERR_NO_TMP_DIR, UPLOAD_ERR_CANT_WRITE, UPLOAD_ERR_EXTENSION => 'Máy chủ không thể nhận ảnh lúc này. Vui lòng thử lại sau.',
+            default => 'Ảnh tải lên không thành công. Vui lòng thử lại.',
+        };
+    }
+
+    private function requestHasUnexpectedImageFileEntries(): bool
+    {
+        foreach ($_FILES as $file) {
+            if (! is_array($file)) {
+                continue;
+            }
+
+            $errors = is_array($file['error'] ?? null) ? $file['error'] : [$file['error'] ?? UPLOAD_ERR_NO_FILE];
+            $names = is_array($file['name'] ?? null) ? $file['name'] : [$file['name'] ?? ''];
+
+            foreach ($errors as $index => $error) {
+                $name = $names[$index] ?? '';
+
+                if ((int) $error !== UPLOAD_ERR_NO_FILE || $name !== '') {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     private function validatedData(Request $request): array
     {
         $data = $request->validate([
@@ -591,7 +706,15 @@ class ProductController extends Controller
             'description' => ['nullable', 'string'],
             // Accept any file upload without MIME validation to avoid mobile upload errors.
             'image' => ['nullable', 'file'],
+            'camera_image' => ['nullable', 'file'],
+        ], [
+            'image.uploaded' => 'Ảnh tải lên không thành công. Vui lòng thử lại hoặc chọn ảnh nhỏ hơn.',
+            'image.file' => 'Tệp ảnh không hợp lệ.',
+            'camera_image.uploaded' => 'Ảnh tải lên không thành công. Vui lòng thử lại hoặc chọn ảnh nhỏ hơn.',
+            'camera_image.file' => 'Tệp ảnh không hợp lệ.',
         ]);
+
+        unset($data['image'], $data['camera_image']);
 
         $supplier = Supplier::query()->withTrashed()->findOrFail($data['supplier_id']);
 

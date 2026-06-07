@@ -209,7 +209,7 @@
                             <x-image-upload-preview
                                 name="image"
                                 label="Ảnh sản phẩm"
-                                helper-text="Ảnh sẽ được tối ưu tự động trên trình duyệt (resize và nén) trước khi upload. Bạn vẫn có thể chọn ảnh từ camera hoặc thư viện thiết bị."
+                                helper-text="Bạn có thể chụp ảnh trực tiếp từ camera hoặc chọn ảnh từ thư viện thiết bị trước khi upload."
                             />
                             @error('image') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
                             <div>
