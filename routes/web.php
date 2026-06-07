@@ -7,6 +7,7 @@ use App\Http\Controllers\RevenueController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\SalesController;
 use App\Http\Controllers\SoldProductController;
+use App\Http\Controllers\SupplierPortalController;
 use App\Http\Controllers\SupplierPaymentController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\ProductController;
@@ -33,9 +34,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return auth()->check() ? redirect()->route('dashboard') : view('sales');
-});
+Route::get('/', [SupplierPortalController::class, 'index'])->name('home');
 
 Route::get('/ban-hang', [SalesController::class, 'index'])->name('sales.index');
 Route::get('/ban-hang/products/search', [SalesController::class, 'search'])

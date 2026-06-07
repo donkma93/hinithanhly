@@ -84,7 +84,6 @@ class ProductController extends Controller
         );
 
         $suppliers = Supplier::query()->orderBy('name')->get(['id', 'public_id', 'name', 'type']);
-        $returnAlerts = collect();
 
         $consignmentExpirySummary = $this->resolveConsignmentExpirySummary();
 
@@ -97,7 +96,6 @@ class ProductController extends Controller
                 'value' => $s->id,
                 'label' => '#'.$s->public_id_display.' - '.$s->name,
             ])->all(),
-            'returnAlerts' => $returnAlerts,
             'consignmentExpirySummary' => $consignmentExpirySummary,
             'consignmentOptions' => $this->buildConsignmentOptions(
                 ConsignmentNote::query()

@@ -14,12 +14,17 @@ class SalesScreenTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_guest_users_see_the_sales_screen_on_the_home_page(): void
+    public function test_guest_users_see_the_supplier_portal_on_the_home_page(): void
     {
         $response = $this->get('/');
 
         $response->assertOk();
-        $response->assertViewIs('sales');
+        $response->assertViewIs('welcome');
+        $response->assertSee('NHÀ CUNG CẤP - TRA CỨU');
+        $response->assertSee('Mã nhà cung cấp');
+        $response->assertSee('Home');
+        $response->assertSee('Tra cứu');
+        $response->assertSee('Địa chỉ');
     }
 
     public function test_sales_lookup_returns_product_payload_for_scanned_code(): void
