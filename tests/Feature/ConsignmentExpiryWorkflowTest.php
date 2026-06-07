@@ -24,7 +24,7 @@ class ConsignmentExpiryWorkflowTest extends TestCase
         $this->seed(DatabaseSeeder::class);
     }
 
-    public function test_products_index_shows_expiry_warning_for_items_close_to_deadline(): void
+    public function test_products_index_links_to_expiry_management_for_items_close_to_deadline(): void
     {
         $this->signInAsAdmin();
 
@@ -36,9 +36,9 @@ class ConsignmentExpiryWorkflowTest extends TestCase
         $response = $this->get(route('products.index'));
 
         $response->assertOk();
-        $response->assertSee('Sản phẩm sắp hết hạn ký gửi');
+        $response->assertSee('Mở màn quản lý hạn ký gửi');
         $response->assertSee($product->name);
-        $response->assertSee('Trả hàng');
+        $response->assertDontSee('Trả hàng');
         $response->assertSee('Còn 4 ngày');
     }
 

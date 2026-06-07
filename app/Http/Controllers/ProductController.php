@@ -37,8 +37,6 @@ class ProductController extends Controller
         $search = ltrim($search, '#');
         $perPage = $this->resolvePerPage($request);
         $filterSupplierId = $request->input('supplier_id') ? (int) $request->input('supplier_id') : null;
-        $warningWindowEnd = now()->subDays(Product::CONSIGNMENT_TERM_DAYS - Product::CONSIGNMENT_WARNING_DAYS)->toDateString();
-
         $products = Product::query()
             ->select(['id', 'public_id', 'consignment_note_id', 'supplier_id', 'category_id', 'created_by_id', 'name', 'sale_price', 'quantity', 'image_path', 'description', 'returned_at', 'returned_by_id', 'created_at'])
             ->with([
@@ -87,25 +85,6 @@ class ProductController extends Controller
 
         $suppliers = Supplier::query()->orderBy('name')->get(['id', 'public_id', 'name', 'type']);
         $returnAlerts = collect();
-
-        if ($search === '' && $filterSupplierId === null) {
-            $returnAlerts = Product::query()
-                ->select(['id', 'public_id', 'consignment_note_id', 'supplier_id', 'category_id', 'name', 'sale_price', 'quantity', 'returned_at', 'returned_by_id', 'created_at'])
-                ->with([
-                    'supplier:id,public_id,name',
-                    'consignmentNote:id,public_id,supplier_id,sent_date',
-                    'returner:id,public_id,name',
-                ])
-                ->whereNull('returned_at')
-                ->where('quantity', '>', 0)
-                ->whereHas('consignmentNote', function ($query) use ($warningWindowEnd): void {
-                    $query->whereDate('sent_date', '<=', $warningWindowEnd);
-                })
-                ->get()
-                ->sortBy(fn (Product $product): int => $product->consignmentDueDate()?->timestamp ?? PHP_INT_MAX)
-                ->take(6)
-                ->values();
-        }
 
         $consignmentExpirySummary = $this->resolveConsignmentExpirySummary();
 

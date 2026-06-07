@@ -67,54 +67,6 @@
                 </a>
             </div>
 
-            @if ($returnAlerts->isNotEmpty())
-                <div class="rounded-3xl border border-amber-200 bg-amber-50 p-5 shadow-sm ring-1 ring-amber-100">
-                    <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
-                            <h3 class="text-lg font-semibold text-amber-900">Sản phẩm sắp hết hạn ký gửi</h3>
-                            <p class="text-sm text-amber-700">Những sản phẩm này còn tối đa 7 ngày hoặc đã quá hạn 45 ngày. Bạn nên trả lại cho người ký gửi sớm để tránh bán nhầm.</p>
-                        </div>
-                        <div class="inline-flex items-center rounded-full bg-white px-3 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-200">
-                            {{ $returnAlerts->count() }} mục cần xử lý
-                        </div>
-                    </div>
-
-                    <div class="mt-4 space-y-3">
-                        @foreach ($returnAlerts as $alertProduct)
-                            <div class="rounded-2xl bg-white p-4 ring-1 {{ $alertProduct->isConsignmentExpired() ? 'ring-rose-200' : 'ring-amber-200' }}">
-                                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                    <div class="min-w-0">
-                                        <p class="truncate font-semibold text-slate-900">#{{ $alertProduct->public_id_display }} - {{ $alertProduct->name }}</p>
-                                        <p class="mt-1 text-sm text-slate-600">
-                                            NCC: {{ $alertProduct->supplier?->name ?? '---' }}
-                                            · Ngày gửi: {{ optional($alertProduct->consignmentNote?->sent_date)->format('d/m/Y') }}
-                                            · Hạn trả: {{ optional($alertProduct->consignmentDueDate())->format('d/m/Y') }}
-                                        </p>
-                                        <p class="mt-1 text-xs {{ $alertProduct->isConsignmentExpired() ? 'text-rose-600' : 'text-amber-700' }}">{{ $alertProduct->consignment_status_label }}</p>
-                                    </div>
-                                    @canany(['products.update', 'products.manage'])
-                                        <x-confirm-action
-                                            :name="'return-product-'.$alertProduct->public_id"
-                                            :action="route('products.return', $alertProduct)"
-                                            title="Trả sản phẩm cho người gửi"
-                                            message="Sản phẩm #{{ $alertProduct->public_id_display }} - {{ $alertProduct->name }} sẽ được đánh dấu đã trả cho người gửi và không thể bán trên hệ thống nữa."
-                                            confirm-text="Đánh dấu đã trả"
-                                            trigger-text="Trả hàng"
-                                            method="POST"
-                                            trigger-class="inline-flex items-center justify-center rounded-xl bg-rose-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-rose-500"
-                                        />
-                                    @endcanany
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
-            @else
-                <div class="rounded-3xl border border-dashed border-slate-200 bg-white p-5 text-sm text-slate-500 shadow-sm">
-                    Hiện chưa có sản phẩm nào cần trả cho người gửi ngay lúc này. Khi có sản phẩm còn tối đa 7 ngày hoặc đã quá hạn 45 ngày, chúng sẽ hiện ở đây.
-                </div>
-            @endif
-
             {{-- Mobile: Nút mở form thêm sản phẩm --}}
             @canany(['products.create', 'products.manage'])
             <div class="lg:hidden">
@@ -429,7 +381,17 @@
                         </form>
                     </div>
                     <div class="mt-4 overflow-x-auto">
-                        <table class="min-w-[920px] divide-y divide-gray-200 text-sm">
+                        <table class="w-full min-w-[1200px] table-fixed divide-y divide-gray-200 text-sm">
+                            <colgroup>
+                                <col class="w-[9%]">
+                                <col class="w-[14%]">
+                                <col class="w-[8%]">
+                                <col class="w-[26%]">
+                                <col class="w-[10%]">
+                                <col class="w-[8%]">
+                                <col class="w-[15%]">
+                                <col class="w-[10%]">
+                            </colgroup>
                             <thead class="text-left text-xs uppercase tracking-wide text-gray-500">
                                 <tr>
                                     <th class="py-3 pr-4">Mã hàng</th>
@@ -446,7 +408,7 @@
                                 @forelse ($products as $product)
                                     <tr>
                                         <td class="py-3 pr-4 font-medium text-slate-900">#{{ $product->public_id_display }}</td>
-                                        <td class="py-3 pr-4 text-gray-600">
+                                        <td class="py-3 pr-4 align-top text-gray-600 break-words">
                                             <div class="font-medium text-gray-900">{{ $product->supplier?->public_id ? '#'.$product->supplier->public_id_display : '---' }}</div>
                                             <div class="text-xs text-gray-500">{{ $product->supplier?->name ?? '---' }}</div>
                                         </td>
@@ -463,10 +425,10 @@
                                                 <div class="flex h-14 w-14 items-center justify-center rounded-xl bg-slate-100 text-xs font-semibold text-slate-500 ring-1 ring-gray-200">Không ảnh</div>
                                             @endif
                                         </td>
-                                        <td class="py-3 pr-4 font-medium text-gray-900">{{ $product->name }}</td>
-                                        <td class="py-3 pr-4 text-gray-600">{{ number_format($product->sale_price ?? 0, 0, ',', '.') }} đ</td>
-                                        <td class="py-3 pr-4 text-gray-600">{{ $product->quantity }}</td>
-                                        <td class="py-3 pr-4 text-gray-600">
+                                        <td class="py-3 pr-4 align-top font-medium text-gray-900 break-words">{{ $product->name }}</td>
+                                        <td class="py-3 pr-4 align-top text-gray-600 whitespace-nowrap">{{ number_format($product->sale_price ?? 0, 0, ',', '.') }} đ</td>
+                                        <td class="py-3 pr-4 align-top text-gray-600 whitespace-nowrap">{{ $product->quantity }}</td>
+                                        <td class="py-3 pr-4 align-top text-gray-600">
                                             <div class="font-medium text-gray-900">Lần {{ $product->send_round ?? 1 }}</div>
                                             <div class="text-xs text-gray-500">{{ $product->send_summary ?? '---' }}</div>
                                             <div class="mt-1 text-xs {{ $product->isReturned() ? 'text-rose-600' : ($product->isConsignmentExpired() ? 'text-rose-600' : ($product->isConsignmentExpiringSoon() ? 'text-amber-600' : 'text-emerald-600')) }}">
@@ -476,7 +438,7 @@
                                                 <div class="mt-1 text-[11px] text-gray-400">Đã trả lúc {{ optional($product->returned_at)->format('d/m/Y H:i') }}</div>
                                             @endif
                                         </td>
-                                        <td class="py-3 pr-4 text-right whitespace-nowrap">
+                                        <td class="py-3 pr-4 align-top text-right whitespace-nowrap">
                                             @if ($product->isReturned())
                                                 <span class="inline-flex items-center rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold text-rose-700 ring-1 ring-rose-200">Đã trả NCC</span>
                                                 @canany(['products.update', 'products.manage'])
@@ -488,16 +450,6 @@
                                                 @endcan
                                                 @canany(['products.update', 'products.manage'])
                                                     <a href="{{ route('products.edit', $product) }}" class="ms-4 text-slate-900 hover:underline">Sửa</a>
-                                                    <x-confirm-action
-                                                        :name="'return-product-'.$product->public_id"
-                                                        :action="route('products.return', $product)"
-                                                        title="Trả sản phẩm cho người gửi"
-                                                        message="Sản phẩm #{{ $product->public_id_display }} - {{ $product->name }} sẽ được đánh dấu đã trả cho người gửi và không thể bán trên hệ thống nữa."
-                                                        confirm-text="Đánh dấu đã trả"
-                                                        trigger-text="Trả hàng"
-                                                        method="POST"
-                                                        trigger-class="ms-4 inline-flex items-center rounded-xl bg-rose-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-rose-500"
-                                                    />
                                                 @endcanany
                                             @endif
                                         </td>
