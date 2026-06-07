@@ -11,6 +11,7 @@ use App\Http\Controllers\SupplierPaymentController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\TrashController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\SupplierController;
 use App\Models\Category;
@@ -107,6 +108,7 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/consignments/{consignment}', [ConsignmentNoteController::class, 'destroy'])->name('consignments.destroy');
 
     Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+    Route::get('/products/han-ky-gui', [ProductController::class, 'expiryIndex'])->name('products.expiry');
     Route::get('/in-ma-hang', [ProductController::class, 'labelIndex'])->name('product-labels.index');
     Route::post('/in-ma-hang/in', [ProductController::class, 'printLabels'])->name('product-labels.print');
     Route::post('/products', [ProductController::class, 'store'])->name('products.store');
@@ -114,6 +116,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/products/{product}/label', [ProductController::class, 'label'])->name('products.label');
     Route::get('/products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
     Route::put('/products/{product}', [ProductController::class, 'update'])->name('products.update');
+    Route::post('/products/{product}/return', [ProductController::class, 'returnToSupplier'])->name('products.return');
     Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
 
     Route::get('/sales-records', [SoldProductController::class, 'index'])
@@ -157,6 +160,25 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/logs', [AuditLogController::class, 'index'])
         ->middleware('permission:logs.view')
         ->name('logs.index');
+
+    Route::get('/thung-rac', [TrashController::class, 'index'])
+        ->middleware('role:admin|super-admin')
+        ->name('trash.index');
+    Route::post('/thung-rac/{type}/{id}/restore', [TrashController::class, 'restore'])
+        ->whereIn('type', ['categories', 'suppliers', 'consignments', 'products', 'users', 'permissions'])
+        ->middleware('role:admin|super-admin')
+        ->name('trash.restore');
+    Route::delete('/thung-rac/{type}/{id}', [TrashController::class, 'forceDestroy'])
+        ->whereIn('type', ['categories', 'suppliers', 'consignments', 'products', 'users', 'permissions'])
+        ->middleware('role:admin|super-admin')
+        ->name('trash.destroy');
+    Route::post('/thung-rac/{type}/empty', [TrashController::class, 'empty'])
+        ->whereIn('type', ['categories', 'suppliers', 'consignments', 'products', 'users', 'permissions'])
+        ->middleware('role:admin|super-admin')
+        ->name('trash.empty');
+    Route::post('/thung-rac/empty-all', [TrashController::class, 'emptyAll'])
+        ->middleware('role:admin|super-admin')
+        ->name('trash.empty-all');
 
     // Sales checkout endpoint (requires auth)
     Route::post('/ban-hang/create-payment', [SalesController::class, 'createPayment'])->name('sales.createPayment');

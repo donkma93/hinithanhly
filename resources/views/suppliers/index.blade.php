@@ -9,8 +9,8 @@
     @php($bankOptions = $bankOptions ?? config('banks', []))
     @php($supplierDiscountRates = $supplierDiscountRates ?? \App\Models\Setting::supplierDiscountRates())
 
-    <div class="py-10">
-        <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+    <div class="py-6 sm:py-10">
+        <div class="mx-auto max-w-10xl space-y-6 px-3 sm:px-6 lg:px-10">
             @if (session('status'))
                 <div class="rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 ring-1 ring-emerald-200">
                     {{ session('status') }}
@@ -139,18 +139,7 @@
                                             @canany(['suppliers.update', 'suppliers.manage'])
                                                 <a href="{{ route('suppliers.edit', $supplier) }}" class="text-slate-900 hover:underline">Sửa</a>
                                             @endcanany
-                                            @can('suppliers.delete')
-                                                <span class="ms-4 inline-block align-middle">
-                                                    <x-confirm-action
-                                                        :name="'delete-supplier-'.$supplier->public_id"
-                                                        :action="route('suppliers.destroy', $supplier)"
-                                                        title="Xoá nhà cung cấp"
-                                                        message="Bạn có chắc chắn muốn xoá nhà cung cấp này?"
-                                                        confirm-text="Xoá"
-                                                        trigger-text="Xoá"
-                                                    />
-                                                </span>
-                                            @endcan
+                                            
                                         </td>
                                     </tr>
                                 @empty

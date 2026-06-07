@@ -25,6 +25,7 @@ class ConsignmentNoteController extends Controller
     {
         $publicId = trim($request->string('public_id')->toString());
         $perPage = $this->resolvePerPage($request);
+        $filterSupplierId = filter_var($request->input('supplier_id'), FILTER_VALIDATE_INT, FILTER_NULL_ON_FAILURE);
 
         $consignmentRoundMap = $this->resolveSendRounds(
             ConsignmentNote::query()
@@ -40,6 +41,7 @@ class ConsignmentNoteController extends Controller
                 'supplier:id,public_id,name,type',
             ])
             ->when($publicId !== '', fn ($query) => $query->where('public_id', $publicId))
+            ->when($filterSupplierId !== null, fn ($query) => $query->where('supplier_id', $filterSupplierId))
             ->latest()
             ->paginate($perPage)
             ->withQueryString();
@@ -58,6 +60,11 @@ class ConsignmentNoteController extends Controller
                 ->whereIn('type', Supplier::MANUAL_CONSIGNMENT_TYPES)
                 ->orderBy('name')
                 ->get(['id', 'public_id', 'name', 'type']),
+            'filterSuppliers' => Supplier::query()
+                ->withTrashed()
+                ->orderBy('name')
+                ->get(['id', 'public_id', 'name', 'type', 'deleted_at']),
+            'filterSupplierId' => $filterSupplierId,
         ]);
     }
 
@@ -92,7 +99,7 @@ class ConsignmentNoteController extends Controller
             ],
         ]);
 
-        return redirect()->route('consignments.index')->with('status', 'Đã tạo phiếu ký gửi.');
+        return redirect()->route('consignments.index')->with('status', 'Đã đưa phiếu ký gửi vào thùng rác.');
     }
 
     public function edit(ConsignmentNote $consignment): View
@@ -101,7 +108,7 @@ class ConsignmentNoteController extends Controller
 
         return view('consignments.edit', [
             'consignment' => $consignment,
-            'suppliers' => Supplier::query()
+            'suppliers' => Supplier::query()->withTrashed()
                 ->whereIn('type', Supplier::MANUAL_CONSIGNMENT_TYPES)
                 ->orderBy('name')
                 ->get(['id', 'public_id', 'name', 'type']),
@@ -171,12 +178,12 @@ class ConsignmentNoteController extends Controller
             'payload' => $payload,
         ]);
 
-        return redirect()->route('consignments.index')->with('status', 'Đã xoá phiếu ký gửi.');
+        return redirect()->route('consignments.index')->with('status', 'Đã đưa phiếu ký gửi vào thùng rác.');
     }
 
     private function resolveManualConsignmentSupplier(int $supplierId): Supplier
     {
-        $supplier = Supplier::query()->findOrFail($supplierId);
+        $supplier = Supplier::query()->withTrashed()->findOrFail($supplierId);
 
         if (! $supplier->requiresManualConsignment()) {
             throw ValidationException::withMessages([

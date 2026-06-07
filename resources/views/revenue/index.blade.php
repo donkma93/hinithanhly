@@ -17,8 +17,8 @@
         $supplierDiscountRates = \App\Models\Setting::supplierDiscountRates();
     @endphp
 
-    <div class="py-10">
-        <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+    <div class="py-6 sm:py-10">
+        <div class="mx-auto max-w-10xl space-y-6 px-3 sm:px-6 lg:px-10">
             <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
                 <div class="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
                     <p class="text-sm text-gray-500">Tổng hoá đơn</p>

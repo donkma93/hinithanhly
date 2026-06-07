@@ -13,8 +13,8 @@
         </div>
     </x-slot>
 
-    <div class="py-10">
-        <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+    <div class="py-6 sm:py-10">
+        <div class="mx-auto max-w-10xl px-3 sm:px-6 lg:px-10">
             <div class="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
                 <style>
                     @media print {

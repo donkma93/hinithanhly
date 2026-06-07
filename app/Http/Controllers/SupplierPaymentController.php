@@ -25,7 +25,7 @@ class SupplierPaymentController extends Controller
     {
         $perPage = $this->resolvePerPage($request);
         $supplierId = $request->integer('supplier_id');
-        $supplier = $supplierId ? Supplier::query()->find($supplierId) : Supplier::query()->orderBy('name')->first();
+        $supplier = $supplierId ? Supplier::query()->withTrashed()->find($supplierId) : Supplier::query()->orderBy('name')->first();
         $startDate = $request->filled('from') ? $request->date('from')->startOfDay() : now()->startOfMonth();
         $endDate = $request->filled('to') ? $request->date('to')->endOfDay() : now()->endOfDay();
 
@@ -133,7 +133,7 @@ class SupplierPaymentController extends Controller
             'to' => ['required', 'date', 'after_or_equal:from'],
         ]);
 
-        $supplier = Supplier::query()->findOrFail($data['supplier_id']);
+        $supplier = Supplier::query()->withTrashed()->findOrFail($data['supplier_id']);
         $startDate = $request->date('from')->startOfDay();
         $endDate = $request->date('to')->endOfDay();
         $summary = $this->buildSummary($supplier, $startDate, $endDate);
@@ -205,7 +205,7 @@ class SupplierPaymentController extends Controller
             return response()->json(['message' => 'Mã thanh toán đã hết hạn hoặc không hợp lệ.'], 422);
         }
 
-        $supplier = Supplier::query()->find($cached['supplier_id']);
+        $supplier = Supplier::query()->withTrashed()->find($cached['supplier_id']);
 
         if (! $supplier) {
             return response()->json(['message' => 'Không tìm thấy nhà cung cấp.'], 422);

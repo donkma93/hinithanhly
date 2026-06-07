@@ -1,4 +1,4 @@
-<div class="mx-auto max-w-6xl px-4 py-4 sm:px-6 lg:px-8">
+<div class="mx-auto max-w-10xl px-3 py-4 sm:px-6 lg:px-10">
     <header class="flex items-center justify-between gap-4 rounded-2xl bg-white px-4 py-3 shadow-sm ring-1 ring-slate-200">
         <div>
             <p class="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">Màn hình bán hàng</p>
@@ -135,6 +135,8 @@
 
         const looksLikeProductCode = (value) => /^[0-9\-]+$/.test(normalizeSearchTerm(value));
 
+        const isProductInCart = (productId) => cart.has(Number(productId));
+
         const hideSuggestions = () => {
             suggestionsPanel.classList.add('hidden');
             suggestionsPanel.innerHTML = '';
@@ -142,13 +144,14 @@
 
         const renderSuggestions = (items, query) => {
             const cleanQuery = normalizeSearchTerm(query);
+            const visibleItems = items.filter((item) => !isProductInCart(item.id));
 
-            if (!cleanQuery || !items.length) {
+            if (!cleanQuery || !visibleItems.length) {
                 hideSuggestions();
                 return;
             }
 
-            suggestionsPanel.innerHTML = items.map((item) => `
+            suggestionsPanel.innerHTML = visibleItems.map((item) => `
                 <button type="button" data-product-id="${item.id}" class="flex w-full items-center gap-3 border-b border-slate-100 px-4 py-3 text-left last:border-b-0 hover:bg-slate-50">
                     <div class="flex h-12 w-12 flex-none items-center justify-center overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200">
                         ${item.image_url ? `<img src="${item.image_url}" alt="${item.name}" class="h-full w-full object-cover">` : '<span class="text-[10px] font-semibold uppercase text-slate-400">No ảnh</span>'}
@@ -169,7 +172,7 @@
             suggestionsPanel.querySelectorAll('[data-product-id]').forEach((button) => {
                 button.addEventListener('click', () => {
                     const id = Number(button.getAttribute('data-product-id'));
-                    const product = items.find((entry) => Number(entry.id) === id);
+                    const product = visibleItems.find((entry) => Number(entry.id) === id);
 
                     if (product) {
                         addProduct(product);
@@ -235,7 +238,7 @@
 
         const buildCheckoutItems = () => Array.from(cart.values()).map((item) => ({
             id: Number(item.id),
-            quantity: Number(item.cart_quantity || 0),
+            quantity: 1,
         }));
 
         const completeCheckout = async (paymentMethod, paymentToken = null) => {
@@ -297,9 +300,9 @@
 
         const renderCart = () => {
             const items = Array.from(cart.values());
-            const subtotal = items.reduce((sum, item) => sum + (Number(item.sale_price || 0) * Number(item.cart_quantity || 0)), 0);
+            const subtotal = items.reduce((sum, item) => sum + Number(item.sale_price || 0), 0);
 
-            itemsCountInline.textContent = String(items.reduce((sum, item) => sum + Number(item.cart_quantity || 0), 0));
+            itemsCountInline.textContent = String(items.length);
             subtotalInline.textContent = formatMoney(subtotal);
             cartState.textContent = items.length ? 'Đang tính tiền' : 'Chờ quét';
 
@@ -325,8 +328,8 @@
                     </div>
                     <div class="flex items-center gap-3">
                         <div class="text-right">
-                            <p class="font-semibold">${formatMoney(item.sale_price * Number(item.cart_quantity || 0))}</p>
-                            <p class="text-xs text-slate-500">SL: ${Number(item.cart_quantity || 0)} × ${formatMoney(item.sale_price)}</p>
+                            <p class="font-semibold">${formatMoney(item.sale_price)}</p>
+                            <p class="text-xs text-slate-500">SL: 1 × ${formatMoney(item.sale_price)}</p>
                         </div>
                         <button type="button" data-remove-id="${item.id}" class="rounded-lg border border-slate-300 px-3 py-1 text-sm text-slate-600">
                             Xóa
@@ -349,7 +352,6 @@
         const addProduct = (product) => {
             const productId = Number(product.id);
             const currentItem = cart.get(productId);
-            const currentQuantity = Number(currentItem?.cart_quantity || 0);
             const stockQuantity = Number(product.quantity || 0);
 
             if (stockQuantity <= 0) {
@@ -359,19 +361,19 @@
                 return;
             }
 
-            if (currentQuantity >= stockQuantity) {
-                setStatus(`Sản phẩm này chỉ còn ${stockQuantity} trong kho, không thể thêm nữa.`, 'warning');
+            if (currentItem) {
+                setStatus('Sản phẩm này đã có trong hóa đơn hiện tại.', 'warning');
                 renderLastProduct(product);
                 focusScanner();
                 return;
             }
 
-            const nextItem = currentItem ? { ...currentItem, cart_quantity: currentQuantity + 1 } : { ...product, cart_quantity: 1 };
+            const nextItem = { ...product, cart_quantity: 1 };
 
             cart.set(productId, nextItem);
             renderLastProduct(product);
             renderCart();
-            setStatus(currentItem ? `Đã tăng số lượng ${product.name} lên ${currentQuantity + 1}.` : `Đã thêm ${product.name}.`, 'success');
+            setStatus(`Đã thêm ${product.name}.`, 'success');
             focusScanner();
         };
 

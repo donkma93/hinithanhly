@@ -12,8 +12,8 @@
         </div>
     </x-slot>
 
-    <div class="py-8">
-        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div class="py-6 sm:py-10">
+        <div class="mx-auto max-w-10xl px-3 sm:px-6 lg:px-10">
             <div class="no-print mb-6 rounded-3xl bg-white p-4 shadow-sm ring-1 ring-gray-200">
                 <form method="GET" action="{{ route('product-labels.index') }}" class="flex flex-wrap items-center gap-3">
                     <x-per-page-select :value="request('per_page', 24)" />

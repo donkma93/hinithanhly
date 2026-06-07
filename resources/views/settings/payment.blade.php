@@ -6,8 +6,8 @@
         </div>
     </x-slot>
 
-    <div class="py-10">
-        <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+    <div class="py-6 sm:py-10">
+        <div class="mx-auto max-w-10xl px-3 sm:px-6 lg:px-10">
 
         @if(session('status'))
             <div class="mb-4 rounded-md bg-emerald-50 p-3 text-emerald-700">{{ session('status') }}</div>

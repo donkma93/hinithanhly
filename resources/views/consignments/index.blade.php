@@ -11,10 +11,15 @@
             'value' => $supplier->id,
             'label' => '#'.$supplier->public_id.' - '.$supplier->name,
         ])->all();
+        $filterSupplierOptions = $filterSuppliers->map(fn ($supplier) => [
+            'value' => $supplier->id,
+            'label' => '#'.$supplier->public_id_display.' - '.$supplier->name.($supplier->trashed() ? ' (Đã xóa)' : ''),
+        ])->all();
+        $selectedFilterSupplier = $filterSupplierId !== null ? $filterSuppliers->firstWhere('id', $filterSupplierId) : null;
     @endphp
 
-    <div class="py-10">
-        <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+    <div class="py-6 sm:py-10">
+        <div class="mx-auto max-w-10xl space-y-6 px-3 sm:px-6 lg:px-10">
             @if (session('status'))
                 <div class="rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 ring-1 ring-emerald-200">
                     {{ session('status') }}
@@ -71,12 +76,45 @@
                 </div>
 
                 <div class="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-200 lg:col-span-2">
-                    <div class="flex flex-wrap items-center justify-between gap-3">
-                        <h3 class="text-lg font-semibold text-gray-900">Danh sách</h3>
-                        <form method="GET" action="{{ route('consignments.index') }}" class="flex flex-wrap items-center gap-2">
+                    <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                        <div class="space-y-2">
+                            <div class="flex flex-wrap items-center gap-3">
+                                <h3 class="text-lg font-semibold text-gray-900">Danh sách</h3>
+                                @if ($selectedFilterSupplier)
+                                    <span class="inline-flex items-center gap-1 rounded-full bg-indigo-100 px-3 py-1 text-xs font-medium text-indigo-700 ring-1 ring-indigo-200">
+                                        <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z" />
+                                        </svg>
+                                        Đang lọc theo NCC #{{ $selectedFilterSupplier->public_id_display }}
+                                    </span>
+                                @endif
+                            </div>
+                            <p class="text-sm text-gray-500">Lọc nhanh theo nhà cung cấp hoặc mã công khai của phiếu.</p>
+                        </div>
+                        <form method="GET" action="{{ route('consignments.index') }}" class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
                             <x-per-page-select :value="request('per_page', 10)" />
-                            <input name="public_id" value="{{ request('public_id') }}" class="w-64 rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Tìm bằng mã công khai">
-                            <button class="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">Tìm</button>
+                            <div class="w-full sm:w-72">
+                                <label class="block text-sm font-medium text-gray-700">Nhà cung cấp</label>
+                                <x-searchable-select
+                                    name="supplier_id"
+                                    :options="$filterSupplierOptions"
+                                    :selected="request('supplier_id', $filterSupplierId)"
+                                    placeholder="Tất cả nhà cung cấp"
+                                    search-placeholder="Tìm theo mã nhà cung cấp hoặc tên"
+                                    empty-text="Không có nhà cung cấp phù hợp"
+                                    :submit-on-select="true"
+                                />
+                            </div>
+                            <div class="w-full sm:w-64">
+                                <label class="block text-sm font-medium text-gray-700">Mã công khai</label>
+                                <input name="public_id" value="{{ request('public_id') }}" class="mt-1 w-full rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Tìm bằng mã công khai">
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <button class="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">Tìm</button>
+                                @if (request('supplier_id') || request('public_id'))
+                                    <a href="{{ route('consignments.index', ['per_page' => request('per_page', 10)]) }}" class="rounded-xl border border-gray-300 px-4 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">Xóa lọc</a>
+                                @endif
+                            </div>
                         </form>
                     </div>
                     <div class="mt-4 overflow-x-auto">
@@ -111,18 +149,7 @@
                                                 @canany(['consignments.update', 'consignments.manage'])
                                                     <a href="{{ route('consignments.edit', $consignment) }}" class="text-slate-900 hover:underline">Sửa</a>
                                                 @endcanany
-                                                @can('consignments.delete')
-                                                    <span class="ms-4 inline-block align-middle">
-                                                        <x-confirm-action
-                                                            :name="'delete-consignment-'.$consignment->public_id"
-                                                            :action="route('consignments.destroy', $consignment)"
-                                                            title="Xoá phiếu ký gửi"
-                                                            message="Bạn có chắc chắn muốn xoá phiếu ký gửi này?"
-                                                            confirm-text="Xoá"
-                                                            trigger-text="Xoá"
-                                                        />
-                                                    </span>
-                                                @endcan
+                                                
                                             @else
                                                 <span class="text-xs font-medium text-gray-400">Tự sinh</span>
                                             @endif

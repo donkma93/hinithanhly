@@ -144,7 +144,7 @@ class UserController extends Controller
     public function destroy(Request $request, User $user): RedirectResponse
     {
         if ($request->user()?->id === $user->id) {
-            return redirect()->route('users.index')->with('status', 'Bạn không thể xoá chính tài khoản đang đăng nhập.');
+            return redirect()->route('users.index')->with('status', 'Bạn không thể đưa chính tài khoản đang đăng nhập vào thùng rác.');
         }
 
         $payload = [
@@ -167,6 +167,6 @@ class UserController extends Controller
             'payload' => $payload,
         ]);
 
-        return redirect()->route('users.index')->with('status', 'Đã xoá tài khoản.');
+        return redirect()->route('users.index')->with('status', 'Đã đưa tài khoản vào thùng rác.');
     }
 }

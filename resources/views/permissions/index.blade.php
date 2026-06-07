@@ -14,8 +14,8 @@
         </div>
     </x-slot>
 
-    <div class="py-10">
-        <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+    <div class="py-6 sm:py-10">
+        <div class="mx-auto max-w-10xl space-y-6 px-3 sm:px-6 lg:px-10">
             @if (session('status'))
                 <div class="rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 ring-1 ring-emerald-200">
                     {{ session('status') }}
@@ -58,16 +58,7 @@
                                             </div>
                                             <div class="flex items-center gap-3">
                                                 <a href="{{ route('permissions.edit', $permission['name']) }}" class="text-slate-900 hover:underline">Sửa</a>
-                                                @can('permissions.delete')
-                                                    <x-confirm-action
-                                                        :name="'delete-permission-'.$permission['name']"
-                                                        :action="route('permissions.destroy', $permission['name'])"
-                                                        title="Xoá quyền"
-                                                        message="Bạn có chắc chắn muốn xoá quyền này? Hành động này có thể ảnh hưởng đến vai trò và tài khoản đang dùng quyền đó."
-                                                        confirm-text="Xoá"
-                                                        trigger-text="Xoá"
-                                                    />
-                                                @endcan
+                                                
                                             </div>
                                         </div>
                                     @endforeach

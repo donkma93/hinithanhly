@@ -87,7 +87,7 @@ class SupplierController extends Controller
             ],
         ]);
 
-        return redirect()->route('suppliers.index')->with('status', 'Đã thêm nhà cung cấp.');
+        return redirect()->route('suppliers.index')->with('status', 'Đã đưa nhà cung cấp vào thùng rác.');
     }
 
     public function edit(Supplier $supplier): View

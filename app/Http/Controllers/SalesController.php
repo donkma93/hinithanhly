@@ -37,11 +37,12 @@ class SalesController extends Controller
         $trimmedDigits = ltrim($normalizedQuery, '0');
 
         $products = Product::query()
-            ->select(['id', 'public_id', 'category_id', 'supplier_id', 'name', 'sale_price', 'quantity', 'image_path'])
+            ->select(['id', 'public_id', 'category_id', 'supplier_id', 'name', 'sale_price', 'quantity', 'image_path', 'returned_at'])
             ->with([
                 'supplier:id,public_id,name',
                 'category:id,public_id,name',
             ])
+            ->sellable()
             ->where(function ($query) use ($normalizedQuery, $trimmedDigits): void {
                 $query->where('name', 'like', '%'.$normalizedQuery.'%')
                     ->orWhere('public_id', 'like', '%'.$normalizedQuery.'%')
@@ -94,6 +95,18 @@ class SalesController extends Controller
             ], 404);
         }
 
+        if ($product->isReturned()) {
+            return response()->json([
+                'message' => 'Sản phẩm này đã được trả cho người gửi nên không thể bán.',
+            ], 422);
+        }
+
+        if ($product->isConsignmentExpired()) {
+            return response()->json([
+                'message' => 'Sản phẩm này đã quá hạn ký gửi nên không thể bán.',
+            ], 422);
+        }
+
         $product->loadMissing([
             'category:id,public_id,name',
             'supplier:id,public_id,name',
@@ -137,6 +150,10 @@ class SalesController extends Controller
         $paymentToken = $data['payment_token'] ?? null;
         $paymentReference = null;
 
+        if ($singleItemValidation = $this->validateSingleItemCheckout($items)) {
+            return $singleItemValidation;
+        }
+
         if ($paymentMethod === 'transfer' && $paymentToken === null) {
             return response()->json(['message' => 'Vui lòng tạo mã QR chuyển khoản trước khi chốt hoá đơn.'], 422);
         }
@@ -163,6 +180,11 @@ class SalesController extends Controller
                 if (! $product) {
                     DB::rollBack();
                     return response()->json(['message' => "Sản phẩm ID {$item['id']} không tồn tại."], 422);
+                }
+
+                if ($product->isReturned() || $product->isConsignmentExpired()) {
+                    DB::rollBack();
+                    return response()->json(['message' => "Sản phẩm {$product->name} đã hết hạn ký gửi hoặc đã trả cho người gửi. Không thể bán trên hệ thống."], 422);
                 }
 
                 $qty = (int) $item['quantity'];
@@ -258,12 +280,16 @@ class SalesController extends Controller
 
         $items = $data['items'];
 
+        if ($singleItemValidation = $this->validateSingleItemCheckout($items)) {
+            return $singleItemValidation;
+        }
+
         // compute total
         $total = 0;
         foreach ($items as $item) {
-            $product = Product::find($item['id']);
+            $product = Product::query()->sellable()->find($item['id']);
             if (!$product) {
-                return response()->json(['message' => "Sản phẩm ID {$item['id']} không tồn tại."], 422);
+                return response()->json(['message' => "Sản phẩm ID {$item['id']} không tồn tại hoặc không còn bán được."], 422);
             }
             $total += $product->sale_price * (int)$item['quantity'];
         }
@@ -326,7 +352,7 @@ class SalesController extends Controller
         }
 
         $query = Product::query()
-            ->select(['id', 'public_id', 'category_id', 'supplier_id', 'name', 'sale_price', 'quantity', 'image_path', 'description']);
+            ->select(['id', 'public_id', 'consignment_note_id', 'category_id', 'supplier_id', 'name', 'sale_price', 'quantity', 'image_path', 'description', 'returned_at']);
 
         if (ctype_digit($code)) {
             $product = (clone $query)->find((int) $code);
@@ -361,6 +387,32 @@ class SalesController extends Controller
             } catch (\Throwable $e) {
                 // ignore DB-specific errors and continue
             }
+        }
+
+        return null;
+    }
+
+    private function validateSingleItemCheckout(array $items): ?JsonResponse
+    {
+        $seen = [];
+
+        foreach ($items as $item) {
+            $id = (int) ($item['id'] ?? 0);
+            $quantity = (int) ($item['quantity'] ?? 0);
+
+            if ($id <= 0 || $quantity !== 1) {
+                return response()->json([
+                    'message' => 'Mỗi lượt chọn bán hàng chỉ được 1 sản phẩm.',
+                ], 422);
+            }
+
+            if (isset($seen[$id])) {
+                return response()->json([
+                    'message' => 'Mỗi sản phẩm chỉ được chọn một lần trong hóa đơn.',
+                ], 422);
+            }
+
+            $seen[$id] = true;
         }
 
         return null;

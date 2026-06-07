@@ -6,11 +6,13 @@ use App\Models\Concerns\HasPublicId;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Supplier extends Model
 {
     use HasFactory;
     use HasPublicId;
+    use SoftDeletes;
 
     public const ACTIVE_TYPES = [
         'cho_tang' => 'Cho tặng',

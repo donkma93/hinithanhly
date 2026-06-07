@@ -8,6 +8,7 @@
     'dependsOn' => '',
     'dependencyValue' => '',
     'filterKey' => 'supplier_id',
+    'submitOnSelect' => false,
 ])
 
 @php
@@ -33,6 +34,7 @@
         dependsOn: @js($dependsOn),
         dependencyValue: @js($dependencyValue),
         filterKey: @js($filterKey),
+        submitOnSelect: @js($submitOnSelect),
     })"
     @click.outside="closeMenu()"
 >

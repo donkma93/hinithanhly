@@ -11,6 +11,7 @@ use App\Repositories\Contracts\ProductRepositoryInterface;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -24,9 +25,9 @@ class ProductController extends Controller
 {
     public function __construct(private readonly ProductRepositoryInterface $products)
     {
-        $this->middleware('permission:products.view')->only(['index', 'labelIndex', 'printLabels', 'label', 'barcode']);
+        $this->middleware('permission:products.view')->only(['index', 'expiryIndex', 'labelIndex', 'printLabels', 'label', 'barcode']);
         $this->middleware('permission:products.create|products.manage')->only('store');
-        $this->middleware('permission:products.update|products.manage')->only('update');
+        $this->middleware('permission:products.update|products.manage')->only(['update', 'returnToSupplier']);
         $this->middleware('permission:products.delete')->only('destroy');
     }
 
@@ -36,14 +37,16 @@ class ProductController extends Controller
         $search = ltrim($search, '#');
         $perPage = $this->resolvePerPage($request);
         $filterSupplierId = $request->input('supplier_id') ? (int) $request->input('supplier_id') : null;
+        $warningWindowEnd = now()->subDays(Product::CONSIGNMENT_TERM_DAYS - Product::CONSIGNMENT_WARNING_DAYS)->toDateString();
 
         $products = Product::query()
-            ->select(['id', 'public_id', 'consignment_note_id', 'supplier_id', 'category_id', 'created_by_id', 'name', 'sale_price', 'quantity', 'image_path', 'description', 'created_at'])
+            ->select(['id', 'public_id', 'consignment_note_id', 'supplier_id', 'category_id', 'created_by_id', 'name', 'sale_price', 'quantity', 'image_path', 'description', 'returned_at', 'returned_by_id', 'created_at'])
             ->with([
                 'category:id,public_id,name',
                 'supplier:id,public_id,name',
                 'consignmentNote:id,public_id,supplier_id,responsible_user_id,sent_date',
                 'consignmentNote.responsibleUser:id,public_id,name',
+                'returner:id,public_id,name',
             ])
             ->when($filterSupplierId !== null, function ($query) use ($filterSupplierId): void {
                 $query->where('supplier_id', $filterSupplierId);
@@ -83,6 +86,28 @@ class ProductController extends Controller
         );
 
         $suppliers = Supplier::query()->orderBy('name')->get(['id', 'public_id', 'name', 'type']);
+        $returnAlerts = collect();
+
+        if ($search === '' && $filterSupplierId === null) {
+            $returnAlerts = Product::query()
+                ->select(['id', 'public_id', 'consignment_note_id', 'supplier_id', 'category_id', 'name', 'sale_price', 'quantity', 'returned_at', 'returned_by_id', 'created_at'])
+                ->with([
+                    'supplier:id,public_id,name',
+                    'consignmentNote:id,public_id,supplier_id,sent_date',
+                    'returner:id,public_id,name',
+                ])
+                ->whereNull('returned_at')
+                ->where('quantity', '>', 0)
+                ->whereHas('consignmentNote', function ($query) use ($warningWindowEnd): void {
+                    $query->whereDate('sent_date', '<=', $warningWindowEnd);
+                })
+                ->get()
+                ->sortBy(fn (Product $product): int => $product->consignmentDueDate()?->timestamp ?? PHP_INT_MAX)
+                ->take(6)
+                ->values();
+        }
+
+        $consignmentExpirySummary = $this->resolveConsignmentExpirySummary();
 
         return view('products.index', [
             'products' => $products,
@@ -93,6 +118,8 @@ class ProductController extends Controller
                 'value' => $s->id,
                 'label' => '#'.$s->public_id_display.' - '.$s->name,
             ])->all(),
+            'returnAlerts' => $returnAlerts,
+            'consignmentExpirySummary' => $consignmentExpirySummary,
             'consignmentOptions' => $this->buildConsignmentOptions(
                 ConsignmentNote::query()
                     ->whereHas('supplier', fn ($query) => $query->whereIn('type', Supplier::MANUAL_CONSIGNMENT_TYPES))
@@ -100,6 +127,126 @@ class ProductController extends Controller
                     ->orderByDesc('id')
                     ->get(['id', 'public_id', 'supplier_id', 'sent_date'])
             ),
+        ]);
+    }
+
+    public function expiryIndex(Request $request): View
+    {
+        $search = trim((string) $request->input('q', ''));
+        $search = ltrim($search, '#');
+        $perPage = $this->resolvePerPage($request);
+        $supplierId = $request->input('supplier_id') ? (int) $request->input('supplier_id') : null;
+        $status = $request->string('status', 'pending')->toString();
+        $allowedStatuses = ['pending', 'expiring_soon', 'expired', 'returned'];
+
+        if (! in_array($status, $allowedStatuses, true)) {
+            $status = 'pending';
+        }
+
+        [$warningWindowStart, $warningWindowEnd] = $this->consignmentExpiryWindows();
+
+        $products = Product::query()
+            ->select([
+                'products.id',
+                'products.public_id',
+                'products.consignment_note_id',
+                'products.supplier_id',
+                'products.category_id',
+                'products.created_by_id',
+                'products.name',
+                'products.sale_price',
+                'products.quantity',
+                'products.image_path',
+                'products.description',
+                'products.returned_at',
+                'products.returned_by_id',
+                'products.created_at',
+            ])
+            ->leftJoin('consignment_notes', 'consignment_notes.id', '=', 'products.consignment_note_id')
+            ->with([
+                'category:id,public_id,name',
+                'supplier:id,public_id,name',
+                'consignmentNote:id,public_id,supplier_id,responsible_user_id,sent_date',
+                'consignmentNote.responsibleUser:id,public_id,name',
+                'returner:id,public_id,name',
+            ])
+            ->when($supplierId !== null, function (Builder $query) use ($supplierId): void {
+                $query->where('products.supplier_id', $supplierId);
+            })
+            ->when($search !== '', function (Builder $query) use ($search): void {
+                $query->where(function (Builder $innerQuery) use ($search): void {
+                    $innerQuery->where('products.public_id', 'like', '%'.$search.'%')
+                        ->orWhere('products.name', 'like', '%'.$search.'%')
+                        ->orWhereHas('supplier', function (Builder $supplierQuery) use ($search): void {
+                            $supplierQuery->where('public_id', 'like', '%'.$search.'%')
+                                ->orWhere('name', 'like', '%'.$search.'%');
+                        });
+                });
+            });
+
+        switch ($status) {
+            case 'returned':
+                $products->whereNotNull('products.returned_at');
+                break;
+
+            case 'expiring_soon':
+                $products->whereNull('products.returned_at')
+                    ->where('products.quantity', '>', 0)
+                    ->whereBetween('consignment_notes.sent_date', [$warningWindowStart, $warningWindowEnd]);
+                break;
+
+            case 'expired':
+                $products->whereNull('products.returned_at')
+                    ->where('products.quantity', '>', 0)
+                    ->whereDate('consignment_notes.sent_date', '<', $warningWindowStart);
+                break;
+
+            default:
+                $products->whereNull('products.returned_at')
+                    ->where('products.quantity', '>', 0)
+                    ->whereDate('consignment_notes.sent_date', '<=', $warningWindowEnd);
+                break;
+        }
+
+        $products = $products
+            ->orderByRaw('CASE WHEN products.returned_at IS NOT NULL THEN 1 ELSE 0 END')
+            ->orderByRaw('CASE WHEN consignment_notes.sent_date IS NULL THEN 1 ELSE 0 END')
+            ->orderBy('consignment_notes.sent_date')
+            ->orderByDesc('products.created_at')
+            ->paginate($perPage)
+            ->withQueryString();
+
+        $suppliers = Supplier::query()->orderBy('name')->get(['id', 'public_id', 'name', 'type']);
+
+        return view('products.expiry', [
+            'products' => $products,
+            'suppliers' => $suppliers,
+            'filterSupplierId' => $supplierId,
+            'filterSupplierOptions' => $suppliers->map(fn ($supplier) => [
+                'value' => $supplier->id,
+                'label' => '#'.$supplier->public_id_display.' - '.$supplier->name,
+            ])->all(),
+            'filterStatus' => $status,
+            'filterSearch' => $search,
+            'expiryStatusOptions' => [
+                'pending' => [
+                    'label' => 'Cần xử lý',
+                    'description' => 'Sắp hết hạn hoặc đã quá hạn',
+                ],
+                'expiring_soon' => [
+                    'label' => 'Sắp hết hạn',
+                    'description' => 'Còn tối đa 7 ngày',
+                ],
+                'expired' => [
+                    'label' => 'Quá hạn',
+                    'description' => 'Đã qua mốc 45 ngày',
+                ],
+                'returned' => [
+                    'label' => 'Đã trả',
+                    'description' => 'Đã đánh dấu trả cho người gửi',
+                ],
+            ],
+            'consignmentExpirySummary' => $this->resolveConsignmentExpirySummary($supplierId),
         ]);
     }
 
@@ -182,10 +329,10 @@ class ProductController extends Controller
     {
         return view('products.edit', [
             'product' => $product,
-            'categories' => Category::query()->orderBy('name')->get(['id', 'name']),
-            'suppliers' => Supplier::query()->orderBy('name')->get(['id', 'public_id', 'name', 'type']),
+            'categories' => Category::query()->withTrashed()->orderBy('name')->get(['id', 'public_id', 'name']),
+            'suppliers' => Supplier::query()->withTrashed()->orderBy('name')->get(['id', 'public_id', 'name', 'type']),
             'consignmentOptions' => $this->buildConsignmentOptions(
-                ConsignmentNote::query()
+                ConsignmentNote::query()->withTrashed()
                     ->whereHas('supplier', fn ($query) => $query->whereIn('type', Supplier::MANUAL_CONSIGNMENT_TYPES))
                     ->orderByDesc('sent_date')
                     ->orderByDesc('id')
@@ -200,11 +347,12 @@ class ProductController extends Controller
         $perPage = $this->resolvePerPage($request);
 
         $products = Product::query()
-            ->select(['id', 'public_id', 'consignment_note_id', 'supplier_id', 'image_path', 'name', 'sale_price', 'quantity', 'created_at'])
+            ->select(['id', 'public_id', 'consignment_note_id', 'supplier_id', 'image_path', 'name', 'sale_price', 'quantity', 'returned_at', 'created_at'])
             ->with([
                 'supplier:id,public_id,name',
                 'consignmentNote:id,public_id,supplier_id,sent_date',
             ])
+            ->sellable()
             ->when($term !== '', function ($query) use ($term): void {
                 $query->where(function ($innerQuery) use ($term): void {
                     $innerQuery->where('name', 'like', '%'.$term.'%')
@@ -256,11 +404,12 @@ class ProductController extends Controller
         $selectedIds = array_map('intval', $validated['ids']);
 
         $products = Product::query()
-            ->select(['id', 'public_id', 'consignment_note_id', 'supplier_id', 'name', 'sale_price', 'quantity', 'created_at'])
+            ->select(['id', 'public_id', 'consignment_note_id', 'supplier_id', 'name', 'sale_price', 'quantity', 'returned_at', 'created_at'])
             ->with([
                 'supplier:id,public_id,name',
                 'consignmentNote:id,public_id,supplier_id,sent_date',
             ])
+            ->sellable()
             ->whereIn('id', $selectedIds)
             ->get()
             ->sortBy(fn (Product $product): int => array_search($product->id, $selectedIds, true) ?: 0)
@@ -294,6 +443,8 @@ class ProductController extends Controller
 
     public function label(Product $product): View
     {
+        abort_if(! $product->isSellable(), 404);
+
         $barcodeData = $this->buildProductBarcodeData($product);
 
         return view('products.label', [
@@ -306,6 +457,8 @@ class ProductController extends Controller
 
     public function barcode(Product $product)
     {
+        abort_if(! $product->isSellable(), 404);
+
         $barcodeData = $this->buildProductBarcodeData($product);
 
         $svg = $this->generateBarcode($barcodeData['barcodePayload']);
@@ -388,6 +541,39 @@ class ProductController extends Controller
         return redirect()->route('products.index')->with('status', 'Đã cập nhật sản phẩm.');
     }
 
+    public function returnToSupplier(Request $request, Product $product): RedirectResponse
+    {
+        if ($product->isReturned()) {
+            return redirect()->route('products.index')->with('status', 'Sản phẩm này đã được trả cho người gửi rồi.');
+        }
+
+        $product->forceFill([
+            'returned_at' => now(),
+            'returned_by_id' => $request->user()?->id,
+            'quantity' => 0,
+        ])->save();
+
+        AuditLog::record([
+            'user_id' => $request->user()?->id,
+            'action' => 'products.return',
+            'method' => $request->method(),
+            'route_name' => 'products.return',
+            'path' => $request->path(),
+            'status_code' => 302,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'payload' => [
+                'product_id' => $product->id,
+                'name' => $product->name,
+                'supplier_id' => $product->supplier_id,
+                'consignment_note_id' => $product->consignment_note_id,
+                'returned_at' => now()->toDateTimeString(),
+            ],
+        ]);
+
+        return redirect()->route('products.index')->with('status', 'Đã đánh dấu sản phẩm đã trả cho người gửi. Sản phẩm này sẽ không bán được nữa.');
+    }
+
     public function destroy(Product $product): RedirectResponse
     {
         $payload = [
@@ -398,10 +584,6 @@ class ProductController extends Controller
             'consignment_note_id' => $product->consignment_note_id,
             'quantity' => $product->quantity,
         ];
-
-        if ($product->image_path) {
-            Storage::disk('public')->delete($product->image_path);
-        }
 
         $this->products->delete($product->id);
 
@@ -417,7 +599,7 @@ class ProductController extends Controller
             'payload' => $payload,
         ]);
 
-        return redirect()->route('products.index')->with('status', 'Đã xoá sản phẩm.');
+        return redirect()->route('products.index')->with('status', 'Đã đưa sản phẩm vào thùng rác.');
     }
 
     private function validatedData(Request $request): array
@@ -430,12 +612,11 @@ class ProductController extends Controller
             'sale_price' => ['required', 'numeric', 'min:0'],
             'quantity' => ['required', 'integer', 'min:1'],
             'description' => ['nullable', 'string'],
-            // No hard server-side size limit here; client will optimize before upload.
-            // Server still validates that the uploaded file is an image.
-            'image' => ['nullable', 'image'],
+            // Accept any file upload without MIME validation to avoid mobile upload errors.
+            'image' => ['nullable', 'file'],
         ]);
 
-        $supplier = Supplier::query()->findOrFail($data['supplier_id']);
+        $supplier = Supplier::query()->withTrashed()->findOrFail($data['supplier_id']);
 
         if ($supplier->requiresManualConsignment()) {
             $consignmentNoteId = $data['consignment_note_id'] ?? null;
@@ -446,7 +627,7 @@ class ProductController extends Controller
                 ]);
             }
 
-            $belongsToSupplier = ConsignmentNote::query()
+            $belongsToSupplier = ConsignmentNote::query()->withTrashed()
                 ->whereKey($consignmentNoteId)
                 ->where('supplier_id', $supplier->id)
                 ->exists();
@@ -469,9 +650,10 @@ class ProductController extends Controller
         Request $request,
         array $data,
         ?Product $product = null
-    ): ConsignmentNote {
+    ): ConsignmentNote
+    {
         if ($supplier->requiresManualConsignment()) {
-            return ConsignmentNote::query()
+            return ConsignmentNote::query()->withTrashed()
                 ->whereKey($data['consignment_note_id'])
                 ->where('supplier_id', $supplier->id)
                 ->firstOrFail();
@@ -532,7 +714,7 @@ class ProductController extends Controller
 
         $sendSummaries = [];
 
-        $consignmentNotes = ConsignmentNote::query()
+        $consignmentNotes = ConsignmentNote::query()->withTrashed()
             ->whereIn('supplier_id', $supplierIds)
             ->orderBy('supplier_id')
             ->orderBy('sent_date')
@@ -598,6 +780,59 @@ class ProductController extends Controller
             'round' => 1,
             'days' => 0,
             'label' => 'Lần 1 / 0 ngày / ---',
+        ];
+    }
+
+    /**
+     * @return array{0:string,1:string}
+     */
+    private function consignmentExpiryWindows(): array
+    {
+        return [
+            now()->subDays(Product::CONSIGNMENT_TERM_DAYS)->toDateString(),
+            now()->subDays(Product::CONSIGNMENT_TERM_DAYS - Product::CONSIGNMENT_WARNING_DAYS)->toDateString(),
+        ];
+    }
+
+    /**
+     * @return array{pending:int,expiring_soon:int,expired:int,returned:int}
+     */
+    private function resolveConsignmentExpirySummary(?int $supplierId = null): array
+    {
+        [$warningWindowStart, $warningWindowEnd] = $this->consignmentExpiryWindows();
+
+        $baseQuery = function () use ($supplierId): Builder {
+            return Product::query()
+                ->when($supplierId !== null, function (Builder $query) use ($supplierId): void {
+                    $query->where('supplier_id', $supplierId);
+                });
+        };
+
+        return [
+            'pending' => $baseQuery()
+                ->whereNull('returned_at')
+                ->where('quantity', '>', 0)
+                ->whereHas('consignmentNote', function (Builder $query) use ($warningWindowEnd): void {
+                    $query->whereDate('sent_date', '<=', $warningWindowEnd);
+                })
+                ->count(),
+            'expiring_soon' => $baseQuery()
+                ->whereNull('returned_at')
+                ->where('quantity', '>', 0)
+                ->whereHas('consignmentNote', function (Builder $query) use ($warningWindowStart, $warningWindowEnd): void {
+                    $query->whereBetween('sent_date', [$warningWindowStart, $warningWindowEnd]);
+                })
+                ->count(),
+            'expired' => $baseQuery()
+                ->whereNull('returned_at')
+                ->where('quantity', '>', 0)
+                ->whereHas('consignmentNote', function (Builder $query) use ($warningWindowStart): void {
+                    $query->whereDate('sent_date', '<', $warningWindowStart);
+                })
+                ->count(),
+            'returned' => $baseQuery()
+                ->whereNotNull('returned_at')
+                ->count(),
         ];
     }
 

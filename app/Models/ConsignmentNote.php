@@ -7,11 +7,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ConsignmentNote extends Model
 {
     use HasFactory;
     use HasPublicId;
+    use SoftDeletes;
 
     public const AUTO_GENERATED_NOTE_MARKER = 'AUTO_GENERATED_FROM_PRODUCT';
 
@@ -32,12 +34,12 @@ class ConsignmentNote extends Model
 
     public function responsibleUser(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'responsible_user_id');
+        return $this->belongsTo(User::class, 'responsible_user_id')->withTrashed();
     }
 
     public function supplier(): BelongsTo
     {
-        return $this->belongsTo(Supplier::class);
+        return $this->belongsTo(Supplier::class)->withTrashed();
     }
 
     public function products(): HasMany

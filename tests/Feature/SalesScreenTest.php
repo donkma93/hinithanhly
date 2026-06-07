@@ -122,4 +122,65 @@ class SalesScreenTest extends TestCase
         $response->assertJsonPath('public_id', $product->public_id);
         $response->assertJsonPath('name', 'Túi đeo chéo');
     }
+
+    public function test_sales_checkout_requires_unique_products_and_single_quantity_per_line(): void
+    {
+        $user = User::create([
+            'name' => 'Nhân viên bán hàng',
+            'email' => 'sales-checkout@example.com',
+            'password' => 'password',
+        ]);
+        $this->actingAs($user);
+
+        $category = Category::create([
+            'name' => 'Phụ kiện',
+            'description' => null,
+            'is_active' => true,
+        ]);
+        $supplier = Supplier::create([
+            'responsible_user_id' => $user->id,
+            'type' => 'cho_tang',
+            'name' => 'Nhà cung cấp C',
+            'phone' => null,
+            'bank_name' => null,
+            'bank_account_name' => null,
+            'bank_account_number' => null,
+            'notes' => null,
+        ]);
+        $consignment = ConsignmentNote::create([
+            'responsible_user_id' => $user->id,
+            'supplier_id' => $supplier->id,
+            'sent_date' => now()->toDateString(),
+            'quantity' => 1,
+            'notes' => null,
+        ]);
+        $product = Product::create([
+            'consignment_note_id' => $consignment->id,
+            'supplier_id' => $supplier->id,
+            'category_id' => $category->id,
+            'created_by_id' => $user->id,
+            'name' => 'Ví test',
+            'sale_price' => 88000,
+            'quantity' => 3,
+            'image_path' => null,
+            'description' => null,
+        ]);
+
+        $this->postJson(route('sales.checkout'), [
+            'items' => [
+                ['id' => $product->id, 'quantity' => 2],
+            ],
+            'payment_method' => 'cash',
+        ])->assertStatus(422)
+            ->assertJsonPath('message', 'Mỗi lượt chọn bán hàng chỉ được 1 sản phẩm.');
+
+        $this->postJson(route('sales.checkout'), [
+            'items' => [
+                ['id' => $product->id, 'quantity' => 1],
+                ['id' => $product->id, 'quantity' => 1],
+            ],
+            'payment_method' => 'cash',
+        ])->assertStatus(422)
+            ->assertJsonPath('message', 'Mỗi sản phẩm chỉ được chọn một lần trong hóa đơn.');
+    }
 }

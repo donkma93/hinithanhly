@@ -64,7 +64,7 @@ class PermissionController extends Controller
             ],
         ]);
 
-        return redirect()->route('permissions.index')->with('status', 'Đã thêm quyền.');
+        return redirect()->route('permissions.index')->with('status', 'Đã đưa quyền vào thùng rác.');
     }
 
     public function edit(Permission $permission): View

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Category;
+use App\Models\ConsignmentNote;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\User;
@@ -78,6 +79,24 @@ class ConsignmentWorkflowRulesTest extends TestCase
         Storage::disk('public')->assertExists($product->image_path);
     }
 
+    public function test_product_creation_requires_a_category_selection(): void
+    {
+        $this->signInAsAdmin();
+        $supplier = $this->createSupplier('cho_tang', 'NCC cho tang');
+
+        $response = $this->from(route('products.index'))->post(route('products.store'), [
+            'supplier_id' => $supplier->id,
+            'name' => 'Ao khoac',
+            'sale_price' => 250000,
+            'quantity' => 1,
+            'description' => 'Thieu danh muc',
+        ]);
+
+        $response->assertRedirect(route('products.index'));
+        $response->assertSessionHasErrors('category_id');
+        $this->assertDatabaseCount('products', 0);
+    }
+
     public function test_manual_supplier_types_still_require_an_explicit_consignment_note(): void
     {
         $this->signInAsAdmin();
@@ -113,6 +132,40 @@ class ConsignmentWorkflowRulesTest extends TestCase
         $response->assertRedirect(route('consignments.index'));
         $response->assertSessionHasErrors('supplier_id');
         $this->assertDatabaseCount('consignment_notes', 0);
+    }
+
+    public function test_consignment_index_filters_notes_by_selected_supplier(): void
+    {
+        $this->signInAsAdmin();
+
+        $manualSupplier = $this->createSupplier('ncc_it_san_pham', 'NCC ky gui A');
+        $autoSupplier = $this->createSupplier('khach_si', 'NCC ky gui B');
+
+        ConsignmentNote::create([
+            'responsible_user_id' => User::factory()->create()->id,
+            'responsible_name' => 'Phieu cua A',
+            'supplier_id' => $manualSupplier->id,
+            'sent_date' => now()->subDays(2)->toDateString(),
+            'quantity' => 2,
+            'notes' => 'Ghi chu A',
+        ]);
+
+        ConsignmentNote::create([
+            'responsible_user_id' => User::factory()->create()->id,
+            'responsible_name' => 'Phieu cua B',
+            'supplier_id' => $autoSupplier->id,
+            'sent_date' => now()->subDay()->toDateString(),
+            'quantity' => 3,
+            'notes' => 'Ghi chu B',
+        ]);
+
+        $response = $this->get(route('consignments.index', [
+            'supplier_id' => $autoSupplier->id,
+        ]));
+
+        $response->assertOk();
+        $response->assertSee('Phieu cua B');
+        $response->assertDontSee('Phieu cua A');
     }
 
     public function test_product_index_searches_by_product_code_supplier_code_and_product_name(): void

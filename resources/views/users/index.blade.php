@@ -8,8 +8,8 @@
         </div>
     </x-slot>
 
-    <div class="py-10">
-        <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+    <div class="py-6 sm:py-10">
+        <div class="mx-auto max-w-10xl space-y-6 px-3 sm:px-6 lg:px-10">
             @if (session('status'))
                 <div class="rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 ring-1 ring-emerald-200">
                     {{ session('status') }}
@@ -100,18 +100,7 @@
                                             @canany(['users.update', 'users.manage'])
                                                 <a href="{{ route('users.edit', $user) }}" class="text-slate-900 hover:underline">Sửa</a>
                                             @endcanany
-                                            @can('users.delete')
-                                                <span class="ms-4 inline-block align-middle">
-                                                    <x-confirm-action
-                                                        :name="'delete-user-'.$user->public_id"
-                                                        :action="route('users.destroy', $user)"
-                                                        title="Xoá tài khoản"
-                                                        message="Bạn có chắc chắn muốn xoá tài khoản này? Hành động này không thể hoàn tác."
-                                                        confirm-text="Xoá"
-                                                        trigger-text="Xoá"
-                                                    />
-                                                </span>
-                                            @endcan
+                                            
                                         </td>
                                     </tr>
                                 @empty

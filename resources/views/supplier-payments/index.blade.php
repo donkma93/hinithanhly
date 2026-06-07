@@ -6,8 +6,16 @@
         </div>
     </x-slot>
 
-    <div class="py-10">
-        <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+    @php
+        $supplierOptions = $suppliers->map(fn ($supplier) => [
+            'value' => $supplier->id,
+            'label' => '#'.($supplier->public_id_display ?? $supplier->public_id).' - '.$supplier->name,
+        ])->all();
+        $selectedSupplierId = (string) ($selectedSupplier?->id ?? '');
+    @endphp
+
+    <div class="py-6 sm:py-10">
+        <div class="mx-auto max-w-10xl space-y-6 px-3 sm:px-6 lg:px-10">
             @if (session('status'))
                 <div class="rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 ring-1 ring-emerald-200">
                     {{ session('status') }}
@@ -24,9 +32,11 @@
                             </div>
                             <form method="GET" action="{{ route('supplier-payments.index') }}" class="flex flex-wrap items-center gap-2">
                                 <input type="hidden" name="search" value="{{ request('search', $search ?? '') }}">
+                                <input type="hidden" name="supplier_id" value="{{ request('supplier_id', $selectedSupplierId) }}">
                                 <input type="hidden" name="supplier_type" value="{{ request('supplier_type', $supplierType ?? '') }}">
                                 <input type="hidden" name="from" value="{{ request('from', $startDate->format('Y-m-d')) }}">
                                 <input type="hidden" name="to" value="{{ request('to', $endDate->format('Y-m-d')) }}">
+                                <input type="hidden" name="show_all" value="{{ request()->boolean('show_all') ? 1 : 0 }}">
                                 <x-per-page-select :value="request('per_page', 10)" />
                                 <button class="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">Lọc</button>
                             </form>
@@ -36,6 +46,18 @@
                                 <div>
                                     <form id="supplier-payment-filter" method="GET" action="{{ route('supplier-payments.index') }}" class="mt-1 space-y-4 rounded-2xl border border-gray-200 bg-gray-50 p-4">
                                         <input type="hidden" name="per_page" value="{{ request('per_page', 10) }}">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700">Nhà cung cấp</label>
+                                            <x-searchable-select
+                                                name="supplier_id"
+                                                :options="$supplierOptions"
+                                                :selected="$selectedSupplierId"
+                                                placeholder="Tất cả nhà cung cấp"
+                                                search-placeholder="Tìm theo mã nhà cung cấp"
+                                                empty-text="Không có nhà cung cấp phù hợp"
+                                            />
+                                            <p class="mt-2 text-xs text-gray-500">Chọn NCC để xem số liệu, thanh toán và lịch sử của riêng NCC đó.</p>
+                                        </div>
                                         <div class="grid gap-3 sm:grid-cols-2">
                                             <div>
                                                 <label class="block text-sm font-medium text-gray-700">Tìm kiếm NCC</label>
@@ -69,11 +91,17 @@
                                                 Hiện tất cả nhà cung cấp
                                             </label>
                                         </div>
+                                        <div class="flex flex-wrap items-center gap-3">
+                                            <button type="submit" class="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">Lọc</button>
+                                        </div>
                                     </form>
                                 </div>
 
                             <div class="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
                                 @if ($selectedSupplier && $summary)
+                                    <div class="mb-3 inline-flex items-center rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
+                                        Đang xem NCC #{{ $selectedSupplier->public_id_display }}
+                                    </div>
                                     <div class="space-y-3 text-sm text-slate-700">
                                         <div class="flex items-center justify-between"><span>Nhà cung cấp</span><strong>{{ $selectedSupplier->name }}</strong></div>
                                         <div class="flex items-center justify-between"><span>Loại</span><strong>{{ \App\Models\Supplier::labelForType($selectedSupplier->type) }}</strong></div>
@@ -180,6 +208,9 @@
                 <div class="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
                     <h3 class="text-lg font-semibold text-gray-900">Thông tin nhà cung cấp</h3>
                     @if ($selectedSupplier)
+                        <div class="mt-3 inline-flex items-center rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
+                            NCC đang được lọc
+                        </div>
                         <div class="mt-4 space-y-3 text-sm text-gray-600">
                             <div class="flex items-center justify-between"><span>Mã</span><strong class="text-gray-900">#{{ $selectedSupplier->public_id_display }}</strong></div>
                             <div class="flex items-center justify-between"><span>Tên</span><strong class="text-gray-900">{{ $selectedSupplier->name }}</strong></div>
@@ -265,6 +296,14 @@
                     to: data.get('to'),
                 };
             };
+
+            window.addEventListener('searchable-select-change', (event) => {
+                if (event.detail?.name !== 'supplier_id') {
+                    return;
+                }
+
+                filterForm?.requestSubmit();
+            });
 
             createButton?.addEventListener('click', async () => {
                 const payload = getFilterPayload();
