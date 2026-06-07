@@ -103,9 +103,9 @@
                             </div>
                         </div>
 
-                        <div class="rounded-[2rem] border border-slate-200 bg-gradient-to-br from-slate-900 to-slate-800 p-6 text-white shadow-[0_20px_60px_rgba(15,23,42,0.18)] sm:p-8">
+                        <div class="rounded-[2rem] border border-slate-200 bg-gradient-to-br from-slate-900 to-slate-800 p-6 text-black shadow-[0_20px_60px_rgba(15,23,42,0.18)] sm:p-8">
                             <p class="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">THÔNG BÁO</p>
-                            <h2 class="mt-4 text-2xl font-black text-white">Theo dõi nhanh, nhìn thấy rõ ngay</h2>
+                            <h2 class="mt-4 text-2xl font-black text-black">Theo dõi nhanh, nhìn thấy rõ ngay</h2>
                             <ul class="mt-6 space-y-4 text-sm leading-7 text-slate-200">
                                 <li class="flex gap-3">
                                     <span class="mt-2 h-2.5 w-2.5 rounded-full bg-cyan-300"></span>
