@@ -35,6 +35,7 @@ class ProductController extends Controller
         $search = trim((string) $request->input('q', $request->input('public_id', '')));
         $search = ltrim($search, '#');
         $perPage = $this->resolvePerPage($request);
+        $filterSupplierId = $request->input('supplier_id') ? (int) $request->input('supplier_id') : null;
 
         $products = Product::query()
             ->select(['id', 'public_id', 'consignment_note_id', 'supplier_id', 'category_id', 'created_by_id', 'name', 'sale_price', 'quantity', 'image_path', 'description', 'created_at'])
@@ -44,6 +45,9 @@ class ProductController extends Controller
                 'consignmentNote:id,public_id,supplier_id,responsible_user_id,sent_date',
                 'consignmentNote.responsibleUser:id,public_id,name',
             ])
+            ->when($filterSupplierId !== null, function ($query) use ($filterSupplierId): void {
+                $query->where('supplier_id', $filterSupplierId);
+            })
             ->when($search !== '', function ($query) use ($search): void {
                 $query->where(function ($innerQuery) use ($search): void {
                     $innerQuery->where('public_id', 'like', '%'.$search.'%')
@@ -78,10 +82,17 @@ class ProductController extends Controller
             })
         );
 
+        $suppliers = Supplier::query()->orderBy('name')->get(['id', 'public_id', 'name', 'type']);
+
         return view('products.index', [
             'products' => $products,
             'categories' => Category::query()->orderBy('name')->get(['id', 'public_id', 'name']),
-            'suppliers' => Supplier::query()->orderBy('name')->get(['id', 'public_id', 'name', 'type']),
+            'suppliers' => $suppliers,
+            'filterSupplierId' => $filterSupplierId,
+            'filterSupplierOptions' => $suppliers->map(fn ($s) => [
+                'value' => $s->id,
+                'label' => '#'.$s->public_id_display.' - '.$s->name,
+            ])->all(),
             'consignmentOptions' => $this->buildConsignmentOptions(
                 ConsignmentNote::query()
                     ->whereHas('supplier', fn ($query) => $query->whereIn('type', Supplier::MANUAL_CONSIGNMENT_TYPES))

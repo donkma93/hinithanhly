@@ -152,7 +152,7 @@ class SupplierPaymentController extends Controller
         }
 
         $paymentReference = Str::uuid()->toString();
-        $paymentContent = sprintf('Thanh toan NCC %s', $supplier->public_id_display);
+        $paymentContent = sprintf('Hinikygui gui ncc %s doanh thu T%s', $supplier->name, $startDate->format('n'));
         $amount = (int) round((float) $summary['payable_amount']);
 
         $qrUrl = sprintf(

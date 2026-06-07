@@ -49,18 +49,26 @@
             width: 100%;
         }
 
-        .barcode-top,
-        .barcode-bottom {
-            font-size: 10pt;
-            line-height: 1;
+        .barcode-top {
+            font-size: 15pt;
+            font-weight: bold;
+            line-height: 1.2;
             color: #000;
             text-align: center;
-            margin: 0 0 2mm 0;
+            margin: 0 0 1mm 0;
             white-space: nowrap;
+            width: 80mm;
         }
 
         .barcode-bottom {
-            margin-top: 2mm;
+            font-size: 24pt;
+            font-weight: bold;
+            line-height: 1.2;
+            color: #000;
+            text-align: center;
+            margin-top: 1mm;
+            white-space: nowrap;
+            width: 80mm;
         }
 
         .barcode svg {
