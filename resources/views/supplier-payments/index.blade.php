@@ -33,7 +33,6 @@
                             <form method="GET" action="{{ route('supplier-payments.index') }}" class="flex flex-wrap items-center gap-2">
                                 <input type="hidden" name="search" value="{{ request('search', $search ?? '') }}">
                                 <input type="hidden" name="supplier_id" value="{{ request('supplier_id', $selectedSupplierId) }}">
-                                <input type="hidden" name="supplier_type" value="{{ request('supplier_type', $supplierType ?? '') }}">
                                 <input type="hidden" name="from" value="{{ request('from', $startDate->format('Y-m-d')) }}">
                                 <input type="hidden" name="to" value="{{ request('to', $endDate->format('Y-m-d')) }}">
                                 <input type="hidden" name="show_all" value="{{ request()->boolean('show_all') ? 1 : 0 }}">
@@ -57,23 +56,6 @@
                                                 empty-text="Không có nhà cung cấp phù hợp"
                                             />
                                             <p class="mt-2 text-xs text-gray-500">Chọn NCC để xem số liệu, thanh toán và lịch sử của riêng NCC đó.</p>
-                                        </div>
-                                        <div class="grid gap-3 sm:grid-cols-2">
-                                            <div>
-                                                <label class="block text-sm font-medium text-gray-700">Tìm kiếm NCC</label>
-                                                <input type="text" name="search" value="{{ request('search', $search ?? '') }}" placeholder="Mã, tên hoặc người phụ trách" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900">
-                                            </div>
-                                            <div>
-                                                <label class="block text-sm font-medium text-gray-700">Phân loại NCC</label>
-                                                <select name="supplier_type" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900">
-                                                    <option value="">-- Tất cả phân loại --</option>
-                                                    @foreach (\App\Models\Supplier::ACTIVE_TYPES as $typeValue => $typeLabel)
-                                                        <option value="{{ $typeValue }}" @selected((string) request('supplier_type', $supplierType ?? '') === (string) $typeValue)>
-                                                            {{ $typeLabel }}
-                                                        </option>
-                                                    @endforeach
-                                                </select>
-                                            </div>
                                         </div>
                                         <div class="grid gap-3 sm:grid-cols-2">
                                             <div>
@@ -118,7 +100,21 @@
                         </div>
 
                         <div class="mt-6">
-                            <h4 class="text-sm font-semibold text-gray-900">Danh sách nhà cung cấp trong khoảng</h4>
+                            <div class="flex flex-wrap items-end justify-between gap-3">
+                                <div>
+                                    <h4 class="text-sm font-semibold text-gray-900">Danh sách nhà cung cấp trong khoảng</h4>
+                                    <p class="mt-1 text-xs text-gray-500">Ô tìm kiếm hoạt động riêng, và khi tìm sẽ hiện cả NCC đã thanh toán lẫn chưa thanh toán.</p>
+                                </div>
+                                <form method="GET" action="{{ route('supplier-payments.index') }}" class="flex flex-1 flex-wrap items-center justify-end gap-2">
+                                    <input type="hidden" name="per_page" value="{{ request('per_page', 10) }}">
+                                    <input type="hidden" name="supplier_id" value="{{ request('supplier_id', $selectedSupplierId) }}">
+                                    <input type="hidden" name="from" value="{{ request('from', $startDate->format('Y-m-d')) }}">
+                                    <input type="hidden" name="to" value="{{ request('to', $endDate->format('Y-m-d')) }}">
+                                    <input type="hidden" name="show_all" value="{{ request()->boolean('show_all') ? 1 : 0 }}">
+                                    <input name="search" value="{{ request('search', $search ?? '') }}" class="w-full rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900 sm:w-80" placeholder="Tìm theo mã, tên hoặc người phụ trách">
+                                    <button type="submit" class="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">Tìm</button>
+                                </form>
+                            </div>
                             <div class="mt-3 overflow-x-auto">
                                 <table class="min-w-full text-sm">
                                     <thead class="text-left text-xs uppercase text-gray-500">

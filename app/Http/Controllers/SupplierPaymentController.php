@@ -24,8 +24,11 @@ class SupplierPaymentController extends Controller
     public function index(Request $request): View
     {
         $perPage = $this->resolvePerPage($request);
+        $search = trim((string) $request->string('search'));
         $supplierId = $request->integer('supplier_id');
-        $supplier = $supplierId ? Supplier::query()->withTrashed()->find($supplierId) : Supplier::query()->orderBy('name')->first();
+        $supplier = $supplierId
+            ? Supplier::query()->withTrashed()->find($supplierId)
+            : ($search === '' ? Supplier::query()->orderBy('name')->first() : null);
         $startDate = $request->filled('from') ? $request->date('from')->startOfDay() : now()->startOfMonth();
         $endDate = $request->filled('to') ? $request->date('to')->endOfDay() : now()->endOfDay();
 
@@ -45,7 +48,7 @@ class SupplierPaymentController extends Controller
         $supplierDiscountRates = Setting::supplierDiscountRates();
 
         $suppliersWithTotals = Supplier::query()->orderBy('name')
-            ->get(['id', 'public_id', 'name', 'type', 'bank_name', 'bank_account_name', 'bank_account_number'])
+            ->get(['id', 'public_id', 'responsible_name', 'name', 'type', 'bank_name', 'bank_account_name', 'bank_account_number'])
             ->map(function (Supplier $s) use ($aggregates, $supplierDiscountRates, $startDate, $endDate) {
                 $agg = $aggregates->get($s->id);
                 $gross = $agg ? (float) $agg->gross_amount : 0.0;
@@ -68,13 +71,6 @@ class SupplierPaymentController extends Controller
 
         $showAll = $request->boolean('show_all', false);
 
-        if (! $showAll) {
-            $suppliersWithTotals = $suppliersWithTotals->filter(fn ($info) => (float) $info['payable_amount'] > 0)->values();
-        }
-
-        $search = trim((string) $request->string('search'));
-        $supplierType = trim((string) $request->string('supplier_type'));
-
         if ($search !== '') {
             $searchLower = mb_strtolower($search);
 
@@ -86,8 +82,8 @@ class SupplierPaymentController extends Controller
             })->values();
         }
 
-        if ($supplierType !== '') {
-            $suppliersWithTotals = $suppliersWithTotals->filter(fn (array $info) => (string) $info['supplier']->type === $supplierType)->values();
+        if ($search === '' && ! $showAll) {
+            $suppliersWithTotals = $suppliersWithTotals->filter(fn ($info) => (float) $info['payable_amount'] > 0)->values();
         }
 
         // Determine which suppliers already have a recorded payment for this exact period
@@ -116,7 +112,6 @@ class SupplierPaymentController extends Controller
             'suppliersWithTotals' => $suppliersWithTotals,
             'showAll' => $showAll,
             'search' => $search,
-            'supplierType' => $supplierType,
             'existingPayments' => $existingPayments,
             'payments' => $payments,
             'startDate' => $startDate,

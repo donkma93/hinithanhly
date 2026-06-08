@@ -69,6 +69,25 @@ class SupplierPaymentFilterTest extends TestCase
         $response->assertDontSee($first['payment']->public_id_display);
     }
 
+    public function test_search_lists_matching_suppliers_even_when_they_have_no_payable_amount(): void
+    {
+        $admin = $this->actingAsAdmin();
+        $category = $this->createCategory();
+
+        $searchable = $this->createSupplierWithoutLedger('Gamma Supplier');
+        $this->createSupplierLedgerFixture($admin, $category, 'Alpha Supplier', '111111111', 120000);
+
+        $response = $this->get(route('supplier-payments.index', [
+            'search' => 'Gamma Supplier',
+            'from' => now()->toDateString(),
+            'to' => now()->toDateString(),
+        ]));
+
+        $response->assertOk();
+        $response->assertSee($searchable->name);
+        $response->assertSee('Không cần thanh toán');
+    }
+
     private function actingAsAdmin(): User
     {
         $user = User::query()->where('email', 'admin@kygui.local')->firstOrFail();
@@ -166,5 +185,19 @@ class SupplierPaymentFilterTest extends TestCase
             'sale' => $sale,
             'payment' => $payment,
         ];
+    }
+
+    private function createSupplierWithoutLedger(string $name): Supplier
+    {
+        return Supplier::create([
+            'responsible_name' => 'Nguoi phu trach '.$name,
+            'type' => 'cho_tang',
+            'name' => $name,
+            'phone' => null,
+            'bank_name' => 'VCB',
+            'bank_account_name' => $name,
+            'bank_account_number' => '000000000',
+            'notes' => null,
+        ]);
     }
 }
