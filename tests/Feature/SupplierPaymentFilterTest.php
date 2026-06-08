@@ -12,6 +12,7 @@ use App\Models\SupplierPayment;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
@@ -28,64 +29,68 @@ class SupplierPaymentFilterTest extends TestCase
         $this->seed(DatabaseSeeder::class);
     }
 
-    public function test_supplier_payment_index_defaults_to_first_supplier_when_no_supplier_id_is_provided(): void
+    public function test_supplier_payment_index_shows_monthly_overview_for_paid_and_unpaid_amounts(): void
     {
         $admin = $this->actingAsAdmin();
         $category = $this->createCategory();
+        $month = Carbon::create(2026, 5, 1);
 
-        $first = $this->createSupplierLedgerFixture($admin, $category, 'Alpha Supplier', '111111111', 120000);
-        $second = $this->createSupplierLedgerFixture($admin, $category, 'Beta Supplier', '222222222', 240000);
+        $paid = $this->createSupplierLedgerFixture($admin, $category, 'Alpha Supplier', '111111111', 120000, $month, true);
+        $unpaid = $this->createSupplierLedgerFixture($admin, $category, 'Beta Supplier', '222222222', 240000, $month, false);
 
         $response = $this->get(route('supplier-payments.index', [
-            'from' => now()->toDateString(),
-            'to' => now()->toDateString(),
+            'month' => $month->format('Y-m'),
         ]));
 
         $response->assertOk();
-        $response->assertSee($first['supplier']->bank_account_number);
-        $response->assertSee($first['payment']->public_id_display);
-        $response->assertDontSee($second['supplier']->bank_account_number);
-        $response->assertDontSee($second['payment']->public_id_display);
+        $response->assertSee($month->format('Y-m'));
+        $response->assertSee('120.000 đ');
+        $response->assertSee('240.000 đ');
+        $response->assertSee('360.000 đ');
+        $response->assertSee($paid['supplier']->name);
+        $response->assertSee($unpaid['supplier']->name);
+        $response->assertSee('Đã thanh toán');
+        $response->assertSee('Chưa thanh toán');
     }
 
-    public function test_supplier_payment_index_switches_context_when_supplier_id_is_provided(): void
+    public function test_supplier_payment_index_filters_to_the_selected_supplier_for_the_month(): void
     {
         $admin = $this->actingAsAdmin();
         $category = $this->createCategory();
+        $month = Carbon::create(2026, 5, 1);
 
-        $first = $this->createSupplierLedgerFixture($admin, $category, 'Alpha Supplier', '111111111', 120000);
-        $second = $this->createSupplierLedgerFixture($admin, $category, 'Beta Supplier', '222222222', 240000);
+        $first = $this->createSupplierLedgerFixture($admin, $category, 'Alpha Supplier', '111111111', 120000, $month, true);
+        $second = $this->createSupplierLedgerFixture($admin, $category, 'Beta Supplier', '222222222', 240000, $month, false);
 
         $response = $this->get(route('supplier-payments.index', [
+            'month' => $month->format('Y-m'),
             'supplier_id' => $second['supplier']->id,
-            'from' => now()->toDateString(),
-            'to' => now()->toDateString(),
         ]));
 
         $response->assertOk();
         $response->assertSee($second['supplier']->bank_account_number);
-        $response->assertSee($second['payment']->public_id_display);
+        $response->assertSee($second['supplier']->name);
         $response->assertDontSee($first['supplier']->bank_account_number);
-        $response->assertDontSee($first['payment']->public_id_display);
+        $response->assertDontSee($first['payment']?->public_id_display ?? 'PAY-ALPHA-SUPPLIER');
     }
 
-    public function test_search_lists_matching_suppliers_even_when_they_have_no_payable_amount(): void
+    public function test_supplier_payment_index_filters_by_unpaid_status(): void
     {
         $admin = $this->actingAsAdmin();
         $category = $this->createCategory();
+        $month = Carbon::create(2026, 5, 1);
 
-        $searchable = $this->createSupplierWithoutLedger('Gamma Supplier');
-        $this->createSupplierLedgerFixture($admin, $category, 'Alpha Supplier', '111111111', 120000);
+        $paid = $this->createSupplierLedgerFixture($admin, $category, 'Alpha Supplier', '111111111', 120000, $month, true);
+        $unpaid = $this->createSupplierLedgerFixture($admin, $category, 'Beta Supplier', '222222222', 240000, $month, false);
 
         $response = $this->get(route('supplier-payments.index', [
-            'search' => 'Gamma Supplier',
-            'from' => now()->toDateString(),
-            'to' => now()->toDateString(),
+            'month' => $month->format('Y-m'),
+            'status' => 'unpaid',
         ]));
 
         $response->assertOk();
-        $response->assertSee($searchable->name);
-        $response->assertSee('Không cần thanh toán');
+        $response->assertSee($unpaid['supplier']->name);
+        $response->assertSee('Chưa thanh toán');
     }
 
     private function actingAsAdmin(): User
@@ -105,13 +110,20 @@ class SupplierPaymentFilterTest extends TestCase
         ]);
     }
 
-    private function createSupplierLedgerFixture(User $user, Category $category, string $name, string $bankAccountNumber, int $lineTotal): array
-    {
+    private function createSupplierLedgerFixture(
+        User $user,
+        Category $category,
+        string $name,
+        string $bankAccountNumber,
+        int $lineTotal,
+        Carbon $month,
+        bool $markAsPaid
+    ): array {
         $supplier = Supplier::create([
             'responsible_name' => 'Nguoi phu trach '.$name,
             'type' => 'cho_tang',
             'name' => $name,
-            'phone' => null,
+            'phone' => '0900000000',
             'bank_name' => 'VCB',
             'bank_account_name' => $name,
             'bank_account_number' => $bankAccountNumber,
@@ -121,7 +133,7 @@ class SupplierPaymentFilterTest extends TestCase
         $consignment = ConsignmentNote::create([
             'responsible_user_id' => $user->id,
             'supplier_id' => $supplier->id,
-            'sent_date' => now()->toDateString(),
+            'sent_date' => $month->copy()->day(5)->toDateString(),
             'quantity' => 1,
             'notes' => null,
         ]);
@@ -145,7 +157,7 @@ class SupplierPaymentFilterTest extends TestCase
             'payment_reference' => null,
             'total_amount' => $lineTotal,
             'items_count' => 1,
-            'completed_at' => now(),
+            'completed_at' => $month->copy()->day(12),
         ]);
         $sale->refresh();
 
@@ -159,25 +171,29 @@ class SupplierPaymentFilterTest extends TestCase
             'line_total' => $lineTotal,
         ]);
 
-        $payment = SupplierPayment::create([
-            'public_id' => 'PAY-'.Str::upper(Str::slug($name)),
-            'supplier_id' => $supplier->id,
-            'user_id' => $user->id,
-            'payment_reference' => 'payment-'.$supplier->id,
-            'period_from' => now()->toDateString(),
-            'period_to' => now()->toDateString(),
-            'gross_amount' => $lineTotal,
-            'discount_rate' => 0,
-            'discount_amount' => 0,
-            'payable_amount' => $lineTotal,
-            'bank_name' => 'VCB',
-            'bank_account_name' => $supplier->bank_account_name,
-            'bank_account_number' => $supplier->bank_account_number,
-            'qr_url' => 'https://example.test/qr/'.$supplier->id,
-            'payload' => 'test payload for '.$name,
-            'paid_at' => now(),
-        ]);
-        $payment->refresh();
+        $payment = null;
+
+        if ($markAsPaid) {
+            $payment = SupplierPayment::create([
+                'public_id' => 'PAY-'.Str::upper(Str::slug($name)),
+                'supplier_id' => $supplier->id,
+                'user_id' => $user->id,
+                'payment_reference' => 'payment-'.$supplier->id.'-'.$month->format('Ym'),
+                'period_from' => $month->copy()->startOfMonth()->toDateString(),
+                'period_to' => $month->copy()->endOfMonth()->toDateString(),
+                'gross_amount' => $lineTotal,
+                'discount_rate' => 0,
+                'discount_amount' => 0,
+                'payable_amount' => $lineTotal,
+                'bank_name' => 'VCB',
+                'bank_account_name' => $supplier->bank_account_name,
+                'bank_account_number' => $supplier->bank_account_number,
+                'qr_url' => 'https://example.test/qr/'.$supplier->id,
+                'payload' => 'test payload for '.$name,
+                'paid_at' => $month->copy()->day(20),
+            ]);
+            $payment->refresh();
+        }
 
         return [
             'supplier' => $supplier,
@@ -185,19 +201,5 @@ class SupplierPaymentFilterTest extends TestCase
             'sale' => $sale,
             'payment' => $payment,
         ];
-    }
-
-    private function createSupplierWithoutLedger(string $name): Supplier
-    {
-        return Supplier::create([
-            'responsible_name' => 'Nguoi phu trach '.$name,
-            'type' => 'cho_tang',
-            'name' => $name,
-            'phone' => null,
-            'bank_name' => 'VCB',
-            'bank_account_name' => $name,
-            'bank_account_number' => '000000000',
-            'notes' => null,
-        ]);
     }
 }
