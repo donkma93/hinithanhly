@@ -154,10 +154,6 @@ class SalesController extends Controller
             return $singleItemValidation;
         }
 
-        if ($paymentMethod === 'transfer' && $paymentToken === null) {
-            return response()->json(['message' => 'Vui lòng tạo mã QR chuyển khoản trước khi chốt hoá đơn.'], 422);
-        }
-
         // If a payment token is provided, verify it exists and matches
         if ($paymentToken) {
             $cached = Cache::pull("sales.payment.{$paymentToken}");

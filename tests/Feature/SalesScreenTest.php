@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Category;
 use App\Models\ConsignmentNote;
 use App\Models\Product;
+use App\Models\Sale;
 use App\Models\Supplier;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -187,5 +188,65 @@ class SalesScreenTest extends TestCase
             'payment_method' => 'cash',
         ])->assertStatus(422)
             ->assertJsonPath('message', 'Mỗi sản phẩm chỉ được chọn một lần trong hóa đơn.');
+    }
+
+    public function test_sales_checkout_allows_transfer_without_generating_qr_first(): void
+    {
+        $user = User::create([
+            'name' => 'Nhân viên bán hàng',
+            'email' => 'sales-transfer@example.com',
+            'password' => 'password',
+        ]);
+        $this->actingAs($user);
+
+        $category = Category::create([
+            'name' => 'Giày dép',
+            'description' => null,
+            'is_active' => true,
+        ]);
+        $supplier = Supplier::create([
+            'responsible_user_id' => $user->id,
+            'type' => 'cho_tang',
+            'name' => 'Nhà cung cấp D',
+            'phone' => null,
+            'bank_name' => null,
+            'bank_account_name' => null,
+            'bank_account_number' => null,
+            'notes' => null,
+        ]);
+        $consignment = ConsignmentNote::create([
+            'responsible_user_id' => $user->id,
+            'supplier_id' => $supplier->id,
+            'sent_date' => now()->toDateString(),
+            'quantity' => 1,
+            'notes' => null,
+        ]);
+        $product = Product::create([
+            'consignment_note_id' => $consignment->id,
+            'supplier_id' => $supplier->id,
+            'category_id' => $category->id,
+            'created_by_id' => $user->id,
+            'name' => 'Giày test',
+            'sale_price' => 150000,
+            'quantity' => 1,
+            'image_path' => null,
+            'description' => null,
+        ]);
+
+        $response = $this->postJson(route('sales.checkout'), [
+            'items' => [
+                ['id' => $product->id, 'quantity' => 1],
+            ],
+            'payment_method' => 'transfer',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('payment_method', 'transfer');
+
+        $sale = Sale::query()->latest('id')->first();
+
+        $this->assertNotNull($sale);
+        $this->assertSame('transfer', $sale->payment_method);
+        $this->assertNull($sale->payment_reference);
     }
 }
