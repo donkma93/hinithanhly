@@ -145,14 +145,15 @@ class SalesController extends Controller
             'payment_token' => ['nullable', 'string'],
         ]);
 
-        $items = $data['items'];
+        $normalizedItems = $this->normalizeCheckoutItems($data['items']);
+        if ($normalizedItems instanceof JsonResponse) {
+            return $normalizedItems;
+        }
+
+        $items = $normalizedItems;
         $paymentMethod = $data['payment_method'];
         $paymentToken = $data['payment_token'] ?? null;
         $paymentReference = null;
-
-        if ($singleItemValidation = $this->validateSingleItemCheckout($items)) {
-            return $singleItemValidation;
-        }
 
         // If a payment token is provided, verify it exists and matches
         if ($paymentToken) {
@@ -274,11 +275,12 @@ class SalesController extends Controller
             'items.*.quantity' => ['required', 'integer', 'min:1'],
         ]);
 
-        $items = $data['items'];
-
-        if ($singleItemValidation = $this->validateSingleItemCheckout($items)) {
-            return $singleItemValidation;
+        $normalizedItems = $this->normalizeCheckoutItems($data['items']);
+        if ($normalizedItems instanceof JsonResponse) {
+            return $normalizedItems;
         }
+
+        $items = $normalizedItems;
 
         // compute total
         $total = 0;
@@ -287,7 +289,14 @@ class SalesController extends Controller
             if (!$product) {
                 return response()->json(['message' => "Sản phẩm ID {$item['id']} không tồn tại hoặc không còn bán được."], 422);
             }
-            $total += $product->sale_price * (int)$item['quantity'];
+
+            $qty = (int) $item['quantity'];
+
+            if ($product->quantity < $qty) {
+                return response()->json(['message' => "Sản phẩm {$product->name} không đủ tồn kho."], 422);
+            }
+
+            $total += $product->sale_price * $qty;
         }
 
         // Build payment payload (prefer settings saved in DB, fallback to env)
@@ -388,30 +397,30 @@ class SalesController extends Controller
         return null;
     }
 
-    private function validateSingleItemCheckout(array $items): ?JsonResponse
+    /**
+     * @return array<int,array{id:int,quantity:int}>|JsonResponse
+     */
+    private function normalizeCheckoutItems(array $items): array|JsonResponse
     {
-        $seen = [];
+        $normalized = [];
 
         foreach ($items as $item) {
             $id = (int) ($item['id'] ?? 0);
             $quantity = (int) ($item['quantity'] ?? 0);
 
-            if ($id <= 0 || $quantity !== 1) {
+            if ($id <= 0 || $quantity <= 0) {
                 return response()->json([
-                    'message' => 'Mỗi lượt chọn bán hàng chỉ được 1 sản phẩm.',
+                    'message' => 'Số lượng sản phẩm bán hàng không hợp lệ.',
                 ], 422);
             }
 
-            if (isset($seen[$id])) {
-                return response()->json([
-                    'message' => 'Mỗi sản phẩm chỉ được chọn một lần trong hóa đơn.',
-                ], 422);
-            }
-
-            $seen[$id] = true;
+            $normalized[$id] = [
+                'id' => $id,
+                'quantity' => ($normalized[$id]['quantity'] ?? 0) + $quantity,
+            ];
         }
 
-        return null;
+        return array_values($normalized);
     }
 
     private function resolveImageUrl(?string $imagePath): ?string

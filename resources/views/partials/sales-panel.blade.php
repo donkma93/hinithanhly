@@ -135,7 +135,12 @@
 
         const looksLikeProductCode = (value) => /^[0-9\-]+$/.test(normalizeSearchTerm(value));
 
-        const isProductInCart = (productId) => cart.has(Number(productId));
+        const getRemainingQuantity = (item) => {
+            const stockQuantity = Number(item.quantity || 0);
+            const cartQuantity = Number(cart.get(Number(item.id))?.cart_quantity || 0);
+
+            return Math.max(stockQuantity - cartQuantity, 0);
+        };
 
         const hideSuggestions = () => {
             suggestionsPanel.classList.add('hidden');
@@ -144,7 +149,7 @@
 
         const renderSuggestions = (items, query) => {
             const cleanQuery = normalizeSearchTerm(query);
-            const visibleItems = items.filter((item) => !isProductInCart(item.id));
+            const visibleItems = items.filter((item) => getRemainingQuantity(item) > 0);
 
             if (!cleanQuery || !visibleItems.length) {
                 hideSuggestions();
@@ -161,7 +166,7 @@
                             <p class="truncate font-semibold text-slate-900">${item.name}</p>
                             <span class="shrink-0 text-sm font-semibold text-slate-900">${item.sale_price_text}</span>
                         </div>
-                        <p class="mt-1 text-sm text-slate-500">Mã: #${item.public_id_display} · Tồn kho: ${item.quantity}</p>
+                        <p class="mt-1 text-sm text-slate-500">Mã: #${item.public_id_display} · Còn có thể bán: ${getRemainingQuantity(item)}/${item.quantity}</p>
                         <p class="mt-1 text-xs text-slate-400">${item.supplier ? `${item.supplier.name}${item.supplier.public_id_display ? ' · #' + item.supplier.public_id_display : ''}` : ''}${item.category ? `${item.supplier ? ' · ' : ''}${item.category.name}${item.category.public_id_display ? ' · #' + item.category.public_id_display : ''}` : ''}</p>
                     </div>
                 </button>
@@ -238,7 +243,7 @@
 
         const buildCheckoutItems = () => Array.from(cart.values()).map((item) => ({
             id: Number(item.id),
-            quantity: 1,
+            quantity: Number(item.cart_quantity || 1),
         }));
 
         const completeCheckout = async (paymentMethod, paymentToken = null) => {
@@ -300,9 +305,10 @@
 
         const renderCart = () => {
             const items = Array.from(cart.values());
-            const subtotal = items.reduce((sum, item) => sum + Number(item.sale_price || 0), 0);
+            const itemsCount = items.reduce((sum, item) => sum + Number(item.cart_quantity || 1), 0);
+            const subtotal = items.reduce((sum, item) => sum + (Number(item.sale_price || 0) * Number(item.cart_quantity || 1)), 0);
 
-            itemsCountInline.textContent = String(items.length);
+            itemsCountInline.textContent = String(itemsCount);
             subtotalInline.textContent = formatMoney(subtotal);
             cartState.textContent = items.length ? 'Đang tính tiền' : 'Chờ quét';
 
@@ -328,8 +334,8 @@
                     </div>
                     <div class="flex items-center gap-3">
                         <div class="text-right">
-                            <p class="font-semibold">${formatMoney(item.sale_price)}</p>
-                            <p class="text-xs text-slate-500">SL: 1 × ${formatMoney(item.sale_price)}</p>
+                            <p class="font-semibold">${formatMoney(Number(item.sale_price || 0) * Number(item.cart_quantity || 1))}</p>
+                            <p class="text-xs text-slate-500">SL: ${Number(item.cart_quantity || 1)} x ${formatMoney(item.sale_price)}</p>
                         </div>
                         <button type="button" data-remove-id="${item.id}" class="rounded-lg border border-slate-300 px-3 py-1 text-sm text-slate-600">
                             Xóa
@@ -362,8 +368,19 @@
             }
 
             if (currentItem) {
-                setStatus('Sản phẩm này đã có trong hóa đơn hiện tại.', 'warning');
+                const currentQuantity = Number(currentItem.cart_quantity || 1);
+
+                if (currentQuantity >= stockQuantity) {
+                    setStatus('Sản phẩm này không còn đủ tồn kho để thêm vào hóa đơn.', 'error');
+                    renderLastProduct(product);
+                    focusScanner();
+                    return;
+                }
+
+                cart.set(productId, { ...currentItem, quantity: stockQuantity, cart_quantity: currentQuantity + 1 });
                 renderLastProduct(product);
+                renderCart();
+                setStatus(`Đã thêm 1 ${product.name}. Số lượng hiện tại: ${currentQuantity + 1}.`, 'success');
                 focusScanner();
                 return;
             }

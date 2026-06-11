@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\ConsignmentNote;
 use App\Models\Product;
 use App\Models\Sale;
+use App\Models\SaleItem;
 use App\Models\Supplier;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -129,7 +130,7 @@ class SalesScreenTest extends TestCase
         $response->assertJsonPath('name', 'Túi đeo chéo');
     }
 
-    public function test_sales_checkout_requires_unique_products_and_single_quantity_per_line(): void
+    public function test_sales_checkout_allows_multiple_units_when_stock_is_available(): void
     {
         $user = User::create([
             'name' => 'Nhân viên bán hàng',
@@ -172,13 +173,66 @@ class SalesScreenTest extends TestCase
             'description' => null,
         ]);
 
-        $this->postJson(route('sales.checkout'), [
+        $response = $this->postJson(route('sales.checkout'), [
             'items' => [
                 ['id' => $product->id, 'quantity' => 2],
             ],
             'payment_method' => 'cash',
-        ])->assertStatus(422)
-            ->assertJsonPath('message', 'Mỗi lượt chọn bán hàng chỉ được 1 sản phẩm.');
+        ]);
+
+        $response->assertOk();
+
+        $product->refresh();
+        $this->assertSame(1, $product->quantity);
+
+        $saleItem = SaleItem::query()->latest('id')->first();
+        $this->assertNotNull($saleItem);
+        $this->assertSame(2, $saleItem->quantity);
+        $this->assertSame(176000.0, (float) $saleItem->line_total);
+    }
+
+    public function test_sales_checkout_combines_duplicate_product_lines_and_rejects_quantity_over_stock(): void
+    {
+        $user = User::create([
+            'name' => 'Nhân viên bán hàng',
+            'email' => 'sales-checkout-duplicates@example.com',
+            'password' => 'password',
+        ]);
+        $this->actingAs($user);
+
+        $category = Category::create([
+            'name' => 'Phụ kiện',
+            'description' => null,
+            'is_active' => true,
+        ]);
+        $supplier = Supplier::create([
+            'responsible_user_id' => $user->id,
+            'type' => 'cho_tang',
+            'name' => 'Nhà cung cấp C',
+            'phone' => null,
+            'bank_name' => null,
+            'bank_account_name' => null,
+            'bank_account_number' => null,
+            'notes' => null,
+        ]);
+        $consignment = ConsignmentNote::create([
+            'responsible_user_id' => $user->id,
+            'supplier_id' => $supplier->id,
+            'sent_date' => now()->toDateString(),
+            'quantity' => 1,
+            'notes' => null,
+        ]);
+        $product = Product::create([
+            'consignment_note_id' => $consignment->id,
+            'supplier_id' => $supplier->id,
+            'category_id' => $category->id,
+            'created_by_id' => $user->id,
+            'name' => 'Ví test',
+            'sale_price' => 88000,
+            'quantity' => 3,
+            'image_path' => null,
+            'description' => null,
+        ]);
 
         $this->postJson(route('sales.checkout'), [
             'items' => [
@@ -186,8 +240,18 @@ class SalesScreenTest extends TestCase
                 ['id' => $product->id, 'quantity' => 1],
             ],
             'payment_method' => 'cash',
+        ])->assertOk();
+
+        $product->refresh();
+        $this->assertSame(1, $product->quantity);
+
+        $this->postJson(route('sales.checkout'), [
+            'items' => [
+                ['id' => $product->id, 'quantity' => 2],
+            ],
+            'payment_method' => 'cash',
         ])->assertStatus(422)
-            ->assertJsonPath('message', 'Mỗi sản phẩm chỉ được chọn một lần trong hóa đơn.');
+            ->assertJsonPath('message', "Sản phẩm {$product->name} không đủ tồn kho.");
     }
 
     public function test_sales_checkout_allows_transfer_without_generating_qr_first(): void
