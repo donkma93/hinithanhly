@@ -63,6 +63,7 @@ Route::middleware(['auth'])->group(function () {
 
         $consignmentSeries = $months->map(function (array $month) {
             return ConsignmentNote::query()
+                ->whereHas('supplier', fn ($query) => $query->where('type', 'ncc_it_san_pham'))
                 ->whereBetween('created_at', [$month['start'], $month['end']])
                 ->count();
         })->values();
@@ -76,7 +77,7 @@ Route::middleware(['auth'])->group(function () {
             'stats' => [
                 'categories' => Category::count(),
                 'suppliers' => Supplier::count(),
-                'consignments' => ConsignmentNote::count(),
+                'consignments' => ConsignmentNote::query()->whereHas('supplier', fn ($query) => $query->where('type', 'ncc_it_san_pham'))->count(),
                 'products' => Product::count(),
             ],
             'activeRole' => auth()->user()?->getRoleNames()->first() ?? 'staff',
