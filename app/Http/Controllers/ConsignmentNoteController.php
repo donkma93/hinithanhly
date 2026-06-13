@@ -29,6 +29,7 @@ class ConsignmentNoteController extends Controller
 
         $consignmentRoundMap = $this->resolveSendRounds(
             ConsignmentNote::query()
+                ->whereHas('supplier', fn ($q) => $q->where('type', 'ncc_it_san_pham'))
                 ->orderBy('supplier_id')
                 ->orderBy('sent_date')
                 ->orderBy('id')
@@ -40,6 +41,7 @@ class ConsignmentNoteController extends Controller
             ->with([
                 'supplier:id,public_id,name,type',
             ])
+            ->whereHas('supplier', fn ($q) => $q->where('type', 'ncc_it_san_pham'))
             ->when($publicId !== '', fn ($query) => $query->where('public_id', $publicId))
             ->when($filterSupplierId !== null, fn ($query) => $query->where('supplier_id', $filterSupplierId))
             ->latest()
@@ -57,10 +59,11 @@ class ConsignmentNoteController extends Controller
         return view('consignments.index', [
             'consignments' => $consignments,
             'suppliers' => Supplier::query()
-                ->whereIn('type', Supplier::MANUAL_CONSIGNMENT_TYPES)
+                ->where('type', 'ncc_it_san_pham')
                 ->orderBy('name')
                 ->get(['id', 'public_id', 'name', 'type']),
             'filterSuppliers' => Supplier::query()
+                ->where('type', 'ncc_it_san_pham')
                 ->withTrashed()
                 ->orderBy('name')
                 ->get(['id', 'public_id', 'name', 'type', 'deleted_at']),
@@ -109,7 +112,7 @@ class ConsignmentNoteController extends Controller
         return view('consignments.edit', [
             'consignment' => $consignment,
             'suppliers' => Supplier::query()->withTrashed()
-                ->whereIn('type', Supplier::MANUAL_CONSIGNMENT_TYPES)
+                ->where('type', 'ncc_it_san_pham')
                 ->orderBy('name')
                 ->get(['id', 'public_id', 'name', 'type']),
         ]);

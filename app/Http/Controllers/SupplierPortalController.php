@@ -2,37 +2,39 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Product;
+use App\Models\SaleItem;
 use App\Models\Setting;
 use App\Models\Supplier;
-use Illuminate\Database\Eloquent\Builder;
+use App\Models\SupplierPayment;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class SupplierPortalController extends Controller
 {
-    private const STATUS_FILTERS = ['all', 'active', 'expiring_soon', 'expired', 'returned'];
-
     public function index(Request $request): View
     {
         $supplierCode = $this->normalizeSupplierCode((string) $request->input('supplier_code', ''));
         $phone = $this->normalizePhone((string) $request->input('phone', ''));
-        $statusFilter = $this->normalizeStatusFilter($request->string('status', 'all')->toString());
         $searchPerformed = $supplierCode !== '' || $phone !== '';
+
+        $selectedMonth = trim((string) $request->string('month'));
+        $monthDate = $selectedMonth !== ''
+            ? Carbon::createFromFormat('Y-m', $selectedMonth)->startOfMonth()
+            : now()->startOfMonth();
+
+        $selectedMonth = $monthDate->format('Y-m');
+        $startDate = $monthDate->copy()->startOfMonth()->startOfDay();
+        $endDate = $monthDate->copy()->endOfMonth()->endOfDay();
 
         $supplier = $searchPerformed
             ? $this->resolveSupplier($supplierCode, $phone)
             : null;
 
-        $statusSummary = $supplier
-            ? $this->buildStatusSummary((int) $supplier->id)
-            : null;
-
-        $products = $supplier
-            ? $this->buildProductsQuery((int) $supplier->id, $statusFilter)
-                ->paginate(8)
-                ->withQueryString()
-            : null;
+        $paymentSummary = null;
+        if ($supplier) {
+            $paymentSummary = $this->buildPaymentSummary($supplier, $startDate, $endDate);
+        }
 
         return view('welcome', [
             'supplier' => $supplier,
@@ -42,12 +44,8 @@ class SupplierPortalController extends Controller
             'searchError' => $searchPerformed && $supplier === null
                 ? 'Không tìm thấy nhà cung cấp phù hợp. Hãy kiểm tra lại mã NCC hoặc số điện thoại.'
                 : null,
-            'statusFilter' => $statusFilter,
-            'statusOptions' => $this->statusOptions(),
-            'statusSummary' => $statusSummary,
-            'products' => $products,
-            'consignmentTermDays' => Product::CONSIGNMENT_TERM_DAYS,
-            'consignmentWarningDays' => Product::CONSIGNMENT_WARNING_DAYS,
+            'selectedMonth' => $selectedMonth,
+            'paymentSummary' => $paymentSummary,
             'portalAddress' => Setting::get('store_address', 'Địa chỉ cửa hàng đang được cập nhật'),
             'portalHotline' => Setting::get('store_hotline', 'Liên hệ trực tiếp cửa hàng để được hỗ trợ'),
             'portalHours' => Setting::get('store_hours', '08:30 - 21:00 mỗi ngày'),
@@ -96,120 +94,43 @@ class SupplierPortalController extends Controller
         return $value;
     }
 
-    private function normalizeStatusFilter(string $status): string
+    private function buildPaymentSummary(Supplier $supplier, Carbon $startDate, Carbon $endDate): array
     {
-        return in_array($status, self::STATUS_FILTERS, true) ? $status : 'all';
-    }
+        $baseQuery = SaleItem::query()
+            ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+            ->join('products', 'sale_items.product_id', '=', 'products.id')
+            ->where('products.supplier_id', $supplier->id)
+            ->whereNotNull('sales.completed_at')
+            ->whereBetween('sales.completed_at', [$startDate, $endDate]);
 
-    /**
-     * @return array<string, array{label:string,description:string}>
-     */
-    private function statusOptions(): array
-    {
-        return [
-            'all' => [
-                'label' => 'Tất cả',
-                'description' => 'Xem toàn bộ sản phẩm của NCC',
-            ],
-            'active' => [
-                'label' => 'Đang hiệu lực',
-                'description' => 'Còn hơn 7 ngày trước hạn',
-            ],
-            'expiring_soon' => [
-                'label' => 'Sắp hết hạn',
-                'description' => 'Còn tối đa 7 ngày',
-            ],
-            'expired' => [
-                'label' => 'Quá hạn',
-                'description' => 'Đã vượt mốc 45 ngày',
-            ],
-            'returned' => [
-                'label' => 'Đã trả',
-                'description' => 'Đã đánh dấu trả cho người gửi',
-            ],
-        ];
-    }
+        $grossAmount = (float) (clone $baseQuery)->sum('sale_items.line_total');
+        $unitsSold = (int) (clone $baseQuery)->sum('sale_items.quantity');
 
-    /**
-     * @return array{0:string,1:string}
-     */
-    private function consignmentWindows(): array
-    {
-        return [
-            now()->subDays(Product::CONSIGNMENT_TERM_DAYS)->toDateString(),
-            now()->subDays(Product::CONSIGNMENT_TERM_DAYS - Product::CONSIGNMENT_WARNING_DAYS)->toDateString(),
-        ];
-    }
+        $discountRate = (float) Setting::supplierDiscountRate($supplier->type);
+        $discountAmount = round($grossAmount * $discountRate / 100, 2);
+        $payableAmount = max(0, round($grossAmount - $discountAmount, 2));
 
-    /**
-     * @return array{all:int,active:int,expiring_soon:int,expired:int,returned:int}
-     */
-    private function buildStatusSummary(int $supplierId): array
-    {
-        [$warningWindowStart, $warningWindowEnd] = $this->consignmentWindows();
+        $payment = SupplierPayment::query()
+            ->where('supplier_id', $supplier->id)
+            ->whereDate('period_from', '>=', $startDate->toDateString())
+            ->whereDate('period_to', '<=', $endDate->toDateString())
+            ->whereNotNull('paid_at')
+            ->first();
 
-        $baseQuery = Product::query()
-            ->where('supplier_id', $supplierId);
+        $isPaid = $payment !== null;
 
         return [
-            'all' => (clone $baseQuery)->count(),
-            'active' => (clone $baseQuery)
-                ->whereNull('returned_at')
-                ->where('quantity', '>', 0)
-                ->whereHas('consignmentNote', function (Builder $query) use ($warningWindowEnd): void {
-                    $query->whereDate('sent_date', '>', $warningWindowEnd);
-                })
-                ->count(),
-            'expiring_soon' => (clone $baseQuery)
-                ->whereNull('returned_at')
-                ->where('quantity', '>', 0)
-                ->whereHas('consignmentNote', function (Builder $query) use ($warningWindowStart, $warningWindowEnd): void {
-                    $query->whereBetween('sent_date', [$warningWindowStart, $warningWindowEnd]);
-                })
-                ->count(),
-            'expired' => (clone $baseQuery)
-                ->whereNull('returned_at')
-                ->where('quantity', '>', 0)
-                ->whereHas('consignmentNote', function (Builder $query) use ($warningWindowStart): void {
-                    $query->whereDate('sent_date', '<', $warningWindowStart);
-                })
-                ->count(),
-            'returned' => (clone $baseQuery)
-                ->whereNotNull('returned_at')
-                ->count(),
+            'gross_amount' => $grossAmount,
+            'discount_rate' => $discountRate,
+            'discount_amount' => $discountAmount,
+            'payable_amount' => $payableAmount,
+            'units_sold' => $unitsSold,
+            'status' => $isPaid ? 'paid' : 'unpaid',
+            'status_label' => $isPaid ? 'Đã thanh toán' : 'Chưa thanh toán',
+            'payment' => $payment,
+            'period_label' => $startDate->format('m/Y'),
+            'start_date' => $startDate,
+            'end_date' => $endDate,
         ];
-    }
-
-    private function buildProductsQuery(int $supplierId, string $statusFilter): Builder
-    {
-        [$warningWindowStart, $warningWindowEnd] = $this->consignmentWindows();
-
-        $query = Product::query()
-            ->select('products.*')
-            ->leftJoin('consignment_notes', 'consignment_notes.id', '=', 'products.consignment_note_id')
-            ->with([
-                'category:id,public_id,name',
-                'consignmentNote:id,public_id,supplier_id,sent_date',
-                'returner:id,public_id,name',
-            ])
-            ->where('products.supplier_id', $supplierId);
-
-        return match ($statusFilter) {
-            'active' => $query
-                ->whereNull('products.returned_at')
-                ->where('products.quantity', '>', 0)
-                ->whereDate('consignment_notes.sent_date', '>', $warningWindowEnd),
-            'expiring_soon' => $query
-                ->whereNull('products.returned_at')
-                ->where('products.quantity', '>', 0)
-                ->whereBetween('consignment_notes.sent_date', [$warningWindowStart, $warningWindowEnd]),
-            'expired' => $query
-                ->whereNull('products.returned_at')
-                ->where('products.quantity', '>', 0)
-                ->whereDate('consignment_notes.sent_date', '<', $warningWindowStart),
-            'returned' => $query
-                ->whereNotNull('products.returned_at'),
-            default => $query,
-        };
     }
 }

@@ -47,6 +47,12 @@
                     <h3 class="text-lg font-semibold text-gray-900">Hoá đơn theo thời gian</h3>
                     <form method="GET" action="{{ route('revenue.index') }}" class="flex flex-wrap items-center gap-2">
                         <x-per-page-select :value="request('per_page', 10)" />
+                        <select name="supplier_type" class="rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900">
+                            <option value="">-- Tất cả loại NCC --</option>
+                            @foreach (\App\Models\Supplier::TYPES as $type => $label)
+                                <option value="{{ $type }}" {{ request('supplier_type') === $type ? 'selected' : '' }}>{{ $label }}</option>
+                            @endforeach
+                        </select>
                         <input type="date" name="from" value="{{ request('from', $startDate->format('Y-m-d')) }}" class="rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900">
                         <input type="date" name="to" value="{{ request('to', $endDate->format('Y-m-d')) }}" class="rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900">
                         <button class="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">Lọc</button>
@@ -70,7 +76,7 @@
                                     <td class="py-3 pr-4 font-medium text-slate-900">#{{ $sale->public_id_display }}</td>
                                     <td class="py-3 pr-4 text-gray-600">{{ optional($sale->completed_at)->format('d/m/Y H:i') ?? $sale->created_at->format('d/m/Y H:i') }}</td>
                                     <td class="py-3 pr-4 text-gray-600">{{ $paymentLabels[$sale->payment_method] ?? $sale->payment_method }}</td>
-                                    <td class="py-3 pr-4 text-gray-900">{{ number_format((float) $sale->total_amount, 0, ',', '.') }} đ</td>
+                                    <td class="py-3 pr-4 text-gray-900">{{ number_format((float) $sale->items->sum('line_total'), 0, ',', '.') }} đ</td>
                                     <td class="py-3 pr-4 text-gray-600">{{ $sale->cashier?->name ?? '---' }}</td>
                                 </tr>
                                 <tr>
