@@ -112,34 +112,40 @@
 
                         <article id="tra-cuu" class="scroll-mt-24 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
                             <p class="text-xs font-bold uppercase tracking-[0.35em] text-cyan-600">NHÀ CUNG CẤP - TRA CỨU</p>
-                            <h2 class="mt-4 text-2xl font-black text-slate-950">Nhập mã để xem sản phẩm</h2>
+                            <h2 class="mt-4 text-2xl font-black text-slate-950">Chọn nhà cung cấp để xem doanh số</h2>
                             <p class="mt-2 text-sm leading-7 text-slate-700">
-                                Điền mã nhà cung cấp hoặc số điện thoại rồi bấm tra cứu để xem danh sách sản phẩm của bạn.
+                                Chọn phân loại và nhà cung cấp rồi bấm tra cứu để xem doanh số và thanh toán của bạn.
                             </p>
 
                             <form method="GET" action="{{ route('home') }}" class="mt-5 space-y-4">
+                                @php
+                                    $selectedSupplierType = request('supplier_type', $supplier?->type ?? '');
+                                @endphp
+
                                 <div>
-                                    <label for="supplier_code" class="mb-2 block text-sm font-semibold text-slate-800">Mã nhà cung cấp</label>
-                                    <input
-                                        id="supplier_code"
-                                        type="text"
-                                        name="supplier_code"
-                                        value="{{ $supplierCode }}"
-                                        placeholder="Tìm theo mã nhà cung cấp"
-                                        class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-950 placeholder:text-slate-400 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/15"
-                                    >
+                                    <label class="mb-2 block text-sm font-semibold text-slate-800">Phân loại nhà cung cấp</label>
+                                    <x-searchable-select
+                                        name="supplier_type"
+                                        :options="$supplierTypeOptions"
+                                        :selected="$selectedSupplierType"
+                                        placeholder="-- Chọn phân loại --"
+                                        search-placeholder="Tìm phân loại..."
+                                        empty-text="Không tìm thấy phân loại"
+                                    />
                                 </div>
 
                                 <div>
-                                    <label for="phone" class="mb-2 block text-sm font-semibold text-slate-800">Số điện thoại</label>
-                                    <input
-                                        id="phone"
-                                        type="text"
-                                        name="phone"
-                                        value="{{ $phone }}"
-                                        placeholder="Nhập số điện thoại liên hệ"
-                                        class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-950 placeholder:text-slate-400 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/15"
-                                    >
+                                    <label class="mb-2 block text-sm font-semibold text-slate-800">Nhà cung cấp</label>
+                                    <x-searchable-select
+                                        name="supplier_code"
+                                        :options="$supplierOptions"
+                                        :selected="$supplierCode"
+                                        placeholder="-- Chọn nhà cung cấp --"
+                                        search-placeholder="Tìm theo mã, tên hoặc SĐT..."
+                                        empty-text="Không tìm thấy nhà cung cấp"
+                                        depends-on="supplier_type"
+                                        filter-key="type"
+                                    />
                                 </div>
 
                                 <div>
@@ -222,7 +228,7 @@
                             <p class="text-xs font-bold uppercase tracking-[0.35em] text-rose-600">CHƯA TÌM THẤY</p>
                             <h2 class="mt-3 text-2xl font-black text-slate-950">Không có dữ liệu phù hợp để hiển thị</h2>
                             <p class="mt-2 max-w-3xl text-sm leading-7 text-slate-700">
-                                Vui lòng kiểm tra lại mã nhà cung cấp hoặc số điện thoại. Nếu chưa có mã, hãy liên hệ cửa hàng để được hỗ trợ tra cứu.
+                                Vui lòng kiểm tra lại lựa chọn phân loại và nhà cung cấp. Nếu chưa thấy tên của mình, hãy liên hệ cửa hàng để được hỗ trợ tra cứu.
                             </p>
                         </section>
                     @else

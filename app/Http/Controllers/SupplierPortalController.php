@@ -36,6 +36,23 @@ class SupplierPortalController extends Controller
             $paymentSummary = $this->buildPaymentSummary($supplier, $startDate, $endDate);
         }
 
+        $supplierTypeOptions = collect(\App\Models\Supplier::TYPES)->map(function ($label, $value) {
+            return ['value' => $value, 'label' => $label];
+        })->values()->all();
+
+        $supplierOptions = \App\Models\Supplier::query()
+            ->select(['id', 'public_id', 'name', 'phone', 'type'])
+            ->orderBy('name')
+            ->get()
+            ->map(function ($s) {
+                return [
+                    'value' => $s->public_id,
+                    'label' => "#{$s->public_id_display} - {$s->name}" . ($s->phone ? " ({$s->phone})" : ""),
+                    'type' => $s->type,
+                ];
+            })
+            ->all();
+
         return view('welcome', [
             'supplier' => $supplier,
             'supplierCode' => $supplierCode,
@@ -46,6 +63,8 @@ class SupplierPortalController extends Controller
                 : null,
             'selectedMonth' => $selectedMonth,
             'paymentSummary' => $paymentSummary,
+            'supplierTypeOptions' => $supplierTypeOptions,
+            'supplierOptions' => $supplierOptions,
             'portalAddress' => Setting::get('store_address', 'Địa chỉ cửa hàng đang được cập nhật'),
             'portalHotline' => Setting::get('store_hotline', 'Liên hệ trực tiếp cửa hàng để được hỗ trợ'),
             'portalHours' => Setting::get('store_hours', '08:30 - 21:00 mỗi ngày'),
