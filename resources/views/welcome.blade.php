@@ -59,118 +59,74 @@
 
             <main class="relative z-10">
                 <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
-                    <section class="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+                    <section class="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
                         <div class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)] sm:p-8 lg:p-10">
                             <span class="inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.3em] text-sky-700">
-                                Tra cứu doanh số
+                                {{ $portalHeroBadge }}
                             </span>
 
-                            <h1 class="mt-5 max-w-3xl text-4xl font-black tracking-tight text-slate-950 sm:text-5xl lg:text-6xl lg:leading-[0.95]">
-                                Nhà cung cấp xem ngay tình trạng thanh toán và doanh số của mình
+                            <h1 class="mt-5 max-w-4xl text-4xl font-black tracking-tight text-slate-950 sm:text-5xl lg:text-6xl lg:leading-[0.96]">
+                                {{ $portalHeroTitle }}
                             </h1>
 
                             <p class="mt-4 max-w-3xl text-base leading-8 text-slate-700 sm:text-lg">
-                                Nhập mã nhà cung cấp hoặc số điện thoại để kiểm tra doanh số bán hàng và tình trạng thanh toán trong tháng.
+                                {{ $portalHeroDescription }}
                             </p>
-
-                            <div class="mt-6 flex flex-wrap gap-3 text-sm font-semibold text-slate-700">
-                                <span class="rounded-full border border-slate-200 bg-slate-50 px-4 py-2">Cập nhật nhanh chóng</span>
-                                <span class="rounded-full border border-slate-200 bg-slate-50 px-4 py-2">Tra cứu theo tháng</span>
-                                <span class="rounded-full border border-slate-200 bg-slate-50 px-4 py-2">Dữ liệu đồng bộ theo hệ thống</span>
-                            </div>
 
                             <div class="mt-8 grid gap-4 sm:grid-cols-3">
                                 <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                                    <p class="text-xs font-bold uppercase tracking-[0.25em] text-slate-500">Nhanh</p>
-                                    <p class="mt-2 text-sm font-semibold text-slate-900">Tra cứu bằng mã NCC hoặc số điện thoại</p>
+                                    <p class="text-xs font-bold uppercase tracking-[0.25em] text-slate-500">Tra cứu</p>
+                                    <p class="mt-2 text-sm font-semibold text-slate-900">Chỉ cần số điện thoại đã đăng ký</p>
                                 </div>
                                 <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                                    <p class="text-xs font-bold uppercase tracking-[0.25em] text-slate-500">Rõ ràng</p>
-                                    <p class="mt-2 text-sm font-semibold text-slate-900">Thông tin thanh toán hiển thị chi tiết</p>
+                                    <p class="text-xs font-bold uppercase tracking-[0.25em] text-slate-500">Thông tin</p>
+                                    <p class="mt-2 text-sm font-semibold text-slate-900">Xem doanh số, số tiền và trạng thái thanh toán</p>
                                 </div>
                                 <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                                    <p class="text-xs font-bold uppercase tracking-[0.25em] text-slate-500">Gọn</p>
-                                    <p class="mt-2 text-sm font-semibold text-slate-900">Có nút mobile Home, Tra cứu, Địa chỉ</p>
+                                    <p class="text-xs font-bold uppercase tracking-[0.25em] text-slate-500">Liên hệ</p>
+                                    <p class="mt-2 text-sm font-semibold text-slate-900">Có thể gọi cửa hàng hoặc bấm gọi ngay cho nhà cung cấp</p>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="rounded-[2rem] border border-slate-200 bg-gradient-to-br from-slate-900 to-slate-800 p-6 text-black shadow-[0_20px_60px_rgba(15,23,42,0.18)] sm:p-8 lg:col-span-1">
-                            <p class="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">THÔNG BÁO</p>
-                            <h2 class="mt-4 text-2xl font-black text-white">Kiểm tra theo mã NCC</h2>
-                            <div class="mt-5 space-y-4 text-sm leading-7 text-slate-200">
-                                <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
-                                    <p class="font-semibold text-white">1. Tra cứu bằng mã NCC</p>
-                                    <p class="mt-1">Nhập đúng mã giống trên phiếu hoặc nhãn để tìm đúng dữ liệu.</p>
-                                </div>
-                                <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
-                                    <p class="font-semibold text-white">2. Tra cứu bằng số điện thoại</p>
-                                    <p class="mt-1">Nếu cần, có thể dùng số điện thoại liên hệ đã đăng ký.</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <article id="tra-cuu" class="scroll-mt-24 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
-                            <p class="text-xs font-bold uppercase tracking-[0.35em] text-cyan-600">NHÀ CUNG CẤP - TRA CỨU</p>
-                            <h2 class="mt-4 text-2xl font-black text-slate-950">Chọn nhà cung cấp để xem doanh số</h2>
-                            <p class="mt-2 text-sm leading-7 text-slate-700">
-                                Chọn phân loại và nhà cung cấp rồi bấm tra cứu để xem doanh số và thanh toán của bạn.
+                        <article id="tra-cuu" class="scroll-mt-24 rounded-[2rem] border border-slate-200 bg-slate-950 p-6 text-white shadow-[0_20px_60px_rgba(15,23,42,0.18)] sm:p-8">
+                            <p class="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">TRA CỨU THÔNG TIN</p>
+                            <h2 class="mt-4 text-2xl font-black text-white">Tìm thông tin nhà cung cấp</h2>
+                            <p class="mt-2 text-sm leading-7 text-slate-200">
+                                Nhập số điện thoại để tra cứu nhanh thông tin sản phẩm đã bán, kỳ doanh số và tình trạng thanh toán.
                             </p>
 
-                            <form method="GET" action="{{ route('home') }}" class="mt-5 space-y-4">
-                                @php
-                                    $selectedSupplierType = request('supplier_type', $supplier?->type ?? '');
-                                @endphp
-
+                            <form method="GET" action="{{ route('home') }}" class="mt-6 space-y-4">
                                 <div>
-                                    <label class="mb-2 block text-sm font-semibold text-slate-800">Phân loại nhà cung cấp</label>
-                                    <x-searchable-select
-                                        name="supplier_type"
-                                        :options="$supplierTypeOptions"
-                                        :selected="$selectedSupplierType"
-                                        placeholder="-- Chọn phân loại --"
-                                        search-placeholder="Tìm phân loại..."
-                                        empty-text="Không tìm thấy phân loại"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label class="mb-2 block text-sm font-semibold text-slate-800">Nhà cung cấp</label>
-                                    <x-searchable-select
-                                        name="supplier_code"
-                                        :options="$supplierOptions"
-                                        :selected="$supplierCode"
-                                        placeholder="-- Chọn nhà cung cấp --"
-                                        search-placeholder="Tìm theo mã, tên hoặc SĐT..."
-                                        empty-text="Không tìm thấy nhà cung cấp"
-                                        depends-on="supplier_type"
-                                        filter-key="type"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label for="month" class="mb-2 block text-sm font-semibold text-slate-800">Tháng tra cứu</label>
-                                    <input
-                                        id="month"
-                                        type="month"
-                                        name="month"
-                                        value="{{ $selectedMonth }}"
-                                        class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-950 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/15"
-                                    >
+                                    <label for="phone" class="mb-2 block text-sm font-semibold text-white">Số điện thoại</label>
+                                    <div class="flex flex-col gap-3 sm:flex-row">
+                                        <input
+                                            id="phone"
+                                            type="tel"
+                                            name="phone"
+                                            value="{{ $phone }}"
+                                            inputmode="numeric"
+                                            autocomplete="tel"
+                                            placeholder="Nhập số điện thoại của bạn"
+                                            class="min-w-0 flex-1 rounded-2xl border border-white/10 bg-white/95 px-4 py-3 text-sm font-medium text-slate-950 shadow-sm focus:border-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-300/20"
+                                        >
+                                        <button
+                                            type="submit"
+                                            class="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-300 px-5 py-3 text-sm font-bold text-slate-950 shadow-lg shadow-cyan-300/20 transition hover:bg-cyan-200 sm:min-w-[150px]"
+                                        >
+                                            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                                <path fill-rule="evenodd" d="M9 4a5 5 0 103.292 8.707l3.5 3.5a1 1 0 001.415-1.414l-3.5-3.5A5 5 0 009 4zm-3 5a3 3 0 116 0 3 3 0 01-6 0z" clip-rule="evenodd" />
+                                            </svg>
+                                            Tra cứu
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div class="flex flex-wrap gap-3">
-                                    <button
-                                        type="submit"
-                                        class="inline-flex items-center justify-center rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-950/20 transition hover:bg-slate-800"
-                                    >
-                                        Tra cứu
-                                    </button>
-
                                     @if ($searchPerformed)
                                         <a
                                             href="{{ route('home') }}"
-                                            class="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                                            class="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
                                         >
                                             Xóa lọc
                                         </a>
@@ -179,47 +135,72 @@
                             </form>
 
                             @if ($searchError)
-                                <div class="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+                                <div class="mt-5 rounded-2xl border border-rose-300/30 bg-rose-400/10 px-4 py-3 text-sm font-medium text-rose-100">
                                     {{ $searchError }}
                                 </div>
                             @endif
+
+                            <div class="mt-6 grid gap-3 sm:grid-cols-2">
+                                <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+                                    <p class="text-xs font-bold uppercase tracking-[0.25em] text-slate-300">Hiển thị</p>
+                                    <p class="mt-2 text-sm font-semibold text-white">Toàn bộ các kỳ doanh số theo bảng ngắn gọn, dễ xem trên điện thoại</p>
+                                </div>
+                                <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+                                    <p class="text-xs font-bold uppercase tracking-[0.25em] text-slate-300">Dữ liệu</p>
+                                    <p class="mt-2 text-sm font-semibold text-white">Thông tin lấy trực tiếp từ hệ thống quản lý của cửa hàng</p>
+                                </div>
+                            </div>
                         </article>
                     </section>
 
-                    @if ($supplier && $paymentSummary)
+                    @if ($supplier && $paymentSummaries->isNotEmpty())
                         <section class="mt-6 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)] sm:p-8">
                             <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                                 <div class="max-w-3xl">
                                     <p class="text-xs font-bold uppercase tracking-[0.35em] text-emerald-600">KẾT QUẢ TRA CỨU</p>
                                     <h2 class="mt-3 text-3xl font-black tracking-tight text-slate-950">{{ $supplier->name }}</h2>
-                                    <p class="mt-2 text-sm font-medium leading-7 text-slate-700">
-                                        #{{ $supplier->public_id_display }}
-                                        <span class="mx-2 text-slate-300">·</span>
-                                        {{ \App\Models\Supplier::labelForType($supplier->type) }}
-                                        @if ($supplier->phone)
-                                            <span class="mx-2 text-slate-300">·</span>
-                                            {{ $supplier->phone }}
-                                        @endif
-                                    </p>
+                                    @if ($supplier->phone)
+                                        <div class="mt-3 flex flex-wrap items-center gap-3">
+                                            <span class="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700">
+                                                SĐT: {{ $supplier->phone }}
+                                            </span>
+                                            <a
+                                                href="tel:{{ preg_replace('/\D+/', '', $supplier->phone) }}"
+                                                class="inline-flex items-center justify-center rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-600"
+                                            >
+                                                Gọi ngay
+                                            </a>
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
 
-                            <div class="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                                    <p class="text-xs font-bold uppercase tracking-[0.25em] text-slate-500">Kỳ doanh số</p>
-                                    <p class="mt-2 text-3xl font-black text-slate-950">{{ $paymentSummary['period_label'] }}</p>
-                                </div>
-                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                                    <p class="text-xs font-bold uppercase tracking-[0.25em] text-slate-500">Sản phẩm đã bán</p>
-                                    <p class="mt-2 text-3xl font-black text-slate-950">{{ number_format($paymentSummary['units_sold']) }}</p>
-                                </div>
-                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                                    <p class="text-xs font-bold uppercase tracking-[0.25em] text-slate-500">Số tiền cần thanh toán</p>
-                                    <p class="mt-2 text-3xl font-black text-sky-600">{{ number_format($paymentSummary['payable_amount'], 0, ',', '.') }} đ</p>
-                                </div>
-                                <div class="rounded-2xl border border-slate-200 {{ $paymentSummary['status'] === 'paid' ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200' }} p-4">
-                                    <p class="text-xs font-bold uppercase tracking-[0.25em] {{ $paymentSummary['status'] === 'paid' ? 'text-emerald-600' : 'text-amber-600' }}">Trạng thái</p>
-                                    <p class="mt-2 text-3xl font-black {{ $paymentSummary['status'] === 'paid' ? 'text-emerald-700' : 'text-amber-700' }}">{{ $paymentSummary['status_label'] }}</p>
+                            <div class="mt-6 overflow-hidden rounded-[1.5rem] border border-slate-200">
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full divide-y divide-slate-200 text-sm">
+                                        <thead class="bg-slate-50 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
+                                            <tr>
+                                                <th class="px-4 py-3">Trạng thái thanh toán</th>
+                                                <th class="px-4 py-3">Số tiền</th>
+                                                <th class="px-4 py-3">Đã bán</th>
+                                                <th class="px-4 py-3">Kỳ doanh số</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-100 bg-white">
+                                            @foreach ($paymentSummaries as $paymentSummary)
+                                                <tr>
+                                                    <td class="px-4 py-4">
+                                                        <span class="inline-flex rounded-full px-3 py-1 text-xs font-bold {{ $paymentSummary['status'] === 'paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
+                                                            {{ $paymentSummary['status_label'] }}
+                                                        </span>
+                                                    </td>
+                                                    <td class="px-4 py-4 font-semibold text-slate-950">{{ number_format($paymentSummary['payable_amount'], 0, ',', '.') }} đ</td>
+                                                    <td class="px-4 py-4 text-slate-700">{{ number_format($paymentSummary['units_sold']) }}</td>
+                                                    <td class="px-4 py-4 text-slate-700">{{ $paymentSummary['period_label'] }}</td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </section>
@@ -228,29 +209,62 @@
                             <p class="text-xs font-bold uppercase tracking-[0.35em] text-rose-600">CHƯA TÌM THẤY</p>
                             <h2 class="mt-3 text-2xl font-black text-slate-950">Không có dữ liệu phù hợp để hiển thị</h2>
                             <p class="mt-2 max-w-3xl text-sm leading-7 text-slate-700">
-                                Vui lòng kiểm tra lại lựa chọn phân loại và nhà cung cấp. Nếu chưa thấy tên của mình, hãy liên hệ cửa hàng để được hỗ trợ tra cứu.
+                                Vui lòng kiểm tra lại số điện thoại đã đăng ký. Nếu chưa thấy thông tin của mình, hãy liên hệ cửa hàng để được hỗ trợ tra cứu.
                             </p>
                         </section>
                     @else
                         <section class="mt-6 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)] sm:p-8">
+                            <div class="mb-5 max-w-3xl">
+                                <p class="text-xs font-bold uppercase tracking-[0.35em] text-sky-600">HƯỚNG DẪN NHANH</p>
+                                <h2 class="mt-3 text-2xl font-black text-slate-950">Một màn hình tra cứu ngắn gọn, đủ thông tin cần thiết</h2>
+                            </div>
+
                             <div class="grid gap-4 lg:grid-cols-3">
                                 <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
                                     <p class="text-sm font-bold text-slate-950">Bước 1</p>
-                                    <p class="mt-2 text-sm leading-7 text-slate-700">Nhập mã nhà cung cấp hoặc số điện thoại vào form tra cứu bên trên.</p>
+                                    <p class="mt-2 text-sm leading-7 text-slate-700">Nhập số điện thoại vào form tra cứu bên trên.</p>
                                 </div>
                                 <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
                                     <p class="text-sm font-bold text-slate-950">Bước 2</p>
-                                    <p class="mt-2 text-sm leading-7 text-slate-700">Chọn tháng bạn muốn tra cứu doanh số và thanh toán.</p>
+                                    <p class="mt-2 text-sm leading-7 text-slate-700">Bấm tra cứu để lấy toàn bộ các kỳ doanh số và thanh toán của mình.</p>
                                 </div>
                                 <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
                                     <p class="text-sm font-bold text-slate-950">Bước 3</p>
-                                    <p class="mt-2 text-sm leading-7 text-slate-700">Xem ngay số lượng sản phẩm bán được và số tiền cần thanh toán của kỳ đó.</p>
+                                    <p class="mt-2 text-sm leading-7 text-slate-700">Xem ngay bảng trạng thái thanh toán, số tiền, đã bán và kỳ doanh số.</p>
                                 </div>
                             </div>
                         </section>
                     @endif
 
 
+
+                    @if ($portalCards->isNotEmpty())
+                        <section class="mt-6 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)] sm:p-8">
+                            <div class="max-w-3xl">
+                                <p class="text-xs font-bold uppercase tracking-[0.35em] text-sky-600">NỘI DUNG TRANG CHỦ</p>
+                                <h2 class="mt-4 text-2xl font-black text-slate-950">{{ $portalInfoSectionTitle }}</h2>
+                                @if (filled($portalInfoSectionIntro))
+                                    <p class="mt-3 text-sm leading-7 text-slate-700">{{ $portalInfoSectionIntro }}</p>
+                                @endif
+                            </div>
+
+                            <div class="mt-6 grid gap-4 lg:grid-cols-3">
+                                @foreach ($portalCards as $card)
+                                    <article class="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-5">
+                                        @if (filled($card['eyebrow']))
+                                            <p class="text-xs font-bold uppercase tracking-[0.3em] text-sky-600">{{ $card['eyebrow'] }}</p>
+                                        @endif
+                                        @if (filled($card['title']))
+                                            <h3 class="mt-3 text-xl font-black text-slate-950">{{ $card['title'] }}</h3>
+                                        @endif
+                                        @if (filled($card['description']))
+                                            <p class="mt-3 text-sm leading-7 text-slate-700">{{ $card['description'] }}</p>
+                                        @endif
+                                    </article>
+                                @endforeach
+                            </div>
+                        </section>
+                    @endif
 
                     <section id="dia-chi" class="scroll-mt-24 mt-6 rounded-[2rem] border border-slate-200 bg-slate-950 p-6 text-white shadow-[0_20px_60px_rgba(15,23,42,0.18)] sm:p-8">
                         <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">

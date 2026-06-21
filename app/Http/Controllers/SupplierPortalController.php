@@ -6,8 +6,8 @@ use App\Models\SaleItem;
 use App\Models\Setting;
 use App\Models\Supplier;
 use App\Models\SupplierPayment;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
@@ -15,57 +15,41 @@ class SupplierPortalController extends Controller
 {
     public function index(Request $request): View
     {
-        $supplierCode = $this->normalizeSupplierCode((string) $request->input('supplier_code', ''));
         $phone = $this->normalizePhone((string) $request->input('phone', ''));
-        $searchPerformed = $supplierCode !== '' || $phone !== '';
-
-        $selectedMonth = trim((string) $request->string('month'));
-        $monthDate = $selectedMonth !== ''
-            ? Carbon::createFromFormat('Y-m', $selectedMonth)->startOfMonth()
-            : now()->startOfMonth();
-
-        $selectedMonth = $monthDate->format('Y-m');
-        $startDate = $monthDate->copy()->startOfMonth()->startOfDay();
-        $endDate = $monthDate->copy()->endOfMonth()->endOfDay();
+        $searchPerformed = $phone !== '';
 
         $supplier = $searchPerformed
-            ? $this->resolveSupplier($supplierCode, $phone)
+            ? $this->resolveSupplier($phone)
             : null;
 
-        $paymentSummary = null;
+        $paymentSummaries = collect();
         if ($supplier) {
-            $paymentSummary = $this->buildPaymentSummary($supplier, $startDate, $endDate);
+            $paymentSummaries = $this->buildPaymentSummaries($supplier);
         }
-
-        $supplierTypeOptions = collect(\App\Models\Supplier::TYPES)->map(function ($label, $value) {
-            return ['value' => $value, 'label' => $label];
-        })->values()->all();
-
-        $supplierOptions = \App\Models\Supplier::query()
-            ->select(['id', 'public_id', 'name', 'phone', 'type'])
-            ->orderBy('name')
-            ->get()
-            ->map(function ($s) {
-                return [
-                    'value' => $s->public_id,
-                    'label' => "#{$s->public_id_display} - {$s->name}" . ($s->phone ? " ({$s->phone})" : ""),
-                    'type' => $s->type,
-                ];
-            })
-            ->all();
 
         return view('welcome', [
             'supplier' => $supplier,
-            'supplierCode' => $supplierCode,
             'phone' => $phone,
             'searchPerformed' => $searchPerformed,
             'searchError' => $searchPerformed && $supplier === null
-                ? 'Không tìm thấy nhà cung cấp phù hợp. Hãy kiểm tra lại mã NCC hoặc số điện thoại.'
+                ? 'Không tìm thấy nhà cung cấp phù hợp. Hãy kiểm tra lại số điện thoại đã đăng ký.'
                 : null,
-            'selectedMonth' => $selectedMonth,
-            'paymentSummary' => $paymentSummary,
-            'supplierTypeOptions' => $supplierTypeOptions,
-            'supplierOptions' => $supplierOptions,
+            'paymentSummaries' => $paymentSummaries,
+            'portalHeroBadge' => Setting::get('portal_hero_badge', 'Tra cứu nhà cung cấp'),
+            'portalHeroTitle' => Setting::get('portal_hero_title', 'Tra cứu nhanh doanh số, thanh toán và thông tin cần thiết'),
+            'portalHeroDescription' => Setting::get('portal_hero_description', 'Nhập số điện thoại đã đăng ký để xem ngay tình trạng thanh toán, số tiền và các kỳ doanh số của nhà cung cấp.'),
+            'portalInfoSectionTitle' => Setting::get('portal_info_section_title', 'Thông tin từ cửa hàng'),
+            'portalInfoSectionIntro' => Setting::get('portal_info_section_intro', 'Cập nhật những thông tin quan trọng để nhà cung cấp nắm nhanh ngay ngoài trang chủ.'),
+            'portalCards' => collect(Setting::getJson('portal_cards'))
+                ->map(function (array $card): array {
+                    return [
+                        'eyebrow' => trim((string) ($card['eyebrow'] ?? '')),
+                        'title' => trim((string) ($card['title'] ?? '')),
+                        'description' => trim((string) ($card['description'] ?? '')),
+                    ];
+                })
+                ->filter(fn (array $card): bool => $card['eyebrow'] !== '' || $card['title'] !== '' || $card['description'] !== '')
+                ->values(),
             'portalAddress' => Setting::get('store_address', 'Địa chỉ cửa hàng đang được cập nhật'),
             'portalHotline' => Setting::get('store_hotline', 'Liên hệ trực tiếp cửa hàng để được hỗ trợ'),
             'portalHours' => Setting::get('store_hours', '08:30 - 21:00 mỗi ngày'),
@@ -73,38 +57,14 @@ class SupplierPortalController extends Controller
         ]);
     }
 
-    private function resolveSupplier(string $supplierCode, string $phone): ?Supplier
+    private function resolveSupplier(string $phone): ?Supplier
     {
-        if ($supplierCode !== '') {
-            $supplier = Supplier::query()
-                ->where('public_id', $supplierCode)
-                ->first();
-
-            if ($supplier !== null) {
-                return $supplier;
-            }
-        }
-
-        if ($phone !== '') {
-            return Supplier::query()
-                ->whereRaw(
-                    "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(phone, ''), ' ', ''), '.', ''), '-', ''), '(', ''), ')', ''), '+', '') LIKE ?",
-                    ['%'.$phone.'%']
-                )
-                ->first();
-        }
-
-        return null;
-    }
-
-    private function normalizeSupplierCode(string $value): string
-    {
-        $value = trim($value);
-        $value = ltrim($value, '#');
-        $value = preg_replace('/\s+/', '', $value) ?? '';
-        $value = ltrim($value, '0');
-
-        return $value === '' ? '' : $value;
+        return Supplier::query()
+            ->whereRaw(
+                "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(phone, ''), ' ', ''), '.', ''), '-', ''), '(', ''), ')', ''), '+', '') LIKE ?",
+                ['%'.$phone.'%']
+            )
+            ->first();
     }
 
     private function normalizePhone(string $value): string
@@ -114,42 +74,56 @@ class SupplierPortalController extends Controller
         return $value;
     }
 
-    private function buildPaymentSummary(Supplier $supplier, Carbon $startDate, Carbon $endDate): array
+    private function buildPaymentSummaries(Supplier $supplier): Collection
     {
-        $baseQuery = SaleItem::query()
+        $salesByMonth = SaleItem::query()
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
             ->join('products', 'sale_items.product_id', '=', 'products.id')
             ->where('products.supplier_id', $supplier->id)
-            ->whereBetween(DB::raw('COALESCE(sales.completed_at, sales.created_at)'), [$startDate, $endDate]);
+            ->groupBy(DB::raw("DATE_FORMAT(COALESCE(sales.completed_at, sales.created_at), '%Y-%m')"))
+            ->orderByDesc(DB::raw("DATE_FORMAT(COALESCE(sales.completed_at, sales.created_at), '%Y-%m')"))
+            ->get([
+                DB::raw("DATE_FORMAT(COALESCE(sales.completed_at, sales.created_at), '%Y-%m') as period_key"),
+                DB::raw('SUM(sale_items.line_total) as gross_amount'),
+                DB::raw('SUM(sale_items.quantity) as units_sold'),
+            ])
+            ->keyBy('period_key');
 
-        $grossAmount = (float) (clone $baseQuery)->sum('sale_items.line_total');
-        $unitsSold = (int) (clone $baseQuery)->sum('sale_items.quantity');
+        $paymentsByMonth = SupplierPayment::query()
+            ->where('supplier_id', $supplier->id)
+            ->whereNotNull('paid_at')
+            ->get()
+            ->keyBy(fn (SupplierPayment $payment) => $payment->period_from?->format('Y-m'));
+
+        $periodKeys = $salesByMonth->keys()
+            ->merge($paymentsByMonth->keys())
+            ->filter()
+            ->unique()
+            ->sortDesc()
+            ->values();
 
         $discountRate = (float) Setting::supplierDiscountRate($supplier->type);
-        $discountAmount = round($grossAmount * $discountRate / 100, 2);
-        $payableAmount = max(0, round($grossAmount - $discountAmount, 2));
 
-        $payment = SupplierPayment::query()
-            ->where('supplier_id', $supplier->id)
-            ->whereDate('period_from', '>=', $startDate->toDateString())
-            ->whereDate('period_to', '<=', $endDate->toDateString())
-            ->whereNotNull('paid_at')
-            ->first();
+        return $periodKeys->map(function (string $periodKey) use ($salesByMonth, $paymentsByMonth, $discountRate) {
+            $sales = $salesByMonth->get($periodKey);
+            $payment = $paymentsByMonth->get($periodKey);
+            $grossAmount = (float) ($sales->gross_amount ?? $payment?->gross_amount ?? 0);
+            $unitsSold = (int) ($sales->units_sold ?? 0);
+            $discountAmount = $payment
+                ? (float) $payment->discount_amount
+                : round($grossAmount * $discountRate / 100, 2);
+            $payableAmount = $payment
+                ? (float) $payment->payable_amount
+                : max(0, round($grossAmount - $discountAmount, 2));
+            $isPaid = $payment !== null;
 
-        $isPaid = $payment !== null;
-
-        return [
-            'gross_amount' => $grossAmount,
-            'discount_rate' => $discountRate,
-            'discount_amount' => $discountAmount,
-            'payable_amount' => $payableAmount,
-            'units_sold' => $unitsSold,
-            'status' => $isPaid ? 'paid' : 'unpaid',
-            'status_label' => $isPaid ? 'Đã thanh toán' : 'Chưa thanh toán',
-            'payment' => $payment,
-            'period_label' => $startDate->format('m/Y'),
-            'start_date' => $startDate,
-            'end_date' => $endDate,
-        ];
+            return [
+                'status' => $isPaid ? 'paid' : 'unpaid',
+                'status_label' => $isPaid ? 'Đã thanh toán' : 'Chưa thanh toán',
+                'payable_amount' => $payableAmount,
+                'units_sold' => $unitsSold,
+                'period_label' => substr($periodKey, 5, 2).'/'.substr($periodKey, 0, 4),
+            ];
+        });
     }
 }

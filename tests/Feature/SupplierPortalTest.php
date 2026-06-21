@@ -5,16 +5,20 @@ namespace Tests\Feature;
 use App\Models\Category;
 use App\Models\ConsignmentNote;
 use App\Models\Product;
+use App\Models\Sale;
+use App\Models\SaleItem;
 use App\Models\Supplier;
+use App\Models\SupplierPayment;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class SupplierPortalTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_supplier_portal_search_returns_supplier_products_and_status_counts(): void
+    public function test_supplier_portal_searches_by_phone_and_shows_all_payment_summary_rows(): void
     {
         $user = User::create([
             'name' => 'Nhân viên tra cứu',
@@ -32,100 +36,140 @@ class SupplierPortalTest extends TestCase
             'responsible_user_id' => $user->id,
             'type' => 'ncc_it_san_pham',
             'name' => 'Nhà cung cấp Portal',
-            'phone' => '0901234567',
-            'bank_name' => null,
-            'bank_account_name' => null,
-            'bank_account_number' => null,
+            'phone' => '0901 234 567',
+            'bank_name' => 'VCB',
+            'bank_account_name' => 'Nhà cung cấp Portal',
+            'bank_account_number' => '123456789',
             'notes' => null,
         ]);
 
-        $activeNote = ConsignmentNote::create([
+        $consignment = ConsignmentNote::create([
             'responsible_user_id' => $user->id,
             'supplier_id' => $supplier->id,
-            'sent_date' => now()->subDays(10)->toDateString(),
+            'sent_date' => Carbon::create(2026, 6, 5)->toDateString(),
             'quantity' => 1,
             'notes' => null,
         ]);
 
-        $expiringSoonNote = ConsignmentNote::create([
+        $mayConsignment = ConsignmentNote::create([
             'responsible_user_id' => $user->id,
             'supplier_id' => $supplier->id,
-            'sent_date' => now()->subDays(41)->toDateString(),
+            'sent_date' => Carbon::create(2026, 5, 5)->toDateString(),
             'quantity' => 1,
             'notes' => null,
         ]);
 
-        $returnedNote = ConsignmentNote::create([
-            'responsible_user_id' => $user->id,
-            'supplier_id' => $supplier->id,
-            'sent_date' => now()->subDays(20)->toDateString(),
-            'quantity' => 1,
-            'notes' => null,
-        ]);
-
-        $activeProduct = Product::create([
-            'consignment_note_id' => $activeNote->id,
+        $juneProduct = Product::create([
+            'consignment_note_id' => $consignment->id,
             'supplier_id' => $supplier->id,
             'category_id' => $category->id,
             'created_by_id' => $user->id,
-            'name' => 'Áo còn hiệu lực',
+            'name' => 'Áo đã bán',
+            'sale_price' => 180000,
+            'quantity' => 1,
+            'image_path' => null,
+            'description' => null,
+        ]);
+
+        $mayProduct = Product::create([
+            'consignment_note_id' => $mayConsignment->id,
+            'supplier_id' => $supplier->id,
+            'category_id' => $category->id,
+            'created_by_id' => $user->id,
+            'name' => 'Váy đã bán',
             'sale_price' => 120000,
             'quantity' => 1,
             'image_path' => null,
             'description' => null,
         ]);
 
-        $expiringSoonProduct = Product::create([
-            'consignment_note_id' => $expiringSoonNote->id,
-            'supplier_id' => $supplier->id,
-            'category_id' => $category->id,
-            'created_by_id' => $user->id,
-            'name' => 'Váy sắp hết hạn',
-            'sale_price' => 150000,
-            'quantity' => 1,
-            'image_path' => null,
-            'description' => null,
+        $juneSale = Sale::create([
+            'user_id' => $user->id,
+            'payment_method' => 'cash',
+            'payment_reference' => null,
+            'total_amount' => 180000,
+            'items_count' => 1,
+            'completed_at' => Carbon::create(2026, 6, 12),
         ]);
 
-        $returnedProduct = Product::create([
-            'consignment_note_id' => $returnedNote->id,
+        $maySale = Sale::create([
+            'user_id' => $user->id,
+            'payment_method' => 'cash',
+            'payment_reference' => null,
+            'total_amount' => 120000,
+            'items_count' => 1,
+            'completed_at' => Carbon::create(2026, 5, 12),
+        ]);
+
+        SaleItem::create([
+            'sale_id' => $juneSale->id,
+            'product_id' => $juneProduct->id,
+            'product_public_id' => $juneProduct->public_id,
+            'product_name' => $juneProduct->name,
+            'quantity' => 1,
+            'unit_price' => 180000,
+            'line_total' => 180000,
+        ]);
+
+        SaleItem::create([
+            'sale_id' => $maySale->id,
+            'product_id' => $mayProduct->id,
+            'product_public_id' => $mayProduct->public_id,
+            'product_name' => $mayProduct->name,
+            'quantity' => 1,
+            'unit_price' => 120000,
+            'line_total' => 120000,
+        ]);
+
+        SupplierPayment::create([
             'supplier_id' => $supplier->id,
-            'category_id' => $category->id,
-            'created_by_id' => $user->id,
-            'name' => 'Quần đã trả',
-            'sale_price' => 90000,
-            'quantity' => 0,
-            'image_path' => null,
-            'description' => null,
-            'returned_at' => now()->subDay(),
-            'returned_by_id' => $user->id,
+            'user_id' => $user->id,
+            'payment_reference' => 'payment-'.$supplier->id.'-202606',
+            'period_from' => Carbon::create(2026, 6, 1)->startOfMonth()->toDateString(),
+            'period_to' => Carbon::create(2026, 6, 1)->endOfMonth()->toDateString(),
+            'gross_amount' => 180000,
+            'discount_rate' => 0,
+            'discount_amount' => 0,
+            'payable_amount' => 180000,
+            'bank_name' => 'VCB',
+            'bank_account_name' => $supplier->bank_account_name,
+            'bank_account_number' => $supplier->bank_account_number,
+            'qr_url' => 'https://example.test/qr/'.$supplier->id,
+            'payload' => 'test payload',
+            'paid_at' => Carbon::create(2026, 6, 20),
         ]);
 
         $response = $this->get(route('home', [
-            'supplier_code' => '#'.$supplier->public_id_display,
+            'phone' => '0901234567',
         ]));
 
         $response->assertOk();
         $response->assertViewIs('welcome');
         $response->assertSee('Nhà cung cấp Portal');
-        $response->assertSee('Tổng 3 sản phẩm');
-        $response->assertSee('Đang hiệu lực');
-        $response->assertSee('Sắp hết hạn');
-        $response->assertSee('Quá hạn');
-        $response->assertSee('Đã trả');
-        $response->assertSee($activeProduct->name);
-        $response->assertSee($expiringSoonProduct->name);
-        $response->assertSee($returnedProduct->name);
-        $response->assertSee('Còn 4 ngày');
-        $response->assertSee('Đã trả cho người gửi');
+        $response->assertSee('0901 234 567');
+        $response->assertSee('SĐT: 0901 234 567');
+        $response->assertSee('href="tel:0901234567"', false);
+        $response->assertSee('Gọi ngay');
+        $response->assertSee('Trạng thái thanh toán');
+        $response->assertSee('Số tiền');
+        $response->assertSee('Đã bán');
+        $response->assertSee('Kỳ doanh số');
+        $response->assertSee('Đã thanh toán');
+        $response->assertSee('Chưa thanh toán');
+        $response->assertSee('180.000 đ');
+        $response->assertSee('120.000 đ');
+        $response->assertSee('06/2026');
+        $response->assertSee('05/2026');
+        $response->assertSee('>1<', false);
     }
 
-    public function test_supplier_portal_shows_helpful_message_when_supplier_is_missing(): void
+    public function test_supplier_portal_shows_helpful_message_when_phone_is_missing(): void
     {
-        $response = $this->get('/?supplier_code=999999');
+        $response = $this->get('/?phone=0999999999');
 
         $response->assertOk();
         $response->assertViewIs('welcome');
         $response->assertSee('Không tìm thấy nhà cung cấp phù hợp');
+        $response->assertSee('số điện thoại đã đăng ký');
     }
 }

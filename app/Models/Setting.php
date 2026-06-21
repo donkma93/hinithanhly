@@ -23,6 +23,19 @@ class Setting extends Model
         return $record ? $record->value : $default;
     }
 
+    public static function getJson(string $key, array $default = []): array
+    {
+        $value = static::get($key);
+
+        if (! is_string($value) || trim($value) === '') {
+            return $default;
+        }
+
+        $decoded = json_decode($value, true);
+
+        return is_array($decoded) ? $decoded : $default;
+    }
+
     public static function set(string $key, $value): Model
     {
         return static::updateOrCreate(['key' => $key], ['value' => $value]);

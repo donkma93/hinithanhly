@@ -121,6 +121,7 @@
                                 <tr>
                                     <th class="py-3 pr-4">Mã</th>
                                     <th class="py-3 pr-4">Tên</th>
+                                    <th class="py-3 pr-4">Số điện thoại</th>
                                     <th class="py-3 pr-4">Loại</th>
                                     <th class="py-3 pr-4">Phụ trách</th>
                                     <th class="py-3 pr-4">Ngân hàng</th>
@@ -132,6 +133,15 @@
                                     <tr>
                                         <td class="py-3 pr-4 font-medium text-slate-900">#{{ $supplier->public_id_display }}</td>
                                         <td class="py-3 pr-4 font-medium text-gray-900">{{ $supplier->name }}</td>
+                                        <td class="py-3 pr-4 text-gray-600">
+                                            @if ($supplier->phone)
+                                                <a href="tel:{{ preg_replace('/\D+/', '', $supplier->phone) }}" class="font-medium text-sky-700 hover:underline">
+                                                    {{ $supplier->phone }}
+                                                </a>
+                                            @else
+                                                ---
+                                            @endif
+                                        </td>
                                         <td class="py-3 pr-4 text-gray-600">{{ \App\Models\Supplier::labelForType($supplier->type) }} ({{ $supplierDiscountRates[$supplier->type] ?? 0 }}%)</td>
                                         <td class="py-3 pr-4 text-gray-600">{{ $supplier->responsible_name ?: '---' }}</td>
                                         <td class="py-3 pr-4 text-gray-600">{{ $supplier->bank_name ?: '---' }}</td>
@@ -143,7 +153,7 @@
                                         </td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="5" class="py-8 text-center text-gray-500">Chưa có nhà cung cấp nào.</td></tr>
+                                    <tr><td colspan="7" class="py-8 text-center text-gray-500">Chưa có nhà cung cấp nào.</td></tr>
                                 @endforelse
                             </tbody>
                         </table>
