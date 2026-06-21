@@ -73,7 +73,7 @@ class RevenueReportTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('190.000 đ');
-        $response->assertSee($actualTime->format('d/m/Y H:i'));
+        $response->assertSee($actualTime->copy()->timezone('Asia/Bangkok')->format('d/m/Y H:i'));
         $response->assertSee('NCC fallback time');
     }
 
@@ -119,6 +119,25 @@ class RevenueReportTest extends TestCase
         $response->assertDontSee('NCC cho tang A Product');
         $response->assertSee('180.000 đ');
         $response->assertDontSee('120.000 đ');
+    }
+
+    public function test_revenue_report_uses_gmt_plus_7_for_filtering_and_display_time(): void
+    {
+        $admin = $this->signInAsAdmin();
+        $category = $this->createCategory();
+        $completedAtUtc = Carbon::create(2026, 6, 15, 17, 30, 0, 'UTC');
+
+        $this->createSaleFixture($admin, $category, 'cho_tang', 'NCC GMT+7', 230000, $completedAtUtc);
+
+        $response = $this->get(route('revenue.index', [
+            'from' => '2026-06-16',
+            'to' => '2026-06-16',
+        ]));
+
+        $response->assertOk();
+        $response->assertSee('NCC GMT+7');
+        $response->assertSee('16/06/2026 00:30');
+        $response->assertSee('230.000 đ');
     }
 
     public function test_user_with_revenue_permission_can_open_revenue_report_without_admin_role(): void

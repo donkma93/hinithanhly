@@ -5,11 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\Supplier;
 use App\Models\Sale;
 use App\Models\SaleItem;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class RevenueController extends Controller
 {
+    private const REPORT_TIMEZONE = 'Asia/Bangkok';
+
     public function __construct()
     {
         $this->middleware('permission:sales.revenue.view')->only('index');
@@ -18,8 +21,14 @@ class RevenueController extends Controller
     public function index(Request $request): View
     {
         $perPage = $this->resolvePerPage($request);
-        $startDate = $request->filled('from') ? $request->date('from')->startOfDay() : now()->startOfMonth();
-        $endDate = $request->filled('to') ? $request->date('to')->endOfDay() : now()->endOfDay();
+        $startDateLocal = $request->filled('from')
+            ? Carbon::parse((string) $request->input('from'), self::REPORT_TIMEZONE)->startOfDay()
+            : now(self::REPORT_TIMEZONE)->startOfMonth();
+        $endDateLocal = $request->filled('to')
+            ? Carbon::parse((string) $request->input('to'), self::REPORT_TIMEZONE)->endOfDay()
+            : now(self::REPORT_TIMEZONE)->endOfDay();
+        $startDate = $startDateLocal->copy()->utc();
+        $endDate = $endDateLocal->copy()->utc();
         $supplierType = trim((string) $request->input('supplier_type'));
         $allowedRevenueSupplierTypes = collect(Supplier::TYPES)
             ->except('ncc_nhieu_san_pham')
@@ -197,8 +206,9 @@ class RevenueController extends Controller
         return view('revenue.index', [
             'summary' => $summary,
             'sales' => $sales,
-            'startDate' => $startDate,
-            'endDate' => $endDate,
+            'startDate' => $startDateLocal,
+            'endDate' => $endDateLocal,
+            'reportTimezone' => self::REPORT_TIMEZONE,
             'supplierType' => $hasSupplierTypeFilter ? $supplierType : null,
             'suppliersForType' => $suppliersForType,
             'selectedSupplierId' => $selectedSupplierId,

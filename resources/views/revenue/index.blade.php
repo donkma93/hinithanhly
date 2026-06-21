@@ -87,7 +87,7 @@
                             @forelse ($sales as $sale)
                                 <tr>
                                     <td class="py-3 pr-4 font-medium text-slate-900">#{{ $sale->public_id_display }}</td>
-                                    <td class="py-3 pr-4 text-gray-600">{{ optional($sale->completed_at ?? $sale->created_at)->format('d/m/Y H:i') }}</td>
+                                    <td class="py-3 pr-4 text-gray-600">{{ optional(($sale->completed_at ?? $sale->created_at)?->copy()->timezone($reportTimezone ?? 'Asia/Bangkok'))->format('d/m/Y H:i') }}</td>
                                     <td class="py-3 pr-4 text-gray-600">{{ $paymentLabels[$sale->payment_method] ?? $sale->payment_method }}</td>
                                     <td class="py-3 pr-4 text-gray-900">{{ number_format((float) $sale->items->sum('line_total'), 0, ',', '.') }} đ</td>
                                     <td class="py-3 pr-4 text-gray-600">{{ $sale->cashier?->name ?? '---' }}</td>
