@@ -216,7 +216,7 @@ class ConsignmentWorkflowRulesTest extends TestCase
         $this->signInAsAdmin();
 
         $manualSupplier = $this->createSupplier('ncc_it_san_pham', 'NCC ky gui A');
-        $autoSupplier = $this->createSupplier('khach_si', 'NCC ky gui B');
+        $manualSupplierB = $this->createSupplier('ncc_nhieu_san_pham', 'NCC ky gui B');
 
         ConsignmentNote::create([
             'responsible_user_id' => User::factory()->create()->id,
@@ -230,19 +230,51 @@ class ConsignmentWorkflowRulesTest extends TestCase
         ConsignmentNote::create([
             'responsible_user_id' => User::factory()->create()->id,
             'responsible_name' => 'Phieu cua B',
-            'supplier_id' => $autoSupplier->id,
+            'supplier_id' => $manualSupplierB->id,
             'sent_date' => now()->subDay()->toDateString(),
             'quantity' => 3,
             'notes' => 'Ghi chu B',
         ]);
 
         $response = $this->get(route('consignments.index', [
-            'supplier_id' => $autoSupplier->id,
+            'supplier_id' => $manualSupplierB->id,
         ]));
 
         $response->assertOk();
         $response->assertSee('Phieu cua B');
         $response->assertDontSee('Phieu cua A');
+    }
+
+    public function test_product_label_index_filters_products_by_selected_supplier(): void
+    {
+        $this->signInAsAdmin();
+        $category = $this->createCategory();
+        $supplierA = $this->createSupplier('cho_tang', 'NCC in ma A');
+        $supplierB = $this->createSupplier('khach_si', 'NCC in ma B');
+
+        $this->post(route('products.store'), [
+            'supplier_id' => $supplierA->id,
+            'category_id' => $category->id,
+            'name' => 'Ao khoac A',
+            'sale_price' => 150000,
+            'quantity' => 1,
+        ])->assertRedirect(route('products.index'));
+
+        $this->post(route('products.store'), [
+            'supplier_id' => $supplierB->id,
+            'category_id' => $category->id,
+            'name' => 'Ao khoac B',
+            'sale_price' => 175000,
+            'quantity' => 1,
+        ])->assertRedirect(route('products.index'));
+
+        $response = $this->get(route('product-labels.index', [
+            'supplier_id' => $supplierB->id,
+        ]));
+
+        $response->assertOk();
+        $response->assertSee('Ao khoac B');
+        $response->assertDontSee('Ao khoac A');
     }
 
     public function test_product_index_searches_by_product_code_supplier_code_and_product_name(): void

@@ -327,6 +327,8 @@ class ProductController extends Controller
     {
         $term = trim($request->string('term')->toString());
         $perPage = $this->resolvePerPage($request);
+        $filterSupplierId = $request->integer('supplier_id');
+        $hasSupplierFilter = $filterSupplierId > 0;
 
         $products = Product::query()
             ->select(['id', 'public_id', 'consignment_note_id', 'supplier_id', 'image_path', 'name', 'sale_price', 'quantity', 'returned_at', 'created_at'])
@@ -335,6 +337,7 @@ class ProductController extends Controller
                 'consignmentNote:id,public_id,supplier_id,sent_date',
             ])
             ->sellable()
+            ->when($hasSupplierFilter, fn ($query) => $query->where('supplier_id', $filterSupplierId))
             ->when($term !== '', function ($query) use ($term): void {
                 $query->where(function ($innerQuery) use ($term): void {
                     $innerQuery->where('name', 'like', '%'.$term.'%')
@@ -371,8 +374,17 @@ class ProductController extends Controller
             })
         );
 
+        $suppliers = Supplier::query()
+            ->orderBy('name')
+            ->get(['id', 'public_id', 'name']);
+
         return view('products.label-index', [
             'products' => $products,
+            'filterSupplierId' => $hasSupplierFilter ? $filterSupplierId : null,
+            'filterSupplierOptions' => $suppliers->map(fn (Supplier $supplier) => [
+                'value' => $supplier->id,
+                'label' => '#'.$supplier->public_id_display.' - '.$supplier->name,
+            ])->all(),
         ]);
     }
 

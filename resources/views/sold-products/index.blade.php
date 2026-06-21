@@ -47,7 +47,7 @@
                             @forelse ($sales as $sale)
                                 <tr>
                                     <td class="py-3 pr-4 font-medium text-slate-900">#{{ $sale->public_id_display }}</td>
-                                    <td class="py-3 pr-4 text-gray-600">{{ optional($sale->completed_at)->format('d/m/Y H:i') ?? $sale->created_at->format('d/m/Y H:i') }}</td>
+                                    <td class="py-3 pr-4 text-gray-600">{{ optional($sale->completed_at ?? $sale->created_at)->format('d/m/Y H:i') }}</td>
                                     <td class="py-3 pr-4 text-gray-600">{{ $paymentLabels[$sale->payment_method] ?? $sale->payment_method }}</td>
                                     <td class="py-3 pr-4 text-gray-900">{{ number_format((float) $sale->total_amount, 0, ',', '.') }} đ</td>
                                     <td class="py-3 pr-4 text-gray-600">{{ $sale->items_count }}</td>

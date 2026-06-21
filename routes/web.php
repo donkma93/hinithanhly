@@ -124,7 +124,7 @@ Route::middleware(['auth'])->group(function () {
         ->name('sold-products.index');
 
     Route::get('/doanh-thu', [RevenueController::class, 'index'])
-        ->middleware('role:admin|super-admin')
+        ->middleware('permission:sales.revenue.view')
         ->name('revenue.index');
 
     Route::get('/thanh-toan-nha-cung-cap', [SupplierPaymentController::class, 'index'])

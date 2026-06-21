@@ -8,6 +8,7 @@ use App\Models\Supplier;
 use App\Models\SupplierPayment;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class SupplierPortalController extends Controller
@@ -119,8 +120,7 @@ class SupplierPortalController extends Controller
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
             ->join('products', 'sale_items.product_id', '=', 'products.id')
             ->where('products.supplier_id', $supplier->id)
-            ->whereNotNull('sales.completed_at')
-            ->whereBetween('sales.completed_at', [$startDate, $endDate]);
+            ->whereBetween(DB::raw('COALESCE(sales.completed_at, sales.created_at)'), [$startDate, $endDate]);
 
         $grossAmount = (float) (clone $baseQuery)->sum('sale_items.line_total');
         $unitsSold = (int) (clone $baseQuery)->sum('sale_items.quantity');

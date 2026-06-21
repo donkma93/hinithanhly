@@ -95,15 +95,18 @@
                             <x-per-page-select :value="request('per_page', 10)" />
                             <div class="w-full sm:w-72">
                                 <label class="block text-sm font-medium text-gray-700">Nhà cung cấp</label>
-                                <x-searchable-select
+                                <select
                                     name="supplier_id"
-                                    :options="$filterSupplierOptions"
-                                    :selected="request('supplier_id', $filterSupplierId)"
-                                    placeholder="Tất cả nhà cung cấp"
-                                    search-placeholder="Tìm theo mã nhà cung cấp hoặc tên"
-                                    empty-text="Không có nhà cung cấp phù hợp"
-                                    :submit-on-select="true"
-                                />
+                                    class="mt-1 w-full rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900"
+                                    onchange="this.form.requestSubmit()"
+                                >
+                                    <option value="">Tất cả nhà cung cấp</option>
+                                    @foreach ($filterSuppliers as $supplier)
+                                        <option value="{{ $supplier->id }}" @selected((string) request('supplier_id', $filterSupplierId) === (string) $supplier->id)>
+                                            #{{ $supplier->public_id_display }} - {{ $supplier->name }}{{ $supplier->trashed() ? ' (Đã xóa)' : '' }}
+                                        </option>
+                                    @endforeach
+                                </select>
                             </div>
                             <div class="w-full sm:w-64">
                                 <label class="block text-sm font-medium text-gray-700">Mã công khai</label>

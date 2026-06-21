@@ -79,9 +79,17 @@ class TrashWorkflowTest extends TestCase
                 ->assertOk()
                 ->assertDontSee('action="'.$case['destroy'].'"', false);
 
-            $this->get($case['edit'])
+            $response = $this->get($case['edit'])
                 ->assertOk()
                 ->assertSee('action="'.$case['destroy'].'"', false);
+
+            $content = $response->getContent();
+            $firstFormClose = strpos($content, '</form>');
+            $destroyAction = strpos($content, 'action="'.$case['destroy'].'"');
+
+            $this->assertNotFalse($firstFormClose);
+            $this->assertNotFalse($destroyAction);
+            $this->assertTrue($destroyAction > $firstFormClose, 'Destroy form must be rendered after the main update form closes.');
         }
     }
 

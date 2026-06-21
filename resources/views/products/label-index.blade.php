@@ -17,8 +17,28 @@
             <div class="no-print mb-6 rounded-3xl bg-white p-4 shadow-sm ring-1 ring-gray-200">
                 <form method="GET" action="{{ route('product-labels.index') }}" class="flex flex-wrap items-center gap-3">
                     <x-per-page-select :value="request('per_page', 24)" />
+                    <div class="w-full max-w-sm">
+                        <select
+                            name="supplier_id"
+                            class="w-full rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900"
+                            onchange="this.form.requestSubmit()"
+                        >
+                            <option value="">Tất cả nhà cung cấp</option>
+                            @foreach ($filterSupplierOptions as $supplierOption)
+                                <option
+                                    value="{{ $supplierOption['value'] }}"
+                                    @selected((string) request('supplier_id', $filterSupplierId) === (string) $supplierOption['value'])
+                                >
+                                    {{ $supplierOption['label'] }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
                     <input name="term" value="{{ request('term') }}" class="w-full max-w-md rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Tìm theo mã, tên sản phẩm, nhà cung cấp">
                     <button class="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">Lọc</button>
+                    @if (request('term') || request('supplier_id'))
+                        <a href="{{ route('product-labels.index', ['per_page' => request('per_page', 24)]) }}" class="rounded-xl border border-gray-300 px-4 py-3 text-sm font-semibold text-gray-700">Xóa lọc</a>
+                    @endif
                 </form>
             </div>
 

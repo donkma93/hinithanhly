@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -43,8 +44,9 @@ class SupplierPaymentController extends Controller
         $aggregates = SaleItem::query()
             ->join('products', 'sale_items.product_id', '=', 'products.id')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
-            ->whereNotNull('sales.completed_at')
-            ->whereBetween('sales.completed_at', [$startDate, $endDate])
+            ->where(function ($query) use ($startDate, $endDate): void {
+                $query->whereBetween(DB::raw('COALESCE(sales.completed_at, sales.created_at)'), [$startDate, $endDate]);
+            })
             ->groupBy('products.supplier_id')
             ->selectRaw('products.supplier_id as supplier_id, SUM(sale_items.line_total) as gross_amount, SUM(sale_items.quantity) as units_sold, COUNT(*) as line_items')
             ->get()
@@ -278,8 +280,7 @@ class SupplierPaymentController extends Controller
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
             ->join('products', 'sale_items.product_id', '=', 'products.id')
             ->where('products.supplier_id', $supplier->id)
-            ->whereNotNull('sales.completed_at')
-            ->whereBetween('sales.completed_at', [$startDate, $endDate]);
+            ->whereBetween(DB::raw('COALESCE(sales.completed_at, sales.created_at)'), [$startDate, $endDate]);
 
         $grossAmount = (float) (clone $baseQuery)->sum('sale_items.line_total');
         $unitsSold = (int) (clone $baseQuery)->sum('sale_items.quantity');
