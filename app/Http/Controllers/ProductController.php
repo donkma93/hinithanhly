@@ -1015,14 +1015,32 @@ class ProductController extends Controller
             File::ensureDirectoryExists($diskRoot.DIRECTORY_SEPARATOR.'products');
             $disk->makeDirectory('products');
 
-            $ext = $image->getClientOriginalExtension() ?: $image->extension() ?: 'jpg';
-            $filename = (string) Str::uuid().'.'.$ext;
-            $path = 'products/'.$filename;
             $realPath = $image->getRealPath();
 
             if (! is_string($realPath) || $realPath === '' || ! is_file($realPath)) {
                 throw new \RuntimeException('Khong tim thay file anh tam thoi de xu ly.');
             }
+
+            // Attempt to compress image to 60% JPEG quality using GD
+            $compressed = $this->compressImageWithGd($realPath);
+
+            if ($compressed !== null) {
+                // Save as JPEG with .jpg extension
+                $filename = (string) Str::uuid().'.jpg';
+                $path = 'products/'.$filename;
+                $stored = $disk->put($path, $compressed);
+
+                if (! $stored || ! $disk->exists($path)) {
+                    throw new \RuntimeException('Khong the luu anh san pham vao he thong.');
+                }
+
+                return $path;
+            }
+
+            // Fallback: store original file if GD cannot handle the format
+            $ext = $image->getClientOriginalExtension() ?: $image->extension() ?: 'jpg';
+            $filename = (string) Str::uuid().'.'.$ext;
+            $path = 'products/'.$filename;
 
             $stream = fopen($realPath, 'rb');
 
@@ -1057,5 +1075,85 @@ class ProductController extends Controller
 
             throw $e;
         }
+    }
+
+    /**
+     * Compress an image to JPEG at 60% quality using PHP GD.
+     * Resizes the image if either dimension exceeds 1920px.
+     * Returns the compressed image as a binary string, or null if GD cannot handle the format.
+     */
+    private function compressImageWithGd(string $realPath): ?string
+    {
+        if (! extension_loaded('gd')) {
+            return null;
+        }
+
+        $imageInfo = @getimagesize($realPath);
+
+        if ($imageInfo === false) {
+            return null;
+        }
+
+        $mimeType = $imageInfo['mime'] ?? '';
+
+        $source = match ($mimeType) {
+            'image/jpeg', 'image/jpg' => @imagecreatefromjpeg($realPath),
+            'image/png'               => @imagecreatefrompng($realPath),
+            'image/gif'               => @imagecreatefromgif($realPath),
+            'image/webp'              => function_exists('imagecreatefromwebp') ? @imagecreatefromwebp($realPath) : false,
+            'image/bmp'               => function_exists('imagecreatefrombmp') ? @imagecreatefrombmp($realPath) : false,
+            default                   => false,
+        };
+
+        if (! $source) {
+            return null;
+        }
+
+        $origWidth  = imagesx($source);
+        $origHeight = imagesy($source);
+        $maxDim = 1920;
+
+        // Compute new dimensions preserving aspect ratio
+        if ($origWidth > $maxDim || $origHeight > $maxDim) {
+            $ratio = min($maxDim / $origWidth, $maxDim / $origHeight);
+            $newWidth  = (int) round($origWidth  * $ratio);
+            $newHeight = (int) round($origHeight * $ratio);
+        } else {
+            $newWidth  = $origWidth;
+            $newHeight = $origHeight;
+        }
+
+        $canvas = imagecreatetruecolor($newWidth, $newHeight);
+
+        if (! $canvas) {
+            imagedestroy($source);
+
+            return null;
+        }
+
+        // Preserve transparency for PNG/GIF before compositing
+        if (in_array($mimeType, ['image/png', 'image/gif'], true)) {
+            imagealphablending($canvas, false);
+            imagesavealpha($canvas, true);
+            $transparent = imagecolorallocatealpha($canvas, 0, 0, 0, 127);
+            if ($transparent !== false) {
+                imagefilledrectangle($canvas, 0, 0, $newWidth - 1, $newHeight - 1, $transparent);
+            }
+            imagealphablending($canvas, true);
+        }
+
+        imagecopyresampled($canvas, $source, 0, 0, 0, 0, $newWidth, $newHeight, $origWidth, $origHeight);
+        imagedestroy($source);
+
+        ob_start();
+        $ok = imagejpeg($canvas, null, 60);
+        $data = ob_get_clean();
+        imagedestroy($canvas);
+
+        if (! $ok || $data === false || $data === '') {
+            return null;
+        }
+
+        return $data;
     }
 }
