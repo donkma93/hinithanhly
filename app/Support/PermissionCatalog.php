@@ -16,49 +16,49 @@ class PermissionCatalog
                 ],
             ],
             'categories' => [
-                'label' => 'Danh mục',
+                'label' => 'Danh muc',
                 'permissions' => [
-                    'categories.view' => 'Xem danh mục',
-                    'categories.create' => 'Thêm danh mục',
-                    'categories.update' => 'Sửa danh mục',
-                    'categories.delete' => 'Đưa danh mục vào thùng rác',
-                    'categories.manage' => 'Quản lý danh mục',
+                    'categories.view' => 'Xem danh muc',
+                    'categories.create' => 'Them danh muc',
+                    'categories.update' => 'Sua danh muc',
+                    'categories.delete' => 'Dua danh muc vao thung rac',
+                    'categories.manage' => 'Quan ly danh muc',
                 ],
             ],
             'suppliers' => [
-                'label' => 'Nhà cung cấp',
+                'label' => 'Nha cung cap',
                 'permissions' => [
-                    'suppliers.view' => 'Xem nhà cung cấp',
-                    'suppliers.create' => 'Thêm nhà cung cấp',
-                    'suppliers.update' => 'Sửa nhà cung cấp',
-                    'suppliers.delete' => 'Đưa nhà cung cấp vào thùng rác',
-                    'suppliers.manage' => 'Quản lý nhà cung cấp',
+                    'suppliers.view' => 'Xem nha cung cap',
+                    'suppliers.create' => 'Them nha cung cap',
+                    'suppliers.update' => 'Sua nha cung cap',
+                    'suppliers.delete' => 'Dua nha cung cap vao thung rac',
+                    'suppliers.manage' => 'Quan ly nha cung cap',
                 ],
             ],
             'consignments' => [
-                'label' => 'Phiếu ký gửi',
+                'label' => 'Phieu ky gui',
                 'permissions' => [
-                    'consignments.view' => 'Xem phiếu ký gửi',
-                    'consignments.create' => 'Thêm phiếu ký gửi',
-                    'consignments.update' => 'Sửa phiếu ký gửi',
-                    'consignments.delete' => 'Đưa phiếu ký gửi vào thùng rác',
-                    'consignments.manage' => 'Quản lý phiếu ký gửi',
+                    'consignments.view' => 'Xem phieu ky gui',
+                    'consignments.create' => 'Them phieu ky gui',
+                    'consignments.update' => 'Sua phieu ky gui',
+                    'consignments.delete' => 'Dua phieu ky gui vao thung rac',
+                    'consignments.manage' => 'Quan ly phieu ky gui',
                 ],
             ],
             'products' => [
-                'label' => 'Sản phẩm',
+                'label' => 'San pham',
                 'permissions' => [
-                    'products.view' => 'Xem sản phẩm',
-                    'products.create' => 'Thêm sản phẩm',
-                    'products.update' => 'Sửa sản phẩm',
-                    'products.delete' => 'Đưa sản phẩm vào thùng rác',
-                    'products.manage' => 'Quản lý sản phẩm',
+                    'products.view' => 'Xem san pham',
+                    'products.create' => 'Them san pham',
+                    'products.update' => 'Sua san pham',
+                    'products.delete' => 'Dua san pham vao thung rac',
+                    'products.manage' => 'Quan ly san pham',
                 ],
             ],
             'sold-products' => [
-                'label' => 'Sản phẩm đã bán',
+                'label' => 'San pham da ban',
                 'permissions' => [
-                    'sales.records.view' => 'Xem sản phẩm đã bán',
+                    'sales.records.view' => 'Xem san pham da ban',
                 ],
             ],
             'revenue' => [
@@ -68,37 +68,38 @@ class PermissionCatalog
                 ],
             ],
             'logs' => [
-                'label' => 'Nhật ký',
+                'label' => 'Nhat ky',
                 'permissions' => [
-                    'logs.view' => 'Xem nhật ký',
+                    'logs.view' => 'Xem nhat ky nguoi dung',
+                    'system-logs.view' => 'Xem log he thong',
                 ],
             ],
             'users' => [
-                'label' => 'Tài khoản',
+                'label' => 'Tai khoan',
                 'permissions' => [
-                    'users.view' => 'Xem tài khoản',
-                    'users.create' => 'Thêm tài khoản',
-                    'users.update' => 'Sửa tài khoản',
-                    'users.delete' => 'Đưa tài khoản vào thùng rác',
-                    'users.manage' => 'Quản lý tài khoản',
+                    'users.view' => 'Xem tai khoan',
+                    'users.create' => 'Them tai khoan',
+                    'users.update' => 'Sua tai khoan',
+                    'users.delete' => 'Dua tai khoan vao thung rac',
+                    'users.manage' => 'Quan ly tai khoan',
                 ],
             ],
             'permissions' => [
-                'label' => 'Phân quyền',
+                'label' => 'Phan quyen',
                 'permissions' => [
-                    'permissions.view' => 'Xem phân quyền',
-                    'permissions.create' => 'Thêm quyền',
-                    'permissions.update' => 'Sửa quyền',
-                    'permissions.delete' => 'Đưa quyền vào thùng rác',
-                    'permissions.manage' => 'Quản lý phân quyền',
+                    'permissions.view' => 'Xem phan quyen',
+                    'permissions.create' => 'Them quyen',
+                    'permissions.update' => 'Sua quyen',
+                    'permissions.delete' => 'Dua quyen vao thung rac',
+                    'permissions.manage' => 'Quan ly phan quyen',
                 ],
             ],
-                'settings' => [
-                    'label' => 'Cài đặt',
-                    'permissions' => [
-                        'settings.manage' => 'Quản lý cài đặt',
-                    ],
+            'settings' => [
+                'label' => 'Cai dat',
+                'permissions' => [
+                    'settings.manage' => 'Quan ly cai dat',
                 ],
+            ],
         ];
     }
 
@@ -147,7 +148,7 @@ class PermissionCatalog
         if ($customPermissions !== []) {
             $grouped[] = [
                 'key' => 'custom',
-                'label' => 'Tùy chỉnh',
+                'label' => 'Tuy chinh',
                 'permissions' => $customPermissions,
             ];
         }

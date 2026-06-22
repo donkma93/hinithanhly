@@ -9,6 +9,7 @@ use App\Http\Controllers\SalesController;
 use App\Http\Controllers\SoldProductController;
 use App\Http\Controllers\SupplierPortalController;
 use App\Http\Controllers\SupplierPaymentController;
+use App\Http\Controllers\SystemErrorLogController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
@@ -160,6 +161,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/logs', [AuditLogController::class, 'index'])
         ->middleware('permission:logs.view')
         ->name('logs.index');
+    Route::get('/system-logs', [SystemErrorLogController::class, 'index'])
+        ->middleware('permission:system-logs.view')
+        ->name('system-logs.index');
 
     Route::get('/thung-rac', [TrashController::class, 'index'])
         ->middleware('role:admin|super-admin')

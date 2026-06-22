@@ -14,6 +14,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
@@ -1007,16 +1008,36 @@ class ProductController extends Controller
     private function storeOptimizedImage(UploadedFile $image): string
     {
         try {
-            Storage::disk('public')->makeDirectory('products');
+            $disk = Storage::disk('public');
+            $diskRoot = (string) config('filesystems.disks.public.root', storage_path('app/public'));
 
-            $ext = $image->getClientOriginalExtension() ?: $image->extension();
+            File::ensureDirectoryExists($diskRoot);
+            File::ensureDirectoryExists($diskRoot.DIRECTORY_SEPARATOR.'products');
+            $disk->makeDirectory('products');
+
+            $ext = $image->getClientOriginalExtension() ?: $image->extension() ?: 'jpg';
             $filename = (string) Str::uuid().'.'.$ext;
+            $path = 'products/'.$filename;
+            $realPath = $image->getRealPath();
 
-            // storeAs returns the relative path within the disk
-            $path = $image->storeAs('products', $filename, 'public');
+            if (! is_string($realPath) || $realPath === '' || ! is_file($realPath)) {
+                throw new \RuntimeException('Khong tim thay file anh tam thoi de xu ly.');
+            }
 
-            if (! $path) {
-                throw new \RuntimeException('Failed to store uploaded image (storeAs returned falsy).');
+            $stream = fopen($realPath, 'rb');
+
+            if ($stream === false) {
+                throw new \RuntimeException('Khong the doc file anh vua tai len.');
+            }
+
+            try {
+                $stored = $disk->put($path, $stream);
+            } finally {
+                fclose($stream);
+            }
+
+            if (! $stored || ! $disk->exists($path)) {
+                throw new \RuntimeException('Khong the luu anh san pham vao he thong.');
             }
 
             return $path;
@@ -1024,6 +1045,11 @@ class ProductController extends Controller
             Log::error('Failed to store product image', [
                 'message' => $e->getMessage(),
                 'exception' => $e,
+                'disk' => 'public',
+                'disk_root' => config('filesystems.disks.public.root'),
+                'disk_root_exists' => is_dir((string) config('filesystems.disks.public.root')),
+                'disk_root_writable' => is_writable(dirname((string) config('filesystems.disks.public.root')))
+                    || is_writable((string) config('filesystems.disks.public.root')),
                 'clientName' => $image->getClientOriginalName(),
                 'clientMime' => $image->getClientMimeType(),
                 'size' => $image->getSize(),

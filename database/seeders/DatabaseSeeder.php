@@ -48,6 +48,7 @@ class DatabaseSeeder extends Seeder
             'products.manage',
             'sales.records.view',
             'sales.revenue.view',
+            'system-logs.view',
         ]);
 
         $admin = User::updateOrCreate(
