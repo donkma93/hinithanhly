@@ -20,7 +20,7 @@
                     <h3 class="text-lg font-semibold text-gray-900">Danh sách hoá đơn</h3>
                     <form method="GET" action="{{ route('sold-products.index') }}" class="flex flex-wrap items-center gap-2">
                         <x-per-page-select :value="request('per_page', 10)" />
-                        <input name="public_id" value="{{ request('public_id') }}" class="w-52 rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Tìm theo mã hoá đơn">
+                        <input name="public_id" value="{{ request('public_id') }}" class="w-52 rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Đúng mã hoá đơn">
                         <select name="payment_method" class="rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900">
                             <option value="">Tất cả thanh toán</option>
                             <option value="cash" @selected(request('payment_method') === 'cash')>Tiền mặt</option>

@@ -45,7 +45,7 @@
                         <h3 class="text-lg font-semibold text-gray-900">Danh sách</h3>
                         <form method="GET" action="{{ route('categories.index') }}" class="flex flex-wrap items-center gap-2">
                             <x-per-page-select :value="request('per_page', 10)" />
-                            <input name="public_id" value="{{ request('public_id') }}" class="w-64 rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Tìm bằng mã công khai">
+                            <input name="public_id" value="{{ request('public_id') }}" class="w-64 rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Đúng mã danh mục">
                             <button class="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">Tìm</button>
                         </form>
                     </div>

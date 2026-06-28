@@ -30,6 +30,14 @@
                             box-shadow: none !important;
                             border: 1px solid #e5e7eb;
                         }
+
+                        .print-policy {
+                            color: #000 !important;
+                            font-family: Arial, Helvetica, "DejaVu Sans", sans-serif !important;
+                            font-size: 24pt !important;
+                            font-weight: 700 !important;
+                            line-height: 1.15 !important;
+                        }
                     }
                 </style>
 
@@ -71,9 +79,18 @@
                         </div>
                         <p class="mt-4 text-xs uppercase tracking-[0.2em] text-slate-300">{{ $barcodePayload }}</p>
                         <p class="mt-3 text-2xl font-semibold text-white">{{ number_format((float) $product->sale_price, 0, ',', '.') }} đ</p>
+                        <p class="print-policy mt-3 text-3xl font-bold leading-tight text-white">Hàng đã mua không đổi trả</p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    @push('scripts')
+        <script>
+            window.addEventListener('load', () => {
+                window.print();
+            });
+        </script>
+    @endpush
 </x-app-layout>

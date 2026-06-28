@@ -130,6 +130,112 @@ class SalesScreenTest extends TestCase
         $response->assertJsonPath('name', 'Túi đeo chéo');
     }
 
+    public function test_sales_lookup_rejects_non_exact_codes(): void
+    {
+        $user = User::create([
+            'name' => 'Nhân viên bán hàng',
+            'email' => 'sales-non-exact@example.com',
+            'password' => 'password',
+        ]);
+        $category = Category::create([
+            'name' => 'Đồng hồ',
+            'description' => null,
+            'is_active' => true,
+        ]);
+        $supplier = Supplier::create([
+            'responsible_user_id' => $user->id,
+            'type' => 'cho_tang',
+            'name' => 'Nhà cung cấp mã chuẩn',
+            'phone' => null,
+            'bank_name' => null,
+            'bank_account_name' => null,
+            'bank_account_number' => null,
+            'notes' => null,
+        ]);
+        $consignment = ConsignmentNote::create([
+            'responsible_user_id' => $user->id,
+            'supplier_id' => $supplier->id,
+            'sent_date' => now()->toDateString(),
+            'quantity' => 1,
+            'notes' => null,
+        ]);
+        $product = Product::create([
+            'consignment_note_id' => $consignment->id,
+            'supplier_id' => $supplier->id,
+            'category_id' => $category->id,
+            'created_by_id' => $user->id,
+            'name' => 'Đồng hồ mã chuẩn',
+            'sale_price' => 199000,
+            'quantity' => 1,
+            'image_path' => null,
+            'description' => null,
+        ]);
+
+        $this->getJson('/ban-hang/products/0'.$product->public_id)
+            ->assertNotFound();
+
+        $this->getJson('/ban-hang/products/'.$product->public_id.'-sai')
+            ->assertNotFound();
+
+        $this->getJson('/ban-hang/products/'.$product->id.'-'.($supplier->id + 1).'-1')
+            ->assertNotFound();
+    }
+
+    public function test_sales_search_only_returns_exact_product_codes(): void
+    {
+        $user = User::create([
+            'name' => 'Nhân viên bán hàng',
+            'email' => 'sales-exact-search@example.com',
+            'password' => 'password',
+        ]);
+        $category = Category::create([
+            'name' => 'Mũ nón',
+            'description' => null,
+            'is_active' => true,
+        ]);
+        $supplier = Supplier::create([
+            'responsible_user_id' => $user->id,
+            'type' => 'cho_tang',
+            'name' => 'Nhà cung cấp exact',
+            'phone' => null,
+            'bank_name' => null,
+            'bank_account_name' => null,
+            'bank_account_number' => null,
+            'notes' => null,
+        ]);
+        $consignment = ConsignmentNote::create([
+            'responsible_user_id' => $user->id,
+            'supplier_id' => $supplier->id,
+            'sent_date' => now()->toDateString(),
+            'quantity' => 1,
+            'notes' => null,
+        ]);
+        $product = Product::create([
+            'consignment_note_id' => $consignment->id,
+            'supplier_id' => $supplier->id,
+            'category_id' => $category->id,
+            'created_by_id' => $user->id,
+            'name' => 'Mũ bucket exact',
+            'sale_price' => 79000,
+            'quantity' => 1,
+            'image_path' => null,
+            'description' => null,
+        ]);
+
+        $this->getJson(route('sales.search', ['query' => $product->public_id]))
+            ->assertOk()
+            ->assertJsonCount(1, 'items')
+            ->assertJsonPath('items.0.id', $product->id);
+
+        $this->getJson(route('sales.search', ['query' => 'Mũ bucket exact']))
+            ->assertOk()
+            ->assertJsonCount(0, 'items');
+
+        $this->getJson(route('sales.search', ['query' => '0'.$product->public_id]))
+            ->assertOk()
+            ->assertJsonCount(0, 'items');
+    }
+
     public function test_sales_checkout_allows_multiple_units_when_stock_is_available(): void
     {
         $user = User::create([

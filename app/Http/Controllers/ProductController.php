@@ -34,11 +34,10 @@ class ProductController extends Controller
 
     public function index(Request $request): View
     {
-        $search = trim((string) $request->input('q', $request->input('public_id', '')));
-        $search = ltrim($search, '#');
+        $exactFilters = $this->resolveProductExactFilters($request);
         $perPage = $this->resolvePerPage($request);
         $filterSupplierId = $request->input('supplier_id') ? (int) $request->input('supplier_id') : null;
-        $products = Product::query()
+        $products = $this->applyProductExactFilters(Product::query()
             ->select(['id', 'public_id', 'consignment_note_id', 'supplier_id', 'category_id', 'created_by_id', 'name', 'sale_price', 'quantity', 'image_path', 'description', 'returned_at', 'returned_by_id', 'created_at'])
             ->with([
                 'category:id,public_id,name',
@@ -49,17 +48,7 @@ class ProductController extends Controller
             ])
             ->when($filterSupplierId !== null, function ($query) use ($filterSupplierId): void {
                 $query->where('supplier_id', $filterSupplierId);
-            })
-            ->when($search !== '', function ($query) use ($search): void {
-                $query->where(function ($innerQuery) use ($search): void {
-                    $innerQuery->where('public_id', 'like', '%'.$search.'%')
-                        ->orWhere('name', 'like', '%'.$search.'%')
-                        ->orWhereHas('supplier', function ($supplierQuery) use ($search): void {
-                            $supplierQuery->where('public_id', 'like', '%'.$search.'%')
-                                ->orWhere('name', 'like', '%'.$search.'%');
-                        });
-                });
-            })
+            }), $exactFilters)
             ->latest()
             ->paginate($perPage)
             ->withQueryString();
@@ -110,8 +99,7 @@ class ProductController extends Controller
 
     public function expiryIndex(Request $request): View
     {
-        $search = trim((string) $request->input('q', ''));
-        $search = ltrim($search, '#');
+        $exactFilters = $this->resolveProductExactFilters($request);
         $perPage = $this->resolvePerPage($request);
         $supplierId = $request->input('supplier_id') ? (int) $request->input('supplier_id') : null;
         $status = $request->string('status', 'pending')->toString();
@@ -123,7 +111,7 @@ class ProductController extends Controller
 
         [$warningWindowStart, $warningWindowEnd] = $this->consignmentExpiryWindows();
 
-        $products = Product::query()
+        $products = $this->applyProductExactFilters(Product::query()
             ->select([
                 'products.id',
                 'products.public_id',
@@ -150,17 +138,7 @@ class ProductController extends Controller
             ])
             ->when($supplierId !== null, function (Builder $query) use ($supplierId): void {
                 $query->where('products.supplier_id', $supplierId);
-            })
-            ->when($search !== '', function (Builder $query) use ($search): void {
-                $query->where(function (Builder $innerQuery) use ($search): void {
-                    $innerQuery->where('products.public_id', 'like', '%'.$search.'%')
-                        ->orWhere('products.name', 'like', '%'.$search.'%')
-                        ->orWhereHas('supplier', function (Builder $supplierQuery) use ($search): void {
-                            $supplierQuery->where('public_id', 'like', '%'.$search.'%')
-                                ->orWhere('name', 'like', '%'.$search.'%');
-                        });
-                });
-            });
+            }), $exactFilters);
 
         switch ($status) {
             case 'returned':
@@ -205,7 +183,7 @@ class ProductController extends Controller
                 'label' => '#'.$supplier->public_id_display.' - '.$supplier->name,
             ])->all(),
             'filterStatus' => $status,
-            'filterSearch' => $search,
+            'exactFilters' => $exactFilters,
             'expiryStatusOptions' => [
                 'pending' => [
                     'label' => 'Cần xử lý',
@@ -326,29 +304,19 @@ class ProductController extends Controller
 
     public function labelIndex(Request $request): View
     {
-        $term = trim($request->string('term')->toString());
+        $exactFilters = $this->resolveProductExactFilters($request);
         $perPage = $this->resolvePerPage($request);
         $filterSupplierId = $request->integer('supplier_id');
         $hasSupplierFilter = $filterSupplierId > 0;
 
-        $products = Product::query()
+        $products = $this->applyProductExactFilters(Product::query()
             ->select(['id', 'public_id', 'consignment_note_id', 'supplier_id', 'image_path', 'name', 'sale_price', 'quantity', 'returned_at', 'created_at'])
             ->with([
                 'supplier:id,public_id,name',
                 'consignmentNote:id,public_id,supplier_id,sent_date',
             ])
             ->sellable()
-            ->when($hasSupplierFilter, fn ($query) => $query->where('supplier_id', $filterSupplierId))
-            ->when($term !== '', function ($query) use ($term): void {
-                $query->where(function ($innerQuery) use ($term): void {
-                    $innerQuery->where('name', 'like', '%'.$term.'%')
-                        ->orWhere('public_id', 'like', '%'.$term.'%')
-                        ->orWhereHas('supplier', function ($supplierQuery) use ($term): void {
-                            $supplierQuery->where('name', 'like', '%'.$term.'%')
-                                ->orWhere('public_id', 'like', '%'.$term.'%');
-                        });
-                });
-            })
+            ->when($hasSupplierFilter, fn ($query) => $query->where('supplier_id', $filterSupplierId)), $exactFilters)
             ->latest()
             ->paginate($perPage)
             ->withQueryString();
@@ -369,7 +337,7 @@ class ProductController extends Controller
                 $product->setAttribute('send_days', $sendSummary['days']);
                 $product->setAttribute('send_summary', $sendSummary['label']);
                 $product->setAttribute('label_code', $this->buildLabelCode($product, $sendSummary['round']));
-                $product->setAttribute('barcode_payload', (string) $product->id);
+                $product->setAttribute('barcode_payload', $product->label_code);
 
                 return $product;
             })
@@ -386,6 +354,7 @@ class ProductController extends Controller
                 'value' => $supplier->id,
                 'label' => '#'.$supplier->public_id_display.' - '.$supplier->name,
             ])->all(),
+            'exactFilters' => $exactFilters,
         ]);
     }
 
@@ -410,26 +379,7 @@ class ProductController extends Controller
             ->sortBy(fn (Product $product): int => array_search($product->id, $selectedIds, true) ?: 0)
             ->values();
 
-        $sendSummaryMap = $this->resolveSendSummaries(
-            $products->pluck('supplier_id')->unique()->all()
-        );
-
-        $products = $products->map(function (Product $product) use ($sendSummaryMap): Product {
-            $sendSummary = $sendSummaryMap[$product->consignment_note_id] ?? [
-                'round' => 1,
-                'days' => 0,
-                'label' => 'Lần 1 / 0 ngày / ---',
-            ];
-
-            $product->setAttribute('send_round', $sendSummary['round']);
-            $product->setAttribute('send_days', $sendSummary['days']);
-            $product->setAttribute('send_summary', $sendSummary['label']);
-            $product->setAttribute('label_code', $this->buildLabelCode($product, $sendSummary['round']));
-            $product->setAttribute('barcode_payload', (string) $product->id);
-            $product->setAttribute('barcode_svg', $this->generateBarcode((string) $product->id));
-
-            return $product;
-        });
+        $products = $this->prepareProductsForLabelPrint($products);
 
         return view('products.label-print', [
             'products' => $products,
@@ -440,13 +390,10 @@ class ProductController extends Controller
     {
         abort_if(! $product->isSellable(), 404);
 
-        $barcodeData = $this->buildProductBarcodeData($product);
+        $products = $this->prepareProductsForLabelPrint(collect([$product]));
 
-        return view('products.label', [
-            'product' => $product,
-            'sendSummary' => $barcodeData['sendSummary'],
-            'barcodeSvg' => $this->generateBarcode($barcodeData['barcodePayload']),
-            'barcodePayload' => $barcodeData['labelCode'],
+        return view('products.label-print', [
+            'products' => $products,
         ]);
     }
 
@@ -644,6 +591,35 @@ class ProductController extends Controller
         }
 
         return null;
+    }
+
+    /**
+     * @return array{product_public_id:string,product_name:string,supplier_public_id:string,supplier_name:string}
+     */
+    private function resolveProductExactFilters(Request $request): array
+    {
+        return [
+            'product_public_id' => ltrim(trim((string) $request->input('product_public_id', $request->input('public_id', ''))), '#'),
+            'product_name' => trim((string) $request->input('product_name', '')),
+            'supplier_public_id' => ltrim(trim((string) $request->input('supplier_public_id', '')), '#'),
+            'supplier_name' => trim((string) $request->input('supplier_name', '')),
+        ];
+    }
+
+    /**
+     * @param  array{product_public_id:string,product_name:string,supplier_public_id:string,supplier_name:string}  $filters
+     */
+    private function applyProductExactFilters(Builder $query, array $filters): Builder
+    {
+        return $query
+            ->when($filters['product_public_id'] !== '', fn (Builder $query) => $query->where('products.public_id', $filters['product_public_id']))
+            ->when($filters['product_name'] !== '', fn (Builder $query) => $query->where('products.name', 'like', '%'.$filters['product_name'].'%'))
+            ->when($filters['supplier_public_id'] !== '', function (Builder $query) use ($filters): void {
+                $query->whereHas('supplier', fn (Builder $supplierQuery) => $supplierQuery->where('public_id', $filters['supplier_public_id']));
+            })
+            ->when($filters['supplier_name'] !== '', function (Builder $query) use ($filters): void {
+                $query->whereHas('supplier', fn (Builder $supplierQuery) => $supplierQuery->where('name', $filters['supplier_name']));
+            });
     }
 
     private function resolveUploadedImage(Request $request): ?UploadedFile
@@ -896,6 +872,32 @@ class ProductController extends Controller
         ];
     }
 
+    private function prepareProductsForLabelPrint(Collection $products): Collection
+    {
+        $sendSummaryMap = $this->resolveSendSummaries(
+            $products->pluck('supplier_id')->unique()->all()
+        );
+
+        return $products->map(function (Product $product) use ($sendSummaryMap): Product {
+            $sendSummary = $sendSummaryMap[$product->consignment_note_id] ?? [
+                'round' => 1,
+                'days' => 0,
+                'label' => 'Lần 1 / 0 ngày / ---',
+            ];
+
+            $labelCode = $this->buildLabelCode($product, $sendSummary['round']);
+
+            $product->setAttribute('send_round', $sendSummary['round']);
+            $product->setAttribute('send_days', $sendSummary['days']);
+            $product->setAttribute('send_summary', $sendSummary['label']);
+            $product->setAttribute('label_code', $labelCode);
+            $product->setAttribute('barcode_payload', $labelCode);
+            $product->setAttribute('barcode_svg', $this->generateBarcode($labelCode));
+
+            return $product;
+        });
+    }
+
     /**
      * @return array{0:string,1:string}
      */
@@ -964,7 +966,7 @@ class ProductController extends Controller
 
         return [
             'sendSummary' => $sendSummary,
-            'barcodePayload' => (string) $product->id,
+            'barcodePayload' => $labelCode,
             'labelCode' => $labelCode,
         ];
     }

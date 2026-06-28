@@ -96,10 +96,10 @@
                     </div>
                 </div>
 
-                <form method="GET" action="{{ route('products.expiry') }}" class="mt-5 flex flex-col gap-3 xl:flex-row xl:flex-wrap xl:items-end">
+                <form method="GET" action="{{ route('products.expiry') }}" class="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-7 xl:items-end">
                     <input type="hidden" name="status" value="{{ $filterStatus }}">
 
-                    <div class="w-full xl:w-72">
+                    <div>
                         <label class="mb-1 block text-sm font-medium text-gray-700">Nhà cung cấp</label>
                         <x-searchable-select
                             name="supplier_id"
@@ -112,32 +112,39 @@
                         />
                     </div>
 
-                    <div class="w-full xl:w-96">
-                        <label class="mb-1 block text-sm font-medium text-gray-700">Tìm sản phẩm</label>
-                        <input
-                            type="text"
-                            name="q"
-                            value="{{ $filterSearch }}"
-                            placeholder="Tìm theo mã, tên sản phẩm hoặc mã NCC"
-                            class="w-full rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900"
-                        >
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-gray-700">Mã hàng</label>
+                        <input name="product_public_id" value="{{ $exactFilters['product_public_id'] ?? '' }}" class="w-full rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Đúng mã hàng">
                     </div>
 
-                    <div class="flex w-full flex-wrap items-end gap-3 xl:w-auto">
-                        <div>
-                            <label class="mb-1 block text-sm font-medium text-gray-700">Mỗi trang</label>
-                            <select name="per_page" class="rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" onchange="this.form.submit()">
-                                @foreach ([10, 20, 50, 100] as $option)
-                                    <option value="{{ $option }}" @selected($products->perPage() === $option)>{{ $option }}</option>
-                                @endforeach
-                            </select>
-                        </div>
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-gray-700">Tên sản phẩm</label>
+                        <input name="product_name" value="{{ $exactFilters['product_name'] ?? '' }}" class="w-full rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Đúng tên sản phẩm">
+                    </div>
 
-                        <div class="flex gap-2">
-                            <button type="submit" class="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white whitespace-nowrap">
-                                Tìm
-                            </button>
-                        </div>
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-gray-700">Mã NCC</label>
+                        <input name="supplier_public_id" value="{{ $exactFilters['supplier_public_id'] ?? '' }}" class="w-full rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Đúng mã NCC">
+                    </div>
+
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-gray-700">Tên NCC</label>
+                        <input name="supplier_name" value="{{ $exactFilters['supplier_name'] ?? '' }}" class="w-full rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Đúng tên NCC">
+                    </div>
+
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-gray-700">Mỗi trang</label>
+                        <select name="per_page" class="w-full rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" onchange="this.form.submit()">
+                            @foreach ([10, 20, 50, 100] as $option)
+                                <option value="{{ $option }}" @selected($products->perPage() === $option)>{{ $option }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div>
+                        <button type="submit" class="w-full rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white whitespace-nowrap">
+                            Lọc
+                        </button>
                     </div>
                 </form>
             </div>

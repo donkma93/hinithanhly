@@ -23,10 +23,10 @@
     <main class="mt-4 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
         <section class="space-y-4">
             <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-                <label for="scanner-input" class="block text-sm font-medium text-slate-700">Ô quét mã hoặc tìm sản phẩm</label>
+                <label for="scanner-input" class="block text-sm font-medium text-slate-700">Ô quét hoặc nhập đúng mã sản phẩm</label>
                 <div class="mt-2 flex gap-2">
                     <div class="relative flex-1">
-                        <input id="scanner-input" type="text" inputmode="text" autocomplete="off" placeholder="Quét mã hoặc nhập tên sản phẩm"
+                        <input id="scanner-input" type="text" inputmode="text" autocomplete="off" placeholder="Quét mã hoặc nhập đúng mã"
                         class="h-12 flex-1 rounded-xl border-slate-300 px-4 text-lg outline-none ring-0 focus:border-slate-900 focus:ring-1 focus:ring-slate-900" />
                         <div id="suggestions-panel" class="absolute left-0 right-0 top-full z-20 mt-2 hidden overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl ring-1 ring-slate-200"></div>
                     </div>
@@ -35,7 +35,7 @@
                     </button>
                 </div>
                 <p id="status-box" class="mt-3 rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600 ring-1 ring-slate-200">
-                    Sẵn sàng nhận mã hoặc tên sản phẩm.
+                    Sẵn sàng nhận đúng mã sản phẩm.
                 </p>
             </div>
 
@@ -431,12 +431,14 @@
             event.preventDefault();
             hideSuggestions();
 
-            if (looksLikeProductCode(scannerInput.value)) {
-                lookupProduct(scannerInput.value);
-            } else {
-                fetchSuggestions(scannerInput.value);
+            if (!looksLikeProductCode(scannerInput.value)) {
+                setStatus('Vui lòng nhập đúng mã sản phẩm.', 'warning');
+                scannerInput.value = '';
+                focusScanner();
+                return;
             }
 
+            lookupProduct(scannerInput.value);
             scannerInput.value = '';
         });
 
@@ -445,7 +447,7 @@
 
             const cleanValue = normalizeSearchTerm(scannerInput.value);
 
-            if (!cleanValue) {
+            if (!cleanValue || !looksLikeProductCode(cleanValue)) {
                 hideSuggestions();
                 return;
             }
@@ -458,7 +460,7 @@
         scannerInput.addEventListener('focus', () => {
             const cleanValue = normalizeSearchTerm(scannerInput.value);
 
-            if (cleanValue) {
+            if (cleanValue && looksLikeProductCode(cleanValue)) {
                 fetchSuggestions(cleanValue);
             }
         });

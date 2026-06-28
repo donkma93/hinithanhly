@@ -139,25 +139,27 @@ document.addEventListener('alpine:init', () => {
 	    this.selectedValue = String(option.value);
 	    this.closeMenu();
 
-	window.dispatchEvent(new CustomEvent('searchable-select-change', {
-		detail: {
-		    name: this.name,
-		    value: this.selectedValue,
+		    window.dispatchEvent(new CustomEvent('searchable-select-change', {
+			detail: {
+			    name: this.name,
+			    value: this.selectedValue,
+			},
+		    }));
+
+		    if (this.submitOnSelect) {
+			this.$nextTick(() => {
+			    const form = this.$el.closest('form');
+
+			    if (form) {
+				if (typeof form.requestSubmit === 'function') {
+				    form.requestSubmit();
+				} else {
+				    form.submit();
+				}
+			    }
+			});
+		    }
 		},
 	    }));
-
-	    if (this.submitOnSelect) {
-		const form = this.$el.closest('form');
-
-		if (form) {
-		    if (typeof form.requestSubmit === 'function') {
-			form.requestSubmit();
-		    } else {
-			form.submit();
-		    }
-		}
-	    }
-	},
-    }));
 });
 </script>

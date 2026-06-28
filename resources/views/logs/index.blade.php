@@ -19,7 +19,7 @@
                 <form method="GET" action="{{ route('logs.index') }}" class="grid gap-4 md:grid-cols-5">
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Mã log</label>
-                        <input name="log_id" value="{{ request('log_id') }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" placeholder="Ví dụ: 123">
+                        <input name="log_id" value="{{ request('log_id') }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" placeholder="Đúng mã log">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Người dùng</label>
@@ -28,13 +28,13 @@
                             :options="$userOptions"
                             :selected="request('user_id')"
                             placeholder="Tất cả người dùng"
-                            search-placeholder="Tìm theo mã hoặc tên"
+                            search-placeholder="Chọn đúng người dùng"
                             empty-text="Không có người dùng phù hợp"
                         />
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Hành động</label>
-                        <input name="action" value="{{ request('action') }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" placeholder="Ví dụ: products.store">
+                        <input name="action" value="{{ request('action') }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" placeholder="Đúng hành động">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Mỗi trang</label>

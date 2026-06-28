@@ -70,6 +70,11 @@ class Product extends Model
         return $this->returned_at !== null;
     }
 
+    public function isSellable(): bool
+    {
+        return ! $this->isReturned() && ! $this->isConsignmentExpired();
+    }
+
     public function consignmentSentDate(): ?\Illuminate\Support\Carbon
     {
         return $this->consignmentNote?->sent_date;

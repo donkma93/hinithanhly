@@ -61,8 +61,8 @@ class SupplierPortalController extends Controller
     {
         return Supplier::query()
             ->whereRaw(
-                "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(phone, ''), ' ', ''), '.', ''), '-', ''), '(', ''), ')', ''), '+', '') LIKE ?",
-                ['%'.$phone.'%']
+                "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(phone, ''), ' ', ''), '.', ''), '-', ''), '(', ''), ')', ''), '+', '') = ?",
+                [$phone]
             )
             ->first();
     }

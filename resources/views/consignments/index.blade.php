@@ -110,7 +110,7 @@
                             </div>
                             <div class="w-full sm:w-64">
                                 <label class="block text-sm font-medium text-gray-700">Mã công khai</label>
-                                <input name="public_id" value="{{ request('public_id') }}" class="mt-1 w-full rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Tìm bằng mã công khai">
+                                <input name="public_id" value="{{ request('public_id') }}" class="mt-1 w-full rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Đúng mã phiếu">
                             </div>
                             <div class="flex flex-wrap items-center gap-2">
                                 <button class="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">Tìm</button>

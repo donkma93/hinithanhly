@@ -15,9 +15,9 @@ class SystemErrorLogController extends Controller
 
         $logs = SystemErrorLog::query()
             ->with('user:id,public_id,name,email')
-            ->when($request->filled('error_uuid'), fn ($query) => $query->where('error_uuid', 'like', '%'.$request->string('error_uuid')->toString().'%'))
+            ->when($request->filled('error_uuid'), fn ($query) => $query->where('error_uuid', trim($request->string('error_uuid')->toString())))
             ->when($request->filled('user_id'), fn ($query) => $query->where('user_id', $request->integer('user_id')))
-            ->when($request->filled('exception_class'), fn ($query) => $query->where('exception_class', 'like', '%'.$request->string('exception_class')->toString().'%'))
+            ->when($request->filled('exception_class'), fn ($query) => $query->where('exception_class', trim($request->string('exception_class')->toString())))
             ->when($request->filled('status_code'), fn ($query) => $query->where('status_code', $request->integer('status_code')))
             ->latest()
             ->paginate($perPage)

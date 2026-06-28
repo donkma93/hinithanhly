@@ -308,72 +308,19 @@
                             </div>
                             <x-per-page-select :value="request('per_page', 10)" />
                         </div>
-                        <form method="GET" action="{{ route('products.index') }}" class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center" id="product-filter-form">
-                            <div class="w-full sm:w-64"
-                                x-data="{
-                                    open: false,
-                                    search: '{{ addslashes(collect($filterSupplierOptions)->firstWhere('value', $filterSupplierId)['label'] ?? '') }}',
-                                    selectedId: '{{ $filterSupplierId ?? '' }}',
-                                    options: @js($filterSupplierOptions),
-                                    selectOption(value, label) {
-                                        this.selectedId = value;
-                                        this.search = label;
-                                        this.open = false;
-                                        this.$refs.hiddenInput.value = value;
-                                        this.$refs.hiddenInput.form.submit();
-                                    },
-                                    clearSelection() {
-                                        this.selectedId = '';
-                                        this.search = '';
-                                        this.open = false;
-                                        this.$refs.hiddenInput.value = '';
-                                        this.$refs.hiddenInput.form.submit();
-                                    },
-                                    get filtered() {
-                                        if (!this.search || this.selectedId) return this.options;
-                                        return this.options.filter(o => o.label.toLowerCase().includes(this.search.toLowerCase()));
-                                    }
-                                }"
-                                @click.outside="open = false"
-                            >
-                                <input type="hidden" name="supplier_id" x-ref="hiddenInput" value="{{ $filterSupplierId ?? '' }}">
-                                <div class="relative">
-                                    <div class="flex w-full items-center rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm focus-within:border-slate-900 focus-within:ring-1 focus-within:ring-slate-900">
-                                        <svg class="mr-2 h-4 w-4 flex-shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z" /></svg>
-                                        <input
-                                            type="text"
-                                            x-model="search"
-                                            @focus="open = true; if (selectedId) { search = ''; }"
-                                            @input="open = true; selectedId = '';"
-                                            placeholder="Lọc theo nhà cung cấp..."
-                                            class="flex-1 bg-transparent text-sm text-gray-700 placeholder-gray-400 outline-none"
-                                            autocomplete="off"
-                                        >
-                                        <button type="button" x-show="selectedId" @click.stop="clearSelection()" class="ml-1 flex-shrink-0 rounded-full p-0.5 text-gray-400 hover:text-gray-600">
-                                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
-                                        </button>
-                                        <svg class="ml-1 h-4 w-4 flex-shrink-0 text-gray-400 transition cursor-pointer" :class="open ? 'rotate-180' : ''" @click="open = !open" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
-                                    </div>
-                                    <div x-show="open" x-transition class="absolute z-30 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-gray-200 bg-white py-1 shadow-lg" style="display:none;">
-                                        <div class="cursor-pointer px-4 py-2 text-sm text-gray-500 hover:bg-gray-50" @click="clearSelection()">
-                                            -- Tất cả nhà cung cấp --
-                                        </div>
-                                        <template x-for="option in filtered" :key="option.value">
-                                            <div
-                                                class="cursor-pointer px-4 py-2 text-sm hover:bg-indigo-50"
-                                                :class="selectedId == option.value ? 'bg-indigo-50 font-semibold text-indigo-700' : 'text-gray-700'"
-                                                @click="selectOption(String(option.value), option.label)"
-                                                x-text="option.label"
-                                            ></div>
-                                        </template>
-                                        <div x-show="filtered.length === 0" class="px-4 py-3 text-sm text-gray-400">Không tìm thấy nhà cung cấp</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="flex w-full gap-2 sm:w-auto">
-                                <input name="q" value="{{ request('q', request('public_id')) }}" class="flex-1 rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900 sm:w-80" placeholder="Tìm mã, tên sản phẩm...">
-                                <button class="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white whitespace-nowrap">Tìm</button>
-                            </div>
+                        <form method="GET" action="{{ route('products.index') }}" class="grid gap-2 md:grid-cols-2 xl:grid-cols-4" id="product-filter-form">
+                            <x-searchable-select
+                                name="supplier_id"
+                                :options="$filterSupplierOptions"
+                                :selected="request('supplier_id', $filterSupplierId)"
+                                placeholder="Tất cả NCC"
+                                search-placeholder="Tìm NCC theo mã hoặc tên"
+                                empty-text="Không có NCC phù hợp"
+                                submit-on-select
+                            />
+                            <input name="product_public_id" value="{{ request('product_public_id', request('public_id')) }}" class="rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Đúng mã hàng">
+                            <input name="product_name" value="{{ request('product_name') }}" class="rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Tìm tên sản phẩm">
+                            <button class="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white whitespace-nowrap">Lọc</button>
                         </form>
                     </div>
                     <div class="mt-4 overflow-x-auto">

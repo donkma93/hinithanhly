@@ -71,6 +71,18 @@
             width: 80mm;
         }
 
+        .return-policy {
+            width: 80mm;
+            margin-top: 1.5mm;
+            color: #000;
+            font-family: Arial, Helvetica, "DejaVu Sans", sans-serif;
+            font-size: 24pt;
+            font-weight: 700;
+            line-height: 1.15;
+            text-align: center;
+            white-space: normal;
+        }
+
         .barcode svg {
             width: 100%;
             height: 100%;
@@ -91,6 +103,7 @@
                 <div class="barcode-top">{{ $product->id }} - {{ $product->supplier_id }} - {{ $product->send_round }}</div>
                 <div class="barcode">{!! $product->barcode_svg !!}</div>
                 <div class="barcode-bottom">{{ number_format($product->sale_price ?? 0, 0, ',', '.') }} đ</div>
+                <div class="return-policy">Hàng đã mua không đổi trả</div>
             </div>
         @endforeach
     </div>

@@ -15,9 +15,9 @@
     <div class="py-6 sm:py-10">
         <div class="mx-auto max-w-10xl px-3 sm:px-6 lg:px-10">
             <div class="no-print mb-6 rounded-3xl bg-white p-4 shadow-sm ring-1 ring-gray-200">
-                <form method="GET" action="{{ route('product-labels.index') }}" class="flex flex-wrap items-center gap-3">
+                <form method="GET" action="{{ route('product-labels.index') }}" class="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
                     <x-per-page-select :value="request('per_page', 24)" />
-                    <div class="w-full max-w-sm">
+                    <div>
                         <select
                             name="supplier_id"
                             class="w-full rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900"
@@ -34,9 +34,12 @@
                             @endforeach
                         </select>
                     </div>
-                    <input name="term" value="{{ request('term') }}" class="w-full max-w-md rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Tìm theo mã, tên sản phẩm, nhà cung cấp">
+                    <input name="product_public_id" value="{{ $exactFilters['product_public_id'] ?? '' }}" class="w-full rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Đúng mã hàng">
+                    <input name="product_name" value="{{ $exactFilters['product_name'] ?? '' }}" class="w-full rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Đúng tên sản phẩm">
+                    <input name="supplier_public_id" value="{{ $exactFilters['supplier_public_id'] ?? '' }}" class="w-full rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Đúng mã NCC">
+                    <input name="supplier_name" value="{{ $exactFilters['supplier_name'] ?? '' }}" class="w-full rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Đúng tên NCC">
                     <button class="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">Lọc</button>
-                    @if (request('term') || request('supplier_id'))
+                    @if (request('product_public_id') || request('product_name') || request('supplier_public_id') || request('supplier_name') || request('supplier_id'))
                         <a href="{{ route('product-labels.index', ['per_page' => request('per_page', 24)]) }}" class="rounded-xl border border-gray-300 px-4 py-3 text-sm font-semibold text-gray-700">Xóa lọc</a>
                     @endif
                 </form>

@@ -115,15 +115,17 @@ Alpine.data('searchableSelect', ({
 		}));
 
 		if (this.submitOnSelect) {
-			const form = this.$el.closest('form');
+			this.$nextTick(() => {
+				const form = this.$el.closest('form');
 
-			if (form) {
-				if (typeof form.requestSubmit === 'function') {
-					form.requestSubmit();
-				} else {
-					form.submit();
+				if (form) {
+					if (typeof form.requestSubmit === 'function') {
+						form.requestSubmit();
+					} else {
+						form.submit();
+					}
 				}
-			}
+			});
 		}
 	},
 }));

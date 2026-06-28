@@ -64,7 +64,7 @@ class ConsignmentExpiryWorkflowTest extends TestCase
             ->assertStatus(422)
             ->assertJsonPath('message', 'Sản phẩm này đã được trả cho người gửi nên không thể bán.');
 
-        $this->getJson(route('sales.search', ['query' => $product->name]))
+        $this->getJson(route('sales.search', ['query' => $product->public_id]))
             ->assertOk()
             ->assertJsonCount(0, 'items');
     }

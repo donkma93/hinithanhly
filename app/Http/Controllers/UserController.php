@@ -24,8 +24,9 @@ class UserController extends Controller
 
     public function index(Request $request): View
     {
-        $publicId = trim($request->string('public_id')->toString());
-        $search = trim($request->string('search')->toString());
+        $publicId = ltrim(trim($request->string('public_id')->toString()), '#');
+        $name = trim($request->string('name')->toString());
+        $email = trim($request->string('email')->toString());
         $perPage = $this->resolvePerPage($request);
         $permissions = Role::query()->orderBy('name')->get(['id', 'name']);
 
@@ -34,10 +35,8 @@ class UserController extends Controller
                 ->with(['roles.permissions:id,name'])
                 ->select(['id', 'public_id', 'name', 'email', 'created_at'])
                 ->when($publicId !== '', fn ($query) => $query->where('public_id', $publicId))
-                ->when($search !== '', fn ($query) => $query->where(function ($query) use ($search) {
-                    $query->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%");
-                }))
+                ->when($name !== '', fn ($query) => $query->where('name', $name))
+                ->when($email !== '', fn ($query) => $query->where('email', $email))
                 ->latest()
                 ->paginate($perPage)
                 ->withQueryString(),

@@ -19,7 +19,7 @@
                 <form method="GET" action="{{ route('system-logs.index') }}" class="grid gap-4 md:grid-cols-6">
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Mã lỗi</label>
-                        <input name="error_uuid" value="{{ request('error_uuid') }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" placeholder="Ví dụ: 2f1f...">
+                        <input name="error_uuid" value="{{ request('error_uuid') }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" placeholder="Đúng mã lỗi">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Người dùng</label>
@@ -28,17 +28,17 @@
                             :options="$userOptions"
                             :selected="request('user_id')"
                             placeholder="Tất cả người dùng"
-                            search-placeholder="Tìm theo mã hoặc tên"
+                            search-placeholder="Chọn đúng người dùng"
                             empty-text="Không có người dùng phù hợp"
                         />
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Exception</label>
-                        <input name="exception_class" value="{{ request('exception_class') }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" placeholder="Ví dụ: RuntimeException">
+                        <input name="exception_class" value="{{ request('exception_class') }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" placeholder="Đúng exception">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">HTTP code</label>
-                        <input name="status_code" value="{{ request('status_code') }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" placeholder="500">
+                        <input name="status_code" value="{{ request('status_code') }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" placeholder="Đúng HTTP code">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Mỗi trang</label>

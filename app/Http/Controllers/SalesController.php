@@ -34,7 +34,6 @@ class SalesController extends Controller
         }
 
         $normalizedQuery = preg_replace('/\s+/', '', $queryText) ?? $queryText;
-        $trimmedDigits = ltrim($normalizedQuery, '0');
 
         $products = Product::query()
             ->select(['id', 'public_id', 'category_id', 'supplier_id', 'name', 'sale_price', 'quantity', 'image_path', 'returned_at'])
@@ -43,20 +42,14 @@ class SalesController extends Controller
                 'category:id,public_id,name',
             ])
             ->sellable()
-            ->where(function ($query) use ($normalizedQuery, $trimmedDigits): void {
-                $query->where('name', 'like', '%'.$normalizedQuery.'%')
-                    ->orWhere('public_id', 'like', '%'.$normalizedQuery.'%')
-                    ->orWhere('id', 'like', '%'.$normalizedQuery.'%');
+            ->where(function ($query) use ($normalizedQuery): void {
+                $query->where('public_id', $normalizedQuery);
 
-                if ($trimmedDigits !== '' && $trimmedDigits !== $normalizedQuery) {
-                    $query->orWhere('public_id', 'like', $trimmedDigits.'%')
-                        ->orWhereRaw("TRIM(LEADING '0' FROM public_id) LIKE ?", [$trimmedDigits.'%']);
+                if ($this->isExactIntegerKey($normalizedQuery)) {
+                    $query->orWhere('id', (int) $normalizedQuery);
                 }
             })
-            ->orderByRaw('CASE WHEN public_id = ? THEN 0 WHEN public_id LIKE ? THEN 1 ELSE 2 END', [
-                $normalizedQuery,
-                $normalizedQuery.'%',
-            ])
+            ->orderByDesc('id')
             ->limit(8)
             ->get()
             ->map(function (Product $product): array {
@@ -352,6 +345,10 @@ class SalesController extends Controller
         $code = preg_replace('/\s+/', '', $code) ?? $code;
 
         if (str_contains($code, '-')) {
+            if (! preg_match('/^\d+-\d+-\d+$/', $code)) {
+                return null;
+            }
+
             $segments = array_values(array_filter(explode('-', $code), fn (string $segment): bool => $segment !== ''));
             $code = $segments[0] ?? $code;
         }
@@ -359,7 +356,21 @@ class SalesController extends Controller
         $query = Product::query()
             ->select(['id', 'public_id', 'consignment_note_id', 'category_id', 'supplier_id', 'name', 'sale_price', 'quantity', 'image_path', 'description', 'returned_at']);
 
-        if (ctype_digit($code)) {
+        if (isset($segments)) {
+            if (! $this->isExactIntegerKey($code)) {
+                return null;
+            }
+
+            $product = (clone $query)->find((int) $code);
+
+            if ($product === null || (int) ($segments[1] ?? 0) !== (int) $product->supplier_id) {
+                return null;
+            }
+
+            return $product;
+        }
+
+        if ($this->isExactIntegerKey($code)) {
             $product = (clone $query)->find((int) $code);
 
             if ($product !== null) {
@@ -367,34 +378,17 @@ class SalesController extends Controller
             }
         }
 
-        // direct public_id match
         $product = $query->where('public_id', $code)->first();
         if ($product !== null) {
             return $product;
         }
 
-        // try matching after stripping leading zeros from scanned code
-        $trimmed = ltrim($code, '0');
-        if ($trimmed !== '' && $trimmed !== $code) {
-            $product = (clone $query)->where('public_id', $trimmed)->first();
-
-            if ($product !== null) {
-                return $product;
-            }
-
-            // fallback: compare DB-side by trimming leading zeros from stored public_id
-            try {
-                $product = (clone $query)->whereRaw("TRIM(LEADING '0' FROM public_id) = ?", [$trimmed])->first();
-
-                if ($product !== null) {
-                    return $product;
-                }
-            } catch (\Throwable $e) {
-                // ignore DB-specific errors and continue
-            }
-        }
-
         return null;
+    }
+
+    private function isExactIntegerKey(string $value): bool
+    {
+        return ctype_digit($value) && (string) (int) $value === $value;
     }
 
     /**
