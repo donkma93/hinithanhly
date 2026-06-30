@@ -24,6 +24,9 @@ use Picqer\Barcode\BarcodeGeneratorSVG;
 
 class ProductController extends Controller
 {
+    private const BARCODE_SVG_WIDTH_FACTOR = 2;
+    private const BARCODE_SVG_HEIGHT = 60;
+
     public function __construct(private readonly ProductRepositoryInterface $products)
     {
         $this->middleware('permission:products.view')->only(['index', 'expiryIndex', 'labelIndex', 'printLabels', 'label', 'barcode']);
@@ -974,7 +977,12 @@ class ProductController extends Controller
     private function generateBarcode(string $value): string
     {
         $generator = new BarcodeGeneratorSVG();
-        return $generator->getBarcode($value, BarcodeGeneratorSVG::TYPE_CODE_128);
+        return $generator->getBarcode(
+            $value,
+            BarcodeGeneratorSVG::TYPE_CODE_128,
+            self::BARCODE_SVG_WIDTH_FACTOR,
+            self::BARCODE_SVG_HEIGHT
+        );
     }
 
     private function buildLabelCode(Product $product, int $sendRound): string

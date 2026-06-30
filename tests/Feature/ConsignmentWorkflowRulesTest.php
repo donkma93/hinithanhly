@@ -11,6 +11,7 @@ use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Picqer\Barcode\BarcodeGeneratorSVG;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
@@ -293,8 +294,8 @@ class ConsignmentWorkflowRulesTest extends TestCase
 
         $product = Product::query()->where('name', 'Ao in tem')->sole();
         $labelCode = $product->id.'-'.$supplier->id.'-1';
-        $expectedSvg = (new \Picqer\Barcode\BarcodeGeneratorSVG())
-            ->getBarcode($labelCode, \Picqer\Barcode\BarcodeGeneratorSVG::TYPE_CODE_128);
+        $expectedSvg = (new BarcodeGeneratorSVG())
+            ->getBarcode($labelCode, BarcodeGeneratorSVG::TYPE_CODE_128, 2, 60);
 
         $response = $this->post(route('product-labels.print'), [
             'ids' => [$product->id],
@@ -330,8 +331,8 @@ class ConsignmentWorkflowRulesTest extends TestCase
 
         $product = Product::query()->where('name', 'Ao in le')->sole();
         $labelCode = $product->id.'-'.$supplier->id.'-1';
-        $expectedSvg = (new \Picqer\Barcode\BarcodeGeneratorSVG())
-            ->getBarcode($labelCode, \Picqer\Barcode\BarcodeGeneratorSVG::TYPE_CODE_128);
+        $expectedSvg = (new BarcodeGeneratorSVG())
+            ->getBarcode($labelCode, BarcodeGeneratorSVG::TYPE_CODE_128, 2, 60);
 
         $response = $this->get(route('products.label', $product));
 

@@ -7,7 +7,7 @@
     <style>
         @page {
             size: auto;
-            margin: 4mm;
+            margin: 2mm;
         }
 
         html, body {
@@ -28,12 +28,12 @@
             flex-direction: column;
             align-items: center;
             gap: 6mm;
-            padding: 4mm;
+            padding: 2mm;
         }
 
         .barcode {
-            width: 80mm;
-            height: 34mm;
+            width: 96mm;
+            height: 42mm;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -57,7 +57,7 @@
             text-align: center;
             margin: 0 0 1mm 0;
             white-space: nowrap;
-            width: 80mm;
+            width: 96mm;
         }
 
         .barcode-bottom {
@@ -68,11 +68,11 @@
             text-align: center;
             margin-top: 1mm;
             white-space: nowrap;
-            width: 80mm;
+            width: 96mm;
         }
 
         .return-policy {
-            width: 80mm;
+            width: 96mm;
             margin-top: 1.5mm;
             color: #000;
             font-family: Arial, Helvetica, "DejaVu Sans", sans-serif;
