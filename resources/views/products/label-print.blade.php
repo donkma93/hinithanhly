@@ -76,8 +76,8 @@
             margin-top: 1.5mm;
             color: #000;
             font-family: Arial, Helvetica, "DejaVu Sans", sans-serif;
-            font-size: 24pt;
-            font-weight: 700;
+            font-size: 18pt;
+            font-weight: 600;
             line-height: 1.15;
             text-align: center;
             white-space: normal;
