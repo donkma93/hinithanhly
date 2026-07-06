@@ -278,7 +278,7 @@ class ConsignmentWorkflowRulesTest extends TestCase
         $response->assertDontSee('Ao khoac A');
     }
 
-    public function test_product_label_print_uses_the_visible_label_code_for_the_barcode(): void
+    public function test_product_label_print_uses_a_shorter_product_code_for_the_barcode(): void
     {
         $this->signInAsAdmin();
         $category = $this->createCategory();
@@ -294,8 +294,9 @@ class ConsignmentWorkflowRulesTest extends TestCase
 
         $product = Product::query()->where('name', 'Ao in tem')->sole();
         $labelCode = $product->id.'-'.$supplier->id.'-1';
+        $barcodePayload = (string) $product->id;
         $expectedSvg = (new BarcodeGeneratorSVG())
-            ->getBarcode($labelCode, BarcodeGeneratorSVG::TYPE_CODE_128, 2, 60);
+            ->getBarcode($barcodePayload, BarcodeGeneratorSVG::TYPE_CODE_128, 3, 75);
 
         $response = $this->post(route('product-labels.print'), [
             'ids' => [$product->id],
@@ -304,18 +305,18 @@ class ConsignmentWorkflowRulesTest extends TestCase
         $response->assertOk();
         $response->assertViewIs('products.label-print');
         $response->assertSee('Hàng đã mua không đổi trả');
-        $response->assertViewHas('products', function ($products) use ($product, $labelCode, $expectedSvg): bool {
+        $response->assertViewHas('products', function ($products) use ($product, $labelCode, $barcodePayload, $expectedSvg): bool {
             $printedProduct = $products->first();
 
             return $products->count() === 1
                 && $printedProduct->id === $product->id
                 && $printedProduct->label_code === $labelCode
-                && $printedProduct->barcode_payload === $labelCode
+                && $printedProduct->barcode_payload === $barcodePayload
                 && $printedProduct->barcode_svg === $expectedSvg;
         });
     }
 
-    public function test_single_product_label_page_uses_the_visible_label_code(): void
+    public function test_single_product_label_page_uses_a_shorter_product_code_for_the_barcode(): void
     {
         $this->signInAsAdmin();
         $category = $this->createCategory();
@@ -331,22 +332,23 @@ class ConsignmentWorkflowRulesTest extends TestCase
 
         $product = Product::query()->where('name', 'Ao in le')->sole();
         $labelCode = $product->id.'-'.$supplier->id.'-1';
+        $barcodePayload = (string) $product->id;
         $expectedSvg = (new BarcodeGeneratorSVG())
-            ->getBarcode($labelCode, BarcodeGeneratorSVG::TYPE_CODE_128, 2, 60);
+            ->getBarcode($barcodePayload, BarcodeGeneratorSVG::TYPE_CODE_128, 3, 75);
 
         $response = $this->get(route('products.label', $product));
 
         $response->assertOk();
         $response->assertViewIs('products.label-print');
         $response->assertSee('Hàng đã mua không đổi trả');
-        $response->assertSee($labelCode);
-        $response->assertViewHas('products', function ($products) use ($product, $labelCode, $expectedSvg): bool {
+        $response->assertSee($product->id.' - '.$supplier->id.' - 1');
+        $response->assertViewHas('products', function ($products) use ($product, $labelCode, $barcodePayload, $expectedSvg): bool {
             $printedProduct = $products->first();
 
             return $products->count() === 1
                 && $printedProduct->id === $product->id
                 && $printedProduct->label_code === $labelCode
-                && $printedProduct->barcode_payload === $labelCode
+                && $printedProduct->barcode_payload === $barcodePayload
                 && $printedProduct->barcode_svg === $expectedSvg;
         });
     }

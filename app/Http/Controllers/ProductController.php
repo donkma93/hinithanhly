@@ -24,8 +24,8 @@ use Picqer\Barcode\BarcodeGeneratorSVG;
 
 class ProductController extends Controller
 {
-    private const BARCODE_SVG_WIDTH_FACTOR = 2;
-    private const BARCODE_SVG_HEIGHT = 60;
+    private const BARCODE_SVG_WIDTH_FACTOR = 3;
+    private const BARCODE_SVG_HEIGHT = 75;
 
     public function __construct(private readonly ProductRepositoryInterface $products)
     {
@@ -340,7 +340,7 @@ class ProductController extends Controller
                 $product->setAttribute('send_days', $sendSummary['days']);
                 $product->setAttribute('send_summary', $sendSummary['label']);
                 $product->setAttribute('label_code', $this->buildLabelCode($product, $sendSummary['round']));
-                $product->setAttribute('barcode_payload', $product->label_code);
+                $product->setAttribute('barcode_payload', $this->buildBarcodePayload($product));
 
                 return $product;
             })
@@ -894,8 +894,10 @@ class ProductController extends Controller
             $product->setAttribute('send_days', $sendSummary['days']);
             $product->setAttribute('send_summary', $sendSummary['label']);
             $product->setAttribute('label_code', $labelCode);
-            $product->setAttribute('barcode_payload', $labelCode);
-            $product->setAttribute('barcode_svg', $this->generateBarcode($labelCode));
+            $barcodePayload = $this->buildBarcodePayload($product);
+
+            $product->setAttribute('barcode_payload', $barcodePayload);
+            $product->setAttribute('barcode_svg', $this->generateBarcode($barcodePayload));
 
             return $product;
         });
@@ -969,7 +971,7 @@ class ProductController extends Controller
 
         return [
             'sendSummary' => $sendSummary,
-            'barcodePayload' => $labelCode,
+            'barcodePayload' => $this->buildBarcodePayload($product),
             'labelCode' => $labelCode,
         ];
     }
@@ -988,6 +990,11 @@ class ProductController extends Controller
     private function buildLabelCode(Product $product, int $sendRound): string
     {
         return $product->id.'-'.$product->supplier_id.'-'.$sendRound;
+    }
+
+    private function buildBarcodePayload(Product $product): string
+    {
+        return (string) $product->id;
     }
 
     /**

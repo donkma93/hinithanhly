@@ -33,7 +33,7 @@
 
         .barcode {
             width: 96mm;
-            height: 42mm;
+            height: 48mm;
             display: flex;
             align-items: center;
             justify-content: center;
