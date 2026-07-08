@@ -15,6 +15,13 @@
 
     @php
         $supplierDiscountRates = \App\Models\Setting::supplierDiscountRates();
+        $supplierOptions = collect([[
+            'value' => '',
+            'label' => '-- Tất cả nhà cung cấp --',
+        ]])->merge($suppliersForType->map(fn ($supplierOption) => [
+            'value' => $supplierOption->id,
+            'label' => '#'.($supplierOption->public_id_display ?? $supplierOption->public_id).' - '.$supplierOption->name,
+        ]))->all();
     @endphp
 
     <div class="py-6 sm:py-10">
@@ -53,19 +60,19 @@
                                 <option value="{{ $type }}" {{ request('supplier_type') === $type ? 'selected' : '' }}>{{ $label }}</option>
                             @endforeach
                         </select>
-                        <select
-                            name="supplier_id"
-                            class="rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900"
-                            onchange="this.form.requestSubmit()"
-                            @disabled(! $supplierType)
-                        >
-                            <option value="">-- Tất cả nhà cung cấp --</option>
-                            @foreach ($suppliersForType as $supplierOption)
-                                <option value="{{ $supplierOption->id }}" @selected((string) $selectedSupplierId === (string) $supplierOption->id)>
-                                    #{{ $supplierOption->public_id_display }} - {{ $supplierOption->name }}
-                                </option>
-                            @endforeach
-                        </select>
+                        <div class="min-w-[260px] flex-1">
+                            <x-searchable-select
+                                name="supplier_id"
+                                :options="$supplierOptions"
+                                :selected="$selectedSupplierId"
+                                placeholder="-- Tất cả nhà cung cấp --"
+                                search-placeholder="Tìm NCC theo mã hoặc tên"
+                                empty-text="Không có nhà cung cấp phù hợp"
+                                depends-on="supplier_type"
+                                :dependency-value="$supplierType"
+                                :submit-on-select="true"
+                            />
+                        </div>
                         <input type="date" name="from" value="{{ request('from', $startDate->format('Y-m-d')) }}" class="rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900">
                         <input type="date" name="to" value="{{ request('to', $endDate->format('Y-m-d')) }}" class="rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900">
                         <button class="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">Lọc</button>
