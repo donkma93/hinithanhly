@@ -18,9 +18,11 @@
         $supplierOptions = collect([[
             'value' => '',
             'label' => '-- Tất cả nhà cung cấp --',
+            'supplier_type' => $supplierType,
         ]])->merge($suppliersForType->map(fn ($supplierOption) => [
             'value' => $supplierOption->id,
             'label' => '#'.($supplierOption->public_id_display ?? $supplierOption->public_id).' - '.$supplierOption->name,
+            'supplier_type' => $supplierOption->type,
         ]))->all();
     @endphp
 
@@ -70,6 +72,7 @@
                                 empty-text="Không có nhà cung cấp phù hợp"
                                 depends-on="supplier_type"
                                 :dependency-value="$supplierType"
+                                filter-key="supplier_type"
                                 :submit-on-select="true"
                             />
                         </div>
