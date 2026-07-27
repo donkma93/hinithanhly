@@ -50,7 +50,7 @@
         }
 
         .barcode-top {
-            font-size: 15pt;
+            font-size: 24pt;
             font-weight: bold;
             line-height: 1.2;
             color: #000;
