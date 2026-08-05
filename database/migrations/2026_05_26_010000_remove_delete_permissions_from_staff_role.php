@@ -1,21 +1,38 @@
 <?php
 
-use App\Models\Permission;
 use App\Support\PermissionCatalog;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
 
 return new class extends Migration
 {
     public function up(): void
     {
-        foreach (PermissionCatalog::names() as $permissionName) {
-            Permission::findOrCreate($permissionName, 'web');
+        $tableNames = config('permission.table_names');
+
+        if (empty($tableNames)) {
+            throw new \Exception('Error: config/permission.php not loaded. Run [php artisan config:clear] and try again.');
         }
+
+        $permissionsTable = $tableNames['permissions'];
+        $rolePermissionsTable = $tableNames['role_has_permissions'];
+
+        $now = now();
+        $permissionRows = collect(PermissionCatalog::names())
+            ->map(fn (string $permissionName) => [
+                'name' => $permissionName,
+                'guard_name' => 'web',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ])
+            ->all();
+
+        DB::table($permissionsTable)->upsert($permissionRows, ['name', 'guard_name'], ['updated_at']);
 
         $staffRole = Role::findOrCreate('staff', 'web');
 
-        $staffRole->syncPermissions([
+        $activePermissionNames = [
             'dashboard.view',
             'categories.view',
             'categories.create',
@@ -33,14 +50,48 @@ return new class extends Migration
             'products.create',
             'products.update',
             'products.manage',
-        ]);
+        ];
+
+        $permissionIds = DB::table($permissionsTable)
+            ->whereIn('name', $activePermissionNames)
+            ->pluck('id', 'name');
+
+        DB::table($rolePermissionsTable)
+            ->where('role_id', $staffRole->id)
+            ->delete();
+
+        DB::table($rolePermissionsTable)->insert(
+            collect($activePermissionNames)
+                ->map(fn (string $permissionName) => [
+                    'permission_id' => $permissionIds[$permissionName],
+                    'role_id' => $staffRole->id,
+                ])
+                ->all()
+        );
     }
 
     public function down(): void
     {
-        foreach (PermissionCatalog::names() as $permissionName) {
-            Permission::findOrCreate($permissionName, 'web');
+        $tableNames = config('permission.table_names');
+
+        if (empty($tableNames)) {
+            throw new \Exception('Error: config/permission.php not loaded. Run [php artisan config:clear] and try again.');
         }
+
+        $permissionsTable = $tableNames['permissions'];
+        $rolePermissionsTable = $tableNames['role_has_permissions'];
+
+        $now = now();
+        $permissionRows = collect(PermissionCatalog::names())
+            ->map(fn (string $permissionName) => [
+                'name' => $permissionName,
+                'guard_name' => 'web',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ])
+            ->all();
+
+        DB::table($permissionsTable)->upsert($permissionRows, ['name', 'guard_name'], ['updated_at']);
 
         $staffRole = Role::query()
             ->where('name', 'staff')
@@ -51,7 +102,7 @@ return new class extends Migration
             return;
         }
 
-        $staffRole->syncPermissions([
+        $permissionNames = [
             'dashboard.view',
             'categories.view',
             'categories.create',
@@ -73,6 +124,23 @@ return new class extends Migration
             'products.update',
             'products.delete',
             'products.manage',
-        ]);
+        ];
+
+        $permissionIds = DB::table($permissionsTable)
+            ->whereIn('name', $permissionNames)
+            ->pluck('id', 'name');
+
+        DB::table($rolePermissionsTable)
+            ->where('role_id', $staffRole->id)
+            ->delete();
+
+        DB::table($rolePermissionsTable)->insert(
+            collect($permissionNames)
+                ->map(fn (string $permissionName) => [
+                    'permission_id' => $permissionIds[$permissionName],
+                    'role_id' => $staffRole->id,
+                ])
+                ->all()
+        );
     }
 };

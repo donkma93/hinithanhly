@@ -10,7 +10,7 @@
         @include('layouts.partials.no-build-assets')
     </head>
     <body class="font-sans text-gray-900 antialiased min-h-screen bg-gray-100">
-        <div class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-10xl px-3 py-6 sm:px-6 lg:px-10">
             <div class="flex items-center justify-between mb-6">
                 <a href="/">
                     <x-application-logo class="w-20 h-20 fill-current text-gray-500" />

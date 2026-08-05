@@ -13,8 +13,8 @@
         </div>
     </x-slot>
 
-    <div class="py-10">
-        <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+    <div class="py-6 sm:py-10">
+        <div class="mx-auto max-w-10xl px-3 sm:px-6 lg:px-10">
             <div class="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
                 <style>
                     @media print {
@@ -29,6 +29,14 @@
                         .print-card {
                             box-shadow: none !important;
                             border: 1px solid #e5e7eb;
+                        }
+
+                        .print-policy {
+                            color: #000 !important;
+                            font-family: Arial, Helvetica, "DejaVu Sans", sans-serif !important;
+                            font-size: 18pt !important;
+                            font-weight: 600 !important;
+                            line-height: 1.15 !important;
                         }
                     }
                 </style>
@@ -71,9 +79,18 @@
                         </div>
                         <p class="mt-4 text-xs uppercase tracking-[0.2em] text-slate-300">{{ $barcodePayload }}</p>
                         <p class="mt-3 text-2xl font-semibold text-white">{{ number_format((float) $product->sale_price, 0, ',', '.') }} đ</p>
+                        <p class="print-policy mt-3 text-2xl font-semibold leading-tight text-white">Hàng đã mua không đổi trả</p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    @push('scripts')
+        <script>
+            window.addEventListener('load', () => {
+                window.print();
+            });
+        </script>
+    @endpush
 </x-app-layout>

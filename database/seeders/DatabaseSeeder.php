@@ -7,7 +7,6 @@ use App\Models\Permission;
 use App\Models\User;
 use App\Support\PermissionCatalog;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
 
 class DatabaseSeeder extends Seeder
@@ -49,23 +48,24 @@ class DatabaseSeeder extends Seeder
             'products.manage',
             'sales.records.view',
             'sales.revenue.view',
+            'system-logs.view',
         ]);
 
         $admin = User::updateOrCreate(
             ['email' => 'admin@kygui.local'],
-            ['name' => 'Administrator', 'password' => Hash::make('password')]
+            ['name' => 'Administrator', 'password' => 'password']
         );
         $admin->syncRoles(['admin']);
 
         $superAdmin = User::updateOrCreate(
             ['email' => 'superadmin@kygui.local'],
-            ['name' => 'Super Admin', 'password' => Hash::make('password')]
+            ['name' => 'Super Admin', 'password' => 'password']
         );
         $superAdmin->syncRoles(['super-admin']);
 
         $staff = User::updateOrCreate(
             ['email' => 'staff@kygui.local'],
-            ['name' => 'Staff User', 'password' => Hash::make('password')]
+            ['name' => 'Staff User', 'password' => 'password']
         );
         $staff->syncRoles(['staff']);
     }

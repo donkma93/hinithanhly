@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Category;
+use App\Models\ConsignmentNote;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\User;
@@ -10,6 +11,7 @@ use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Picqer\Barcode\BarcodeGeneratorSVG;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
@@ -78,6 +80,101 @@ class ConsignmentWorkflowRulesTest extends TestCase
         Storage::disk('public')->assertExists($product->image_path);
     }
 
+    public function test_product_creation_accepts_an_image_from_the_camera_input(): void
+    {
+        Storage::fake('public');
+
+        $this->signInAsAdmin();
+        $category = $this->createCategory();
+        $supplier = $this->createSupplier('cho_tang', 'NCC cho tang');
+
+        $response = $this->post(route('products.store'), [
+            'supplier_id' => $supplier->id,
+            'category_id' => $category->id,
+            'name' => 'Ao khoac chup tu camera',
+            'sale_price' => 260000,
+            'quantity' => 1,
+            'description' => 'Upload anh tu camera',
+            'camera_image' => UploadedFile::fake()->image('ao-khoac-camera.jpg', 4000, 3000),
+        ]);
+
+        $response->assertRedirect(route('products.index'));
+
+        $product = Product::query()->sole();
+
+        $this->assertNotNull($product->image_path);
+        Storage::disk('public')->assertExists($product->image_path);
+    }
+
+    public function test_product_update_accepts_an_image_from_the_camera_input(): void
+    {
+        Storage::fake('public');
+
+        $user = $this->signInAsAdmin();
+        $category = $this->createCategory();
+        $supplier = $this->createSupplier('cho_tang', 'NCC cho tang');
+        $consignment = ConsignmentNote::create([
+            'responsible_user_id' => $user->id,
+            'responsible_name' => $user->name,
+            'supplier_id' => $supplier->id,
+            'sent_date' => now()->toDateString(),
+            'quantity' => 1,
+            'notes' => ConsignmentNote::AUTO_GENERATED_NOTE_MARKER,
+        ]);
+        $oldImagePath = 'products/existing-camera-image.jpg';
+
+        Storage::disk('public')->put($oldImagePath, 'old-image');
+
+        $product = Product::create([
+            'consignment_note_id' => $consignment->id,
+            'supplier_id' => $supplier->id,
+            'category_id' => $category->id,
+            'created_by_id' => $user->id,
+            'name' => 'Ao khoac cu',
+            'sale_price' => 250000,
+            'quantity' => 1,
+            'image_path' => $oldImagePath,
+            'description' => 'Anh cu',
+        ]);
+
+        $response = $this->put(route('products.update', $product), [
+            'supplier_id' => $supplier->id,
+            'category_id' => $category->id,
+            'name' => 'Ao khoac moi',
+            'sale_price' => 275000,
+            'quantity' => 2,
+            'description' => 'Cap nhat anh tu camera',
+            'camera_image' => UploadedFile::fake()->image('ao-khoac-moi.jpg', 3000, 2500),
+        ]);
+
+        $response->assertRedirect(route('products.index'));
+
+        $product->refresh();
+
+        $this->assertSame('Ao khoac moi', $product->name);
+        $this->assertNotSame($oldImagePath, $product->image_path);
+        Storage::disk('public')->assertMissing($oldImagePath);
+        Storage::disk('public')->assertExists($product->image_path);
+    }
+
+    public function test_product_creation_requires_a_category_selection(): void
+    {
+        $this->signInAsAdmin();
+        $supplier = $this->createSupplier('cho_tang', 'NCC cho tang');
+
+        $response = $this->from(route('products.index'))->post(route('products.store'), [
+            'supplier_id' => $supplier->id,
+            'name' => 'Ao khoac',
+            'sale_price' => 250000,
+            'quantity' => 1,
+            'description' => 'Thieu danh muc',
+        ]);
+
+        $response->assertRedirect(route('products.index'));
+        $response->assertSessionHasErrors('category_id');
+        $this->assertDatabaseCount('products', 0);
+    }
+
     public function test_manual_supplier_types_still_require_an_explicit_consignment_note(): void
     {
         $this->signInAsAdmin();
@@ -115,7 +212,148 @@ class ConsignmentWorkflowRulesTest extends TestCase
         $this->assertDatabaseCount('consignment_notes', 0);
     }
 
-    public function test_product_index_searches_by_product_code_supplier_code_and_product_name(): void
+    public function test_consignment_index_filters_notes_by_selected_supplier(): void
+    {
+        $this->signInAsAdmin();
+
+        $manualSupplier = $this->createSupplier('ncc_it_san_pham', 'NCC ky gui A');
+        $manualSupplierB = $this->createSupplier('ncc_nhieu_san_pham', 'NCC ky gui B');
+
+        ConsignmentNote::create([
+            'responsible_user_id' => User::factory()->create()->id,
+            'responsible_name' => 'Phieu cua A',
+            'supplier_id' => $manualSupplier->id,
+            'sent_date' => now()->subDays(2)->toDateString(),
+            'quantity' => 2,
+            'notes' => 'Ghi chu A',
+        ]);
+
+        ConsignmentNote::create([
+            'responsible_user_id' => User::factory()->create()->id,
+            'responsible_name' => 'Phieu cua B',
+            'supplier_id' => $manualSupplierB->id,
+            'sent_date' => now()->subDay()->toDateString(),
+            'quantity' => 3,
+            'notes' => 'Ghi chu B',
+        ]);
+
+        $response = $this->get(route('consignments.index', [
+            'supplier_id' => $manualSupplierB->id,
+        ]));
+
+        $response->assertOk();
+        $response->assertSee('Phieu cua B');
+        $response->assertDontSee('Phieu cua A');
+    }
+
+    public function test_product_label_index_filters_products_by_selected_supplier(): void
+    {
+        $this->signInAsAdmin();
+        $category = $this->createCategory();
+        $supplierA = $this->createSupplier('cho_tang', 'NCC in ma A');
+        $supplierB = $this->createSupplier('khach_si', 'NCC in ma B');
+
+        $this->post(route('products.store'), [
+            'supplier_id' => $supplierA->id,
+            'category_id' => $category->id,
+            'name' => 'Ao khoac A',
+            'sale_price' => 150000,
+            'quantity' => 1,
+        ])->assertRedirect(route('products.index'));
+
+        $this->post(route('products.store'), [
+            'supplier_id' => $supplierB->id,
+            'category_id' => $category->id,
+            'name' => 'Ao khoac B',
+            'sale_price' => 175000,
+            'quantity' => 1,
+        ])->assertRedirect(route('products.index'));
+
+        $response = $this->get(route('product-labels.index', [
+            'supplier_id' => $supplierB->id,
+        ]));
+
+        $response->assertOk();
+        $response->assertSee('Ao khoac B');
+        $response->assertDontSee('Ao khoac A');
+    }
+
+    public function test_product_label_print_uses_a_shorter_product_code_for_the_barcode(): void
+    {
+        $this->signInAsAdmin();
+        $category = $this->createCategory();
+        $supplier = $this->createSupplier('cho_tang', 'NCC in tem');
+
+        $this->post(route('products.store'), [
+            'supplier_id' => $supplier->id,
+            'category_id' => $category->id,
+            'name' => 'Ao in tem',
+            'sale_price' => 150000,
+            'quantity' => 1,
+        ])->assertRedirect(route('products.index'));
+
+        $product = Product::query()->where('name', 'Ao in tem')->sole();
+        $labelCode = $product->id.'-'.$supplier->id.'-1';
+        $barcodePayload = (string) $product->id;
+        $expectedSvg = (new BarcodeGeneratorSVG())
+            ->getBarcode($barcodePayload, BarcodeGeneratorSVG::TYPE_CODE_128, 3, 75);
+
+        $response = $this->post(route('product-labels.print'), [
+            'ids' => [$product->id],
+        ]);
+
+        $response->assertOk();
+        $response->assertViewIs('products.label-print');
+        $response->assertSee('Hàng đã mua không đổi trả');
+        $response->assertViewHas('products', function ($products) use ($product, $labelCode, $barcodePayload, $expectedSvg): bool {
+            $printedProduct = $products->first();
+
+            return $products->count() === 1
+                && $printedProduct->id === $product->id
+                && $printedProduct->label_code === $labelCode
+                && $printedProduct->barcode_payload === $barcodePayload
+                && $printedProduct->barcode_svg === $expectedSvg;
+        });
+    }
+
+    public function test_single_product_label_page_uses_a_shorter_product_code_for_the_barcode(): void
+    {
+        $this->signInAsAdmin();
+        $category = $this->createCategory();
+        $supplier = $this->createSupplier('cho_tang', 'NCC in le');
+
+        $this->post(route('products.store'), [
+            'supplier_id' => $supplier->id,
+            'category_id' => $category->id,
+            'name' => 'Ao in le',
+            'sale_price' => 150000,
+            'quantity' => 1,
+        ])->assertRedirect(route('products.index'));
+
+        $product = Product::query()->where('name', 'Ao in le')->sole();
+        $labelCode = $product->id.'-'.$supplier->id.'-1';
+        $barcodePayload = (string) $product->id;
+        $expectedSvg = (new BarcodeGeneratorSVG())
+            ->getBarcode($barcodePayload, BarcodeGeneratorSVG::TYPE_CODE_128, 3, 75);
+
+        $response = $this->get(route('products.label', $product));
+
+        $response->assertOk();
+        $response->assertViewIs('products.label-print');
+        $response->assertSee('Hàng đã mua không đổi trả');
+        $response->assertSee($product->id.' - '.$supplier->id.' - 1');
+        $response->assertViewHas('products', function ($products) use ($product, $labelCode, $barcodePayload, $expectedSvg): bool {
+            $printedProduct = $products->first();
+
+            return $products->count() === 1
+                && $printedProduct->id === $product->id
+                && $printedProduct->label_code === $labelCode
+                && $printedProduct->barcode_payload === $barcodePayload
+                && $printedProduct->barcode_svg === $expectedSvg;
+        });
+    }
+
+    public function test_product_index_filters_by_exact_product_code_and_partial_product_name(): void
     {
         $this->signInAsAdmin();
         $category = $this->createCategory();
@@ -143,20 +381,25 @@ class ConsignmentWorkflowRulesTest extends TestCase
         $productA = Product::query()->where('name', 'Ao so mi xanh')->sole();
         $productB = Product::query()->where('name', 'Quan tay den')->sole();
 
-        $responseByProductCode = $this->get(route('products.index', ['q' => $productA->public_id]));
+        $responseByProductCode = $this->get(route('products.index', ['product_public_id' => $productA->public_id]));
         $responseByProductCode->assertOk();
         $responseByProductCode->assertSee('Ao so mi xanh');
         $responseByProductCode->assertDontSee('Quan tay den');
 
-        $responseBySupplierCode = $this->get(route('products.index', ['q' => $supplierB->public_id]));
-        $responseBySupplierCode->assertOk();
-        $responseBySupplierCode->assertSee('Quan tay den');
-        $responseBySupplierCode->assertDontSee('Ao so mi xanh');
+        $responseByPartialCode = $this->get(route('products.index', ['product_public_id' => '0'.$productA->public_id]));
+        $responseByPartialCode->assertOk();
+        $responseByPartialCode->assertDontSee('Ao so mi xanh');
+        $responseByPartialCode->assertDontSee('Quan tay den');
 
-        $responseByName = $this->get(route('products.index', ['q' => 'ao so mi']));
-        $responseByName->assertOk();
-        $responseByName->assertSee('Ao so mi xanh');
-        $responseByName->assertDontSee('Quan tay den');
+        $responseBySupplierDropdown = $this->get(route('products.index', ['supplier_id' => $supplierB->id]));
+        $responseBySupplierDropdown->assertOk();
+        $responseBySupplierDropdown->assertSee('Quan tay den');
+        $responseBySupplierDropdown->assertDontSee('Ao so mi xanh');
+
+        $responseByPartialName = $this->get(route('products.index', ['product_name' => 'so mi']));
+        $responseByPartialName->assertOk();
+        $responseByPartialName->assertSee('Ao so mi xanh');
+        $responseByPartialName->assertDontSee('Quan tay den');
     }
 
     private function signInAsAdmin(): User

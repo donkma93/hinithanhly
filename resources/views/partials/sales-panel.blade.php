@@ -1,4 +1,4 @@
-<div class="mx-auto max-w-6xl px-4 py-4 sm:px-6 lg:px-8">
+<div class="mx-auto max-w-10xl px-3 py-4 sm:px-6 lg:px-10">
     <header class="flex items-center justify-between gap-4 rounded-2xl bg-white px-4 py-3 shadow-sm ring-1 ring-slate-200">
         <div>
             <p class="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">Màn hình bán hàng</p>
@@ -23,10 +23,10 @@
     <main class="mt-4 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
         <section class="space-y-4">
             <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-                <label for="scanner-input" class="block text-sm font-medium text-slate-700">Ô quét mã hoặc tìm sản phẩm</label>
+                <label for="scanner-input" class="block text-sm font-medium text-slate-700">Ô quét hoặc nhập đúng mã sản phẩm</label>
                 <div class="mt-2 flex gap-2">
                     <div class="relative flex-1">
-                        <input id="scanner-input" type="text" inputmode="text" autocomplete="off" placeholder="Quét mã hoặc nhập tên sản phẩm"
+                        <input id="scanner-input" type="text" inputmode="text" autocomplete="off" placeholder="Quét mã hoặc nhập đúng mã"
                         class="h-12 flex-1 rounded-xl border-slate-300 px-4 text-lg outline-none ring-0 focus:border-slate-900 focus:ring-1 focus:ring-slate-900" />
                         <div id="suggestions-panel" class="absolute left-0 right-0 top-full z-20 mt-2 hidden overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl ring-1 ring-slate-200"></div>
                     </div>
@@ -35,7 +35,7 @@
                     </button>
                 </div>
                 <p id="status-box" class="mt-3 rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600 ring-1 ring-slate-200">
-                    Sẵn sàng nhận mã hoặc tên sản phẩm.
+                    Sẵn sàng nhận đúng mã sản phẩm.
                 </p>
             </div>
 
@@ -135,6 +135,13 @@
 
         const looksLikeProductCode = (value) => /^[0-9\-]+$/.test(normalizeSearchTerm(value));
 
+        const getRemainingQuantity = (item) => {
+            const stockQuantity = Number(item.quantity || 0);
+            const cartQuantity = Number(cart.get(Number(item.id))?.cart_quantity || 0);
+
+            return Math.max(stockQuantity - cartQuantity, 0);
+        };
+
         const hideSuggestions = () => {
             suggestionsPanel.classList.add('hidden');
             suggestionsPanel.innerHTML = '';
@@ -142,13 +149,14 @@
 
         const renderSuggestions = (items, query) => {
             const cleanQuery = normalizeSearchTerm(query);
+            const visibleItems = items.filter((item) => getRemainingQuantity(item) > 0);
 
-            if (!cleanQuery || !items.length) {
+            if (!cleanQuery || !visibleItems.length) {
                 hideSuggestions();
                 return;
             }
 
-            suggestionsPanel.innerHTML = items.map((item) => `
+            suggestionsPanel.innerHTML = visibleItems.map((item) => `
                 <button type="button" data-product-id="${item.id}" class="flex w-full items-center gap-3 border-b border-slate-100 px-4 py-3 text-left last:border-b-0 hover:bg-slate-50">
                     <div class="flex h-12 w-12 flex-none items-center justify-center overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200">
                         ${item.image_url ? `<img src="${item.image_url}" alt="${item.name}" class="h-full w-full object-cover">` : '<span class="text-[10px] font-semibold uppercase text-slate-400">No ảnh</span>'}
@@ -158,7 +166,7 @@
                             <p class="truncate font-semibold text-slate-900">${item.name}</p>
                             <span class="shrink-0 text-sm font-semibold text-slate-900">${item.sale_price_text}</span>
                         </div>
-                        <p class="mt-1 text-sm text-slate-500">Mã: #${item.public_id_display} · Tồn kho: ${item.quantity}</p>
+                        <p class="mt-1 text-sm text-slate-500">Mã: #${item.public_id_display} · Còn có thể bán: ${getRemainingQuantity(item)}/${item.quantity}</p>
                         <p class="mt-1 text-xs text-slate-400">${item.supplier ? `${item.supplier.name}${item.supplier.public_id_display ? ' · #' + item.supplier.public_id_display : ''}` : ''}${item.category ? `${item.supplier ? ' · ' : ''}${item.category.name}${item.category.public_id_display ? ' · #' + item.category.public_id_display : ''}` : ''}</p>
                     </div>
                 </button>
@@ -169,7 +177,7 @@
             suggestionsPanel.querySelectorAll('[data-product-id]').forEach((button) => {
                 button.addEventListener('click', () => {
                     const id = Number(button.getAttribute('data-product-id'));
-                    const product = items.find((entry) => Number(entry.id) === id);
+                    const product = visibleItems.find((entry) => Number(entry.id) === id);
 
                     if (product) {
                         addProduct(product);
@@ -235,7 +243,7 @@
 
         const buildCheckoutItems = () => Array.from(cart.values()).map((item) => ({
             id: Number(item.id),
-            quantity: Number(item.cart_quantity || 0),
+            quantity: Number(item.cart_quantity || 1),
         }));
 
         const completeCheckout = async (paymentMethod, paymentToken = null) => {
@@ -297,9 +305,10 @@
 
         const renderCart = () => {
             const items = Array.from(cart.values());
-            const subtotal = items.reduce((sum, item) => sum + (Number(item.sale_price || 0) * Number(item.cart_quantity || 0)), 0);
+            const itemsCount = items.reduce((sum, item) => sum + Number(item.cart_quantity || 1), 0);
+            const subtotal = items.reduce((sum, item) => sum + (Number(item.sale_price || 0) * Number(item.cart_quantity || 1)), 0);
 
-            itemsCountInline.textContent = String(items.reduce((sum, item) => sum + Number(item.cart_quantity || 0), 0));
+            itemsCountInline.textContent = String(itemsCount);
             subtotalInline.textContent = formatMoney(subtotal);
             cartState.textContent = items.length ? 'Đang tính tiền' : 'Chờ quét';
 
@@ -325,8 +334,8 @@
                     </div>
                     <div class="flex items-center gap-3">
                         <div class="text-right">
-                            <p class="font-semibold">${formatMoney(item.sale_price * Number(item.cart_quantity || 0))}</p>
-                            <p class="text-xs text-slate-500">SL: ${Number(item.cart_quantity || 0)} × ${formatMoney(item.sale_price)}</p>
+                            <p class="font-semibold">${formatMoney(Number(item.sale_price || 0) * Number(item.cart_quantity || 1))}</p>
+                            <p class="text-xs text-slate-500">SL: ${Number(item.cart_quantity || 1)} x ${formatMoney(item.sale_price)}</p>
                         </div>
                         <button type="button" data-remove-id="${item.id}" class="rounded-lg border border-slate-300 px-3 py-1 text-sm text-slate-600">
                             Xóa
@@ -349,7 +358,6 @@
         const addProduct = (product) => {
             const productId = Number(product.id);
             const currentItem = cart.get(productId);
-            const currentQuantity = Number(currentItem?.cart_quantity || 0);
             const stockQuantity = Number(product.quantity || 0);
 
             if (stockQuantity <= 0) {
@@ -359,19 +367,30 @@
                 return;
             }
 
-            if (currentQuantity >= stockQuantity) {
-                setStatus(`Sản phẩm này chỉ còn ${stockQuantity} trong kho, không thể thêm nữa.`, 'warning');
+            if (currentItem) {
+                const currentQuantity = Number(currentItem.cart_quantity || 1);
+
+                if (currentQuantity >= stockQuantity) {
+                    setStatus('Sản phẩm này không còn đủ tồn kho để thêm vào hóa đơn.', 'error');
+                    renderLastProduct(product);
+                    focusScanner();
+                    return;
+                }
+
+                cart.set(productId, { ...currentItem, quantity: stockQuantity, cart_quantity: currentQuantity + 1 });
                 renderLastProduct(product);
+                renderCart();
+                setStatus(`Đã thêm 1 ${product.name}. Số lượng hiện tại: ${currentQuantity + 1}.`, 'success');
                 focusScanner();
                 return;
             }
 
-            const nextItem = currentItem ? { ...currentItem, cart_quantity: currentQuantity + 1 } : { ...product, cart_quantity: 1 };
+            const nextItem = { ...product, cart_quantity: 1 };
 
             cart.set(productId, nextItem);
             renderLastProduct(product);
             renderCart();
-            setStatus(currentItem ? `Đã tăng số lượng ${product.name} lên ${currentQuantity + 1}.` : `Đã thêm ${product.name}.`, 'success');
+            setStatus(`Đã thêm ${product.name}.`, 'success');
             focusScanner();
         };
 
@@ -412,12 +431,14 @@
             event.preventDefault();
             hideSuggestions();
 
-            if (looksLikeProductCode(scannerInput.value)) {
-                lookupProduct(scannerInput.value);
-            } else {
-                fetchSuggestions(scannerInput.value);
+            if (!looksLikeProductCode(scannerInput.value)) {
+                setStatus('Vui lòng nhập đúng mã sản phẩm.', 'warning');
+                scannerInput.value = '';
+                focusScanner();
+                return;
             }
 
+            lookupProduct(scannerInput.value);
             scannerInput.value = '';
         });
 
@@ -426,7 +447,7 @@
 
             const cleanValue = normalizeSearchTerm(scannerInput.value);
 
-            if (!cleanValue) {
+            if (!cleanValue || !looksLikeProductCode(cleanValue)) {
                 hideSuggestions();
                 return;
             }
@@ -439,7 +460,7 @@
         scannerInput.addEventListener('focus', () => {
             const cleanValue = normalizeSearchTerm(scannerInput.value);
 
-            if (cleanValue) {
+            if (cleanValue && looksLikeProductCode(cleanValue)) {
                 fetchSuggestions(cleanValue);
             }
         });
@@ -476,96 +497,9 @@
                 return;
             }
 
-            const items = buildCheckoutItems();
-            // If you need quantities >1, extend the UI to capture them; current cart stores single qty per scan.
-
-            // First, request a payment QR payload from the server. The
-            // cashier will ask the customer to transfer and then confirm.
-            setStatus('Chuẩn bị mã QR chuyển khoản...', 'info');
-
-            try {
-                const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-
-                const createResp = await fetch(@json(url('/ban-hang/create-payment')), {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': token,
-                    },
-                    body: JSON.stringify({ items }),
-                });
-
-                if (createResp.status === 401) {
-                    setStatus('Vui lòng đăng nhập để hoàn tất hoá đơn.', 'warning');
-                    focusScanner();
-                    return;
-                }
-
-                const createPayload = await createResp.json().catch(() => ({}));
-
-                if (!createResp.ok) {
-                    setStatus(createPayload.message || 'Không thể tạo mã QR.', 'error');
-                    focusScanner();
-                    return;
-                }
-
-                // Show modal with QR
-                showPaymentModal(createPayload.qr_url, createPayload.payload, createPayload.payment_token, createPayload.total);
-                setStatus('Hiển thị mã QR. Chờ xác nhận chuyển tiền.', 'info');
-            } catch (err) {
-                setStatus('Lỗi khi tạo mã QR.', 'error');
-                focusScanner();
-            }
+            setStatus('Đang chốt hoá đơn chuyển khoản...', 'info');
+            await completeCheckout('transfer');
         });
-
-        /* Payment modal handling */
-        const paymentModal = document.createElement('div');
-        paymentModal.id = 'payment-modal';
-        paymentModal.style.display = 'none';
-        paymentModal.innerHTML = `
-            <div id="payment-modal-backdrop" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:60;">
-                <div style="background:white;border-radius:12px;padding:20px;max-width:420px;width:90%;box-shadow:0 10px 30px rgba(0,0,0,0.2);">
-                    <h3 style="font-weight:600;margin-bottom:12px;">Mã QR chuyển khoản</h3>
-                    <div id="payment-qr-container" style="text-align:center;margin-bottom:12px;"></div>
-                    <pre id="payment-payload" style="white-space:pre-wrap;background:#f7f7f7;padding:8px;border-radius:6px;margin-bottom:12px;font-size:13px;color:#333;"></pre>
-                    <div style="display:flex;gap:8px;justify-content:flex-end;">
-                        <button id="payment-cancel" type="button" style="padding:8px 12px;border-radius:8px;border:1px solid #ddd;background:#fff;">Hủy</button>
-                        <button id="payment-confirm" type="button" style="padding:8px 12px;border-radius:8px;background:#10b981;color:#fff;border:none;">Tôi đã chuyển tiền</button>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        document.body.appendChild(paymentModal);
-
-        const showPaymentModal = (qrUrl, payloadText, paymentToken, total) => {
-            const container = document.getElementById('payment-qr-container');
-            const payloadEl = document.getElementById('payment-payload');
-            const modal = document.getElementById('payment-modal');
-
-            if (qrUrl) {
-                container.innerHTML = `<img src="${qrUrl}" alt="Mã QR chuyển khoản" style="width:100%;max-width:320px;margin:0 auto;display:block;" />`;
-            } else {
-                container.innerHTML = `<div style="padding:24px;border-radius:8px;background:#f3f4f6;color:#111;">${payloadText.replace(/\n/g, '<br/>')}</div>`;
-            }
-
-            payloadEl.textContent = `Tổng: ${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 }).format(total)} ₫\n${payloadText}`;
-
-            paymentModal.style.display = 'block';
-
-            document.getElementById('payment-cancel').onclick = () => {
-                paymentModal.style.display = 'none';
-                focusScanner();
-            };
-
-            document.getElementById('payment-confirm').onclick = async () => {
-                paymentModal.style.display = 'none';
-                setStatus('Xác nhận thanh toán...', 'info');
-
-                await completeCheckout('transfer', paymentToken);
-            };
-        };
 
         scannerInput.addEventListener('blur', () => {
             // Allow other inputs (e.g. the login form) to keep focus when

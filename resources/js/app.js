@@ -18,6 +18,7 @@ Alpine.data('searchableSelect', ({
 	dependsOn = '',
 	dependencyValue = '',
 	filterKey = 'supplier_id',
+	submitOnSelect = false,
 } = {}) => ({
 	open: false,
 	query: '',
@@ -30,6 +31,7 @@ Alpine.data('searchableSelect', ({
 	dependsOn,
 	dependencyValue: String(dependencyValue ?? ''),
 	filterKey,
+	submitOnSelect,
 
 	init() {
 		window.addEventListener('searchable-select-change', (event) => {
@@ -111,6 +113,20 @@ Alpine.data('searchableSelect', ({
 				value: this.selectedValue,
 			},
 		}));
+
+		if (this.submitOnSelect) {
+			this.$nextTick(() => {
+				const form = this.$el.closest('form');
+
+				if (form) {
+					if (typeof form.requestSubmit === 'function') {
+						form.requestSubmit();
+					} else {
+						form.submit();
+					}
+				}
+			});
+		}
 	},
 }));
 

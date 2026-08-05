@@ -9,8 +9,8 @@
     @php($bankOptions = $bankOptions ?? config('banks', []))
     @php($supplierDiscountRates = $supplierDiscountRates ?? \App\Models\Setting::supplierDiscountRates())
 
-    <div class="py-10">
-        <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+    <div class="py-6 sm:py-10">
+        <div class="mx-auto max-w-10xl space-y-6 px-3 sm:px-6 lg:px-10">
             @if (session('status'))
                 <div class="rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 ring-1 ring-emerald-200">
                     {{ session('status') }}
@@ -110,9 +110,18 @@
                 <div class="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-200 lg:col-span-2">
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <h3 class="text-lg font-semibold text-gray-900">Danh sách</h3>
-                        <form id="supplier-search-form" method="GET" action="{{ route('suppliers.index') }}" class="flex flex-wrap items-center gap-2">
+                        <form method="GET" action="{{ route('suppliers.index') }}" class="grid w-full gap-2 md:grid-cols-2 xl:grid-cols-6">
                             <x-per-page-select :value="request('per_page', 10)" />
-                            <input name="public_id" value="{{ request('public_id') }}" class="w-72 rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Tìm bằng mã công khai, tên hoặc người phụ trách">
+                            <input name="public_id" value="{{ request('public_id') }}" class="rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Đúng mã NCC">
+                            <input name="name" value="{{ request('name') }}" class="rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Tên NCC">
+                            <input name="phone" value="{{ request('phone') }}" class="rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Đúng số điện thoại">
+                            <select name="type" class="rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900">
+                                <option value="">Tất cả loại</option>
+                                @foreach ($supplierTypes as $value => $label)
+                                    <option value="{{ $value }}" @selected(request('type') === $value)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                            <button class="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">Lọc</button>
                         </form>
                     </div>
                     <div class="mt-4 overflow-x-auto">
@@ -121,6 +130,7 @@
                                 <tr>
                                     <th class="py-3 pr-4">Mã</th>
                                     <th class="py-3 pr-4">Tên</th>
+                                    <th class="py-3 pr-4">Số điện thoại</th>
                                     <th class="py-3 pr-4">Loại</th>
                                     <th class="py-3 pr-4">Phụ trách</th>
                                     <th class="py-3 pr-4">Ngân hàng</th>
@@ -133,6 +143,15 @@
                                     <tr>
                                         <td class="py-3 pr-4 font-medium text-slate-900">#{{ $supplier->public_id_display }}</td>
                                         <td class="py-3 pr-4 font-medium text-gray-900">{{ $supplier->name }}</td>
+                                        <td class="py-3 pr-4 text-gray-600">
+                                            @if ($supplier->phone)
+                                                <a href="tel:{{ preg_replace('/\D+/', '', $supplier->phone) }}" class="font-medium text-sky-700 hover:underline">
+                                                    {{ $supplier->phone }}
+                                                </a>
+                                            @else
+                                                ---
+                                            @endif
+                                        </td>
                                         <td class="py-3 pr-4 text-gray-600">{{ \App\Models\Supplier::labelForType($supplier->type) }} ({{ $supplierDiscountRates[$supplier->type] ?? 0 }}%)</td>
                                         <td class="py-3 pr-4 text-gray-600">{{ $supplier->responsible_name ?: '---' }}</td>
                                         <td class="py-3 pr-4 text-gray-600">{{ $supplier->bank_name ?: '---' }}</td>
@@ -141,18 +160,7 @@
                                             @canany(['suppliers.update', 'suppliers.manage'])
                                                 <a href="{{ route('suppliers.edit', $supplier) }}" class="text-slate-900 hover:underline">Sửa</a>
                                             @endcanany
-                                            @can('suppliers.delete')
-                                                <span class="ms-4 inline-block align-middle">
-                                                    <x-confirm-action
-                                                        :name="'delete-supplier-'.$supplier->public_id"
-                                                        :action="route('suppliers.destroy', $supplier)"
-                                                        title="Xoá nhà cung cấp"
-                                                        message="Bạn có chắc chắn muốn xoá nhà cung cấp này?"
-                                                        confirm-text="Xoá"
-                                                        trigger-text="Xoá"
-                                                    />
-                                                </span>
-                                            @endcan
+                                            
                                         </td>
                                     </tr>
                                 @empty
@@ -167,21 +175,4 @@
         </div>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const form = document.getElementById('supplier-search-form');
-            const input = form?.querySelector('input[name="public_id"]');
-            let timer = null;
-
-            const submitForm = () => {
-                if (!form) return;
-                form.requestSubmit ? form.requestSubmit() : form.submit();
-            };
-
-            input?.addEventListener('input', () => {
-                window.clearTimeout(timer);
-                timer = window.setTimeout(submitForm, 300);
-            });
-        });
-    </script>
 </x-app-layout>

@@ -56,7 +56,7 @@
                 <!-- Page Heading -->
                 @if (isset($header))
                     <header class="border-b border-slate-200 bg-slate-50/70">
-                        <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+                        <div class="mx-auto max-w-10xl px-3 py-6 sm:px-6 lg:px-10">
                             {{ $header }}
                         </div>
                     </header>

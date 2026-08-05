@@ -7,7 +7,7 @@
     <style>
         @page {
             size: auto;
-            margin: 4mm;
+            margin: 2mm;
         }
 
         html, body {
@@ -28,12 +28,12 @@
             flex-direction: column;
             align-items: center;
             gap: 6mm;
-            padding: 4mm;
+            padding: 2mm;
         }
 
         .barcode {
-            width: 80mm;
-            height: 34mm;
+            width: 96mm;
+            height: 48mm;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -49,18 +49,38 @@
             width: 100%;
         }
 
-        .barcode-top,
-        .barcode-bottom {
-            font-size: 10pt;
-            line-height: 1;
+        .barcode-top {
+            font-size: 24pt;
+            font-weight: bold;
+            line-height: 1.2;
             color: #000;
             text-align: center;
-            margin: 0 0 2mm 0;
+            margin: 0 0 1mm 0;
             white-space: nowrap;
+            width: 96mm;
         }
 
         .barcode-bottom {
-            margin-top: 2mm;
+            font-size: 24pt;
+            font-weight: bold;
+            line-height: 1.2;
+            color: #000;
+            text-align: center;
+            margin-top: 1mm;
+            white-space: nowrap;
+            width: 96mm;
+        }
+
+        .return-policy {
+            width: 96mm;
+            margin-top: 1.5mm;
+            color: #000;
+            font-family: Arial, Helvetica, "DejaVu Sans", sans-serif;
+            font-size: 18pt;
+            font-weight: 600;
+            line-height: 1.15;
+            text-align: center;
+            white-space: normal;
         }
 
         .barcode svg {
@@ -83,6 +103,7 @@
                 <div class="barcode-top">{{ $product->id }} - {{ $product->supplier_id }} - {{ $product->send_round }}</div>
                 <div class="barcode">{!! $product->barcode_svg !!}</div>
                 <div class="barcode-bottom">{{ number_format($product->sale_price ?? 0, 0, ',', '.') }} đ</div>
+                <div class="return-policy">Hàng đã mua không đổi trả</div>
             </div>
         @endforeach
     </div>

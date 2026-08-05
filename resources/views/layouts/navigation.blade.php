@@ -21,7 +21,7 @@
                 class="space-y-3"
                 x-data="{
                     commonOpen: {{ request()->routeIs('sales.*', 'categories.*', 'suppliers.*', 'consignments.*', 'products.*', 'product-labels.*', 'sold-products.*', 'revenue.*', 'supplier-payments.*') ? 'true' : 'false' }},
-                    systemOpen: {{ request()->routeIs('logs.*', 'users.*', 'permissions.*', 'roles.*', 'settings.*') ? 'true' : 'false' }},
+                    systemOpen: {{ request()->routeIs('logs.*', 'system-logs.*', 'trash.*', 'users.*', 'permissions.*', 'roles.*', 'settings.*') ? 'true' : 'false' }},
                     init() {
                         this.commonOpen = localStorage.getItem('sidebar.commonOpen') === '1' || this.commonOpen;
                         this.systemOpen = localStorage.getItem('sidebar.systemOpen') === '1' || this.systemOpen;
@@ -78,8 +78,11 @@
                             <a href="{{ route('products.index') }}" @click="openCommon()" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition {{ request()->routeIs('products.*') ? 'bg-white text-slate-950' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
                                 <span>Sản phẩm</span>
                             </a>
+                            <a href="{{ route('products.expiry') }}" @click="openCommon()" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition {{ request()->routeIs('products.expiry') ? 'bg-white text-slate-950' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
+                                <span>Hạn ký gửi</span>
+                            </a>
                             <a href="{{ route('product-labels.index') }}" @click="openCommon()" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition {{ request()->routeIs('product-labels.*') ? 'bg-white text-slate-950' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
-                                <span>In Mã hàng</span>
+                                <span>In mã hàng</span>
                             </a>
                         @endcan
                         @can('sales.records.view')
@@ -113,6 +116,16 @@
                                 <span>Nhật ký</span>
                             </a>
                         @endcan
+                        @can('system-logs.view')
+                            <a href="{{ route('system-logs.index') }}" @click="openSystem()" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition {{ request()->routeIs('system-logs.*') ? 'bg-white text-slate-950' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
+                                <span>Log hệ thống</span>
+                            </a>
+                        @endcan
+                        @if(in_array($activeRole, ['admin', 'super-admin'], true))
+                            <a href="{{ route('trash.index') }}" @click="openSystem()" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition {{ request()->routeIs('trash.*') ? 'bg-white text-slate-950' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
+                                <span>Thùng rác</span>
+                            </a>
+                        @endif
                         @canany(['users.view', 'users.manage'])
                             <a href="{{ route('users.index') }}" @click="openSystem()" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition {{ request()->routeIs('users.*') ? 'bg-white text-slate-950' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
                                 <span>Tài khoản</span>

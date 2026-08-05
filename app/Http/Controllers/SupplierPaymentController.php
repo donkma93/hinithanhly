@@ -7,10 +7,12 @@ use App\Models\SaleItem;
 use App\Models\Setting;
 use App\Models\Supplier;
 use App\Models\SupplierPayment;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -24,84 +26,104 @@ class SupplierPaymentController extends Controller
     public function index(Request $request): View
     {
         $perPage = $this->resolvePerPage($request);
+        $selectedMonth = trim((string) $request->string('month'));
+        $monthDate = $selectedMonth !== ''
+            ? Carbon::createFromFormat('Y-m', $selectedMonth)->startOfMonth()
+            : now()->startOfMonth();
+        $selectedMonth = $monthDate->format('Y-m');
         $supplierId = $request->integer('supplier_id');
-        $supplier = $supplierId ? Supplier::query()->find($supplierId) : Supplier::query()->orderBy('name')->first();
-        $startDate = $request->filled('from') ? $request->date('from')->startOfDay() : now()->startOfMonth();
-        $endDate = $request->filled('to') ? $request->date('to')->endOfDay() : now()->endOfDay();
-
-        $summary = $supplier ? $this->buildSummary($supplier, $startDate, $endDate) : null;
+        $status = trim((string) $request->string('status', ''));
+        $startDate = $monthDate->copy()->startOfMonth()->startOfDay();
+        $endDate = $monthDate->copy()->endOfMonth()->endOfDay();
+        $hasSupplierFilter = $supplierId > 0;
+        $supplier = $hasSupplierFilter
+            ? Supplier::query()->withTrashed()->find($supplierId)
+            : null;
 
         // Aggregate sales by supplier for the selected period
-        $aggregates = \App\Models\SaleItem::query()
+        $aggregates = SaleItem::query()
             ->join('products', 'sale_items.product_id', '=', 'products.id')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
-            ->whereNotNull('sales.completed_at')
-            ->whereBetween('sales.completed_at', [$startDate, $endDate])
+            ->where(function ($query) use ($startDate, $endDate): void {
+                $query->whereBetween(DB::raw('COALESCE(sales.completed_at, sales.created_at)'), [$startDate, $endDate]);
+            })
             ->groupBy('products.supplier_id')
             ->selectRaw('products.supplier_id as supplier_id, SUM(sale_items.line_total) as gross_amount, SUM(sale_items.quantity) as units_sold, COUNT(*) as line_items')
             ->get()
             ->keyBy('supplier_id');
 
+        $paymentsForMonth = SupplierPayment::query()
+            ->with(['supplier:id,public_id,name,type,phone', 'handledBy:id,public_id,name'])
+            ->whereDate('period_from', '>=', $startDate->toDateString())
+            ->whereDate('period_to', '<=', $endDate->toDateString())
+            ->whereNotNull('paid_at')
+            ->get()
+            ->keyBy('supplier_id');
+
         $supplierDiscountRates = Setting::supplierDiscountRates();
 
-        $suppliersWithTotals = Supplier::query()->orderBy('name')
-            ->get(['id', 'public_id', 'name', 'type', 'bank_name', 'bank_account_name', 'bank_account_number'])
+        $supplierRows = Supplier::query()->orderBy('name')
+            ->get(['id', 'public_id', 'responsible_name', 'name', 'phone', 'type', 'bank_name', 'bank_account_name', 'bank_account_number'])
             ->map(function (Supplier $s) use ($aggregates, $supplierDiscountRates, $startDate, $endDate) {
                 $agg = $aggregates->get($s->id);
                 $gross = $agg ? (float) $agg->gross_amount : 0.0;
                 $units = $agg ? (int) $agg->units_sold : 0;
-                $lineItems = $agg ? (int) $agg->line_items : 0;
                 $discountRate = isset($supplierDiscountRates[$s->type]) ? (float) $supplierDiscountRates[$s->type] : 0.0;
                 $discountAmount = round($gross * $discountRate / 100, 2);
                 $payable = max(0, round($gross - $discountAmount, 2));
 
                 return [
                     'supplier' => $s,
+                    'period_label' => $startDate->format('Y-m'),
                     'gross_amount' => $gross,
                     'units_sold' => $units,
-                    'line_items' => $lineItems,
                     'discount_rate' => $discountRate,
                     'discount_amount' => $discountAmount,
                     'payable_amount' => $payable,
                 ];
-            });
+            })
+            ->map(function (array $row) use ($paymentsForMonth) {
+                $payment = $paymentsForMonth->get($row['supplier']->id);
+                $isPaid = $payment !== null;
 
-        $showAll = $request->boolean('show_all', false);
+                return [
+                    ...$row,
+                    'status' => $isPaid ? 'paid' : 'unpaid',
+                    'status_label' => $isPaid ? 'Đã thanh toán' : 'Chưa thanh toán',
+                    'paid_amount' => $isPaid ? (float) $payment->payable_amount : 0.0,
+                    'outstanding_amount' => $isPaid ? 0.0 : (float) $row['payable_amount'],
+                    'payment' => $payment,
+                ];
+            })
+            ->filter(function (array $row) use ($supplierId, $status) {
+                if ($supplierId > 0 && (int) $row['supplier']->id !== $supplierId) {
+                    return false;
+                }
 
-        if (! $showAll) {
-            $suppliersWithTotals = $suppliersWithTotals->filter(fn ($info) => (float) $info['payable_amount'] > 0)->values();
-        }
+                if ($status !== '' && $row['status'] !== $status) {
+                    return false;
+                }
 
-        $search = trim((string) $request->string('search'));
-        $supplierType = trim((string) $request->string('supplier_type'));
+                return (float) $row['payable_amount'] > 0 || $row['payment'] !== null;
+            })
+            ->values();
 
-        if ($search !== '') {
-            $searchLower = mb_strtolower($search);
+        $overview = [
+            'period' => $selectedMonth,
+            'paid_amount' => round((float) $supplierRows->sum('paid_amount'), 2),
+            'unpaid_amount' => round((float) $supplierRows->sum('outstanding_amount'), 2),
+        ];
+        $overview['total_amount'] = round($overview['paid_amount'] + $overview['unpaid_amount'], 2);
 
-            $suppliersWithTotals = $suppliersWithTotals->filter(function (array $info) use ($searchLower) {
-                $supplier = $info['supplier'];
-                $haystack = mb_strtolower(trim($supplier->name.' '.$supplier->public_id_display.' '.$supplier->responsible_name));
-
-                return str_contains($haystack, $searchLower);
-            })->values();
-        }
-
-        if ($supplierType !== '') {
-            $suppliersWithTotals = $suppliersWithTotals->filter(fn (array $info) => (string) $info['supplier']->type === $supplierType)->values();
-        }
-
-        // Determine which suppliers already have a recorded payment for this exact period
-        $existingPayments = SupplierPayment::query()
-            ->whereBetween('period_from', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
-            ->whereBetween('period_to', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
-            ->whereNotNull('paid_at')
-            ->get()
-            ->groupBy('supplier_id')
-            ->map(fn($grp) => $grp->first());
+        $selectedRow = $supplier
+            ? $supplierRows->firstWhere('supplier.id', $supplier->id)
+            : null;
 
         $payments = SupplierPayment::query()
             ->select(['id', 'public_id', 'supplier_id', 'user_id', 'payment_reference', 'period_from', 'period_to', 'gross_amount', 'discount_rate', 'discount_amount', 'payable_amount', 'bank_name', 'bank_account_name', 'bank_account_number', 'paid_at', 'created_at'])
             ->with(['supplier:id,public_id,name,type', 'handledBy:id,public_id,name'])
+            ->whereDate('period_from', '>=', $startDate->toDateString())
+            ->whereDate('period_to', '<=', $endDate->toDateString())
             ->when($supplier, fn ($query) => $query->where('supplier_id', $supplier->id))
             ->latest('paid_at')
             ->paginate($perPage)
@@ -110,14 +132,14 @@ class SupplierPaymentController extends Controller
         return view('supplier-payments.index', [
             'suppliers' => Supplier::query()
                 ->orderBy('name')
-                ->get(['id', 'public_id', 'name', 'type', 'bank_name', 'bank_account_name', 'bank_account_number']),
+                ->get(['id', 'public_id', 'name', 'phone', 'type', 'bank_name', 'bank_account_name', 'bank_account_number']),
             'selectedSupplier' => $supplier,
-            'summary' => $summary,
-            'suppliersWithTotals' => $suppliersWithTotals,
-            'showAll' => $showAll,
-            'search' => $search,
-            'supplierType' => $supplierType,
-            'existingPayments' => $existingPayments,
+            'selectedSupplierRow' => $selectedRow,
+            'supplierRows' => $supplierRows,
+            'overview' => $overview,
+            'selectedMonth' => $selectedMonth,
+            'status' => $status,
+            'hasSupplierFilter' => $hasSupplierFilter,
             'payments' => $payments,
             'startDate' => $startDate,
             'endDate' => $endDate,
@@ -133,7 +155,7 @@ class SupplierPaymentController extends Controller
             'to' => ['required', 'date', 'after_or_equal:from'],
         ]);
 
-        $supplier = Supplier::query()->findOrFail($data['supplier_id']);
+        $supplier = Supplier::query()->withTrashed()->findOrFail($data['supplier_id']);
         $startDate = $request->date('from')->startOfDay();
         $endDate = $request->date('to')->endOfDay();
         $summary = $this->buildSummary($supplier, $startDate, $endDate);
@@ -152,7 +174,7 @@ class SupplierPaymentController extends Controller
         }
 
         $paymentReference = Str::uuid()->toString();
-        $paymentContent = sprintf('Thanh toan NCC %s', $supplier->public_id_display);
+        $paymentContent = sprintf('Hinikygui gui ncc %s doanh thu T%s', $supplier->name, $startDate->format('n'));
         $amount = (int) round((float) $summary['payable_amount']);
 
         $qrUrl = sprintf(
@@ -205,7 +227,7 @@ class SupplierPaymentController extends Controller
             return response()->json(['message' => 'Mã thanh toán đã hết hạn hoặc không hợp lệ.'], 422);
         }
 
-        $supplier = Supplier::query()->find($cached['supplier_id']);
+        $supplier = Supplier::query()->withTrashed()->find($cached['supplier_id']);
 
         if (! $supplier) {
             return response()->json(['message' => 'Không tìm thấy nhà cung cấp.'], 422);
@@ -258,8 +280,7 @@ class SupplierPaymentController extends Controller
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
             ->join('products', 'sale_items.product_id', '=', 'products.id')
             ->where('products.supplier_id', $supplier->id)
-            ->whereNotNull('sales.completed_at')
-            ->whereBetween('sales.completed_at', [$startDate, $endDate]);
+            ->whereBetween(DB::raw('COALESCE(sales.completed_at, sales.created_at)'), [$startDate, $endDate]);
 
         $grossAmount = (float) (clone $baseQuery)->sum('sale_items.line_total');
         $unitsSold = (int) (clone $baseQuery)->sum('sale_items.quantity');

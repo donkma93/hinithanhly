@@ -13,14 +13,14 @@
         ];
     @endphp
 
-    <div class="py-10">
-        <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+    <div class="py-6 sm:py-10">
+        <div class="mx-auto max-w-10xl space-y-6 px-3 sm:px-6 lg:px-10">
             <div class="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
                 <div class="flex flex-wrap items-center justify-between gap-3">
                     <h3 class="text-lg font-semibold text-gray-900">Danh sách hoá đơn</h3>
                     <form method="GET" action="{{ route('sold-products.index') }}" class="flex flex-wrap items-center gap-2">
                         <x-per-page-select :value="request('per_page', 10)" />
-                        <input name="public_id" value="{{ request('public_id') }}" class="w-52 rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Tìm theo mã hoá đơn">
+                        <input name="public_id" value="{{ request('public_id') }}" class="w-52 rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Đúng mã hoá đơn">
                         <select name="payment_method" class="rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900">
                             <option value="">Tất cả thanh toán</option>
                             <option value="cash" @selected(request('payment_method') === 'cash')>Tiền mặt</option>
@@ -47,7 +47,7 @@
                             @forelse ($sales as $sale)
                                 <tr>
                                     <td class="py-3 pr-4 font-medium text-slate-900">#{{ $sale->public_id_display }}</td>
-                                    <td class="py-3 pr-4 text-gray-600">{{ optional($sale->completed_at)->format('d/m/Y H:i') ?? $sale->created_at->format('d/m/Y H:i') }}</td>
+                                    <td class="py-3 pr-4 text-gray-600">{{ optional($sale->completed_at ?? $sale->created_at)->format('d/m/Y H:i') }}</td>
                                     <td class="py-3 pr-4 text-gray-600">{{ $paymentLabels[$sale->payment_method] ?? $sale->payment_method }}</td>
                                     <td class="py-3 pr-4 text-gray-900">{{ number_format((float) $sale->total_amount, 0, ',', '.') }} đ</td>
                                     <td class="py-3 pr-4 text-gray-600">{{ $sale->items_count }}</td>

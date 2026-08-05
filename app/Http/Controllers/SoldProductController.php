@@ -27,7 +27,7 @@ class SoldProductController extends Controller
             ])
             ->when($publicId !== '', fn ($query) => $query->where('public_id', $publicId))
             ->when($paymentMethod !== '', fn ($query) => $query->where('payment_method', $paymentMethod))
-            ->latest('completed_at')
+            ->orderByRaw('COALESCE(completed_at, created_at) DESC')
             ->paginate($perPage)
             ->withQueryString();
 

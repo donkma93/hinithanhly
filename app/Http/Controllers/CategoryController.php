@@ -59,7 +59,7 @@ class CategoryController extends Controller
             ],
         ]);
 
-        return redirect()->route('categories.index')->with('status', 'Đã thêm danh mục.');
+        return redirect()->route('categories.index')->with('status', 'Đã đưa danh mục vào thùng rác.');
     }
 
     public function edit(Category $category): View

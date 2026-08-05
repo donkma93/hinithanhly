@@ -3,8 +3,35 @@
 <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
 <!-- Assets for hosts without Node/Vite -->
-<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.tailwindcss.com?plugins=forms"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+<style>
+    /* Đảm bảo tất cả input/select/textarea luôn có viền rõ ràng */
+    input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="range"]):not([type="file"]),
+    select,
+    textarea {
+        border-width: 1px !important;
+        border-style: solid !important;
+        border-color: #d1d5db !important; /* gray-300 */
+        border-radius: 0.75rem; /* rounded-xl */
+    }
+
+    input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="range"]):not([type="file"]):focus,
+    select:focus,
+    textarea:focus {
+        border-color: #0f172a !important; /* slate-900 */
+        outline: none !important;
+        box-shadow: 0 0 0 1px #0f172a !important;
+    }
+
+    /* Giữ rounded-xl cho input có class đó */
+    input.rounded-xl, select.rounded-xl, textarea.rounded-xl {
+        border-radius: 0.75rem !important;
+    }
+
+    [x-cloak] { display: none !important; }
+</style>
 <script>
 document.addEventListener('alpine:init', () => {
     const normalizeText = (value) =>
@@ -23,6 +50,7 @@ document.addEventListener('alpine:init', () => {
 	dependsOn = '',
 	dependencyValue = '',
 	filterKey = 'supplier_id',
+	submitOnSelect = false,
     } = {}) => ({
 	open: false,
 	query: '',
@@ -35,6 +63,7 @@ document.addEventListener('alpine:init', () => {
 	dependsOn,
 	dependencyValue: String(dependencyValue ?? ''),
 	filterKey,
+	submitOnSelect,
 
 	init() {
 	    window.addEventListener('searchable-select-change', (event) => {
@@ -110,13 +139,27 @@ document.addEventListener('alpine:init', () => {
 	    this.selectedValue = String(option.value);
 	    this.closeMenu();
 
-	    window.dispatchEvent(new CustomEvent('searchable-select-change', {
-		detail: {
-		    name: this.name,
-		    value: this.selectedValue,
+		    window.dispatchEvent(new CustomEvent('searchable-select-change', {
+			detail: {
+			    name: this.name,
+			    value: this.selectedValue,
+			},
+		    }));
+
+		    if (this.submitOnSelect) {
+			this.$nextTick(() => {
+			    const form = this.$el.closest('form');
+
+			    if (form) {
+				if (typeof form.requestSubmit === 'function') {
+				    form.requestSubmit();
+				} else {
+				    form.submit();
+				}
+			    }
+			});
+		    }
 		},
 	    }));
-	},
-    }));
 });
 </script>

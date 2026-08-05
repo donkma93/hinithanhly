@@ -23,19 +23,18 @@ class SupplierController extends Controller
 
     public function index(Request $request): View
     {
-        $keyword = trim($request->string('public_id')->toString());
+        $publicId = ltrim(trim($request->string('public_id')->toString()), '#');
+        $name = trim($request->string('name')->toString());
+        $phone = trim($request->string('phone')->toString());
+        $type = trim($request->string('type')->toString());
         $perPage = $this->resolvePerPage($request);
 
         $suppliersQuery = Supplier::query()
-            ->select(['id', 'public_id', 'responsible_name', 'type', 'name', 'phone', 'bank_name', 'created_at']);
-
-        if ($keyword !== '') {
-            $suppliersQuery->where(function ($query) use ($keyword) {
-                $query->where('public_id', $keyword)
-                    ->orWhere('name', 'like', '%'.$keyword.'%')
-                    ->orWhere('responsible_name', 'like', '%'.$keyword.'%');
-            });
-        }
+            ->select(['id', 'public_id', 'responsible_name', 'type', 'name', 'phone', 'bank_name', 'created_at'])
+            ->when($publicId !== '', fn ($query) => $query->where('public_id', $publicId))
+            ->when($name !== '', fn ($query) => $query->where('name', 'like', '%'.$name.'%'))
+            ->when($phone !== '', fn ($query) => $query->where('phone', $phone))
+            ->when($type !== '', fn ($query) => $query->where('type', $type));
 
         return view('suppliers.index', [
             'suppliers' => $suppliersQuery
@@ -87,7 +86,7 @@ class SupplierController extends Controller
             ],
         ]);
 
-        return redirect()->route('suppliers.index')->with('status', 'Đã thêm nhà cung cấp.');
+        return redirect()->route('suppliers.index')->with('status', 'Đã đưa nhà cung cấp vào thùng rác.');
     }
 
     public function edit(Supplier $supplier): View

@@ -8,8 +8,8 @@
         </div>
     </x-slot>
 
-    <div class="py-10">
-        <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+    <div class="py-6 sm:py-10">
+        <div class="mx-auto max-w-10xl space-y-6 px-3 sm:px-6 lg:px-10">
             @if (session('status'))
                 <div class="rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 ring-1 ring-emerald-200">
                     {{ session('status') }}
@@ -61,10 +61,11 @@
                 <div class="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-200 lg:col-span-2">
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <h3 class="text-lg font-semibold text-gray-900">Danh sách</h3>
-                        <form method="GET" action="{{ route('users.index') }}" class="flex flex-wrap items-center gap-2">
+                        <form method="GET" action="{{ route('users.index') }}" class="grid w-full gap-2 sm:grid-cols-2 xl:grid-cols-5">
                             <x-per-page-select :value="request('per_page', 10)" />
-                            <input name="public_id" value="{{ request('public_id') }}" class="w-36 rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Mã">
-                            <input name="search" value="{{ request('search') }}" class="w-56 rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Tìm tên hoặc email">
+                            <input name="public_id" value="{{ request('public_id') }}" class="rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Đúng mã">
+                            <input name="name" value="{{ request('name') }}" class="rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Đúng họ tên">
+                            <input name="email" value="{{ request('email') }}" class="rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Đúng email">
                             <button class="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">Tìm</button>
                         </form>
                     </div>
@@ -100,18 +101,7 @@
                                             @canany(['users.update', 'users.manage'])
                                                 <a href="{{ route('users.edit', $user) }}" class="text-slate-900 hover:underline">Sửa</a>
                                             @endcanany
-                                            @can('users.delete')
-                                                <span class="ms-4 inline-block align-middle">
-                                                    <x-confirm-action
-                                                        :name="'delete-user-'.$user->public_id"
-                                                        :action="route('users.destroy', $user)"
-                                                        title="Xoá tài khoản"
-                                                        message="Bạn có chắc chắn muốn xoá tài khoản này? Hành động này không thể hoàn tác."
-                                                        confirm-text="Xoá"
-                                                        trigger-text="Xoá"
-                                                    />
-                                                </span>
-                                            @endcan
+                                            
                                         </td>
                                     </tr>
                                 @empty
