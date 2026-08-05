@@ -124,6 +124,7 @@
                                     <th class="py-3 pr-4">Loại</th>
                                     <th class="py-3 pr-4">Phụ trách</th>
                                     <th class="py-3 pr-4">Ngân hàng</th>
+                                    <th class="py-3 pr-4">Thời gian tạo</th>
                                     <th class="py-3 pr-4"></th>
                                 </tr>
                             </thead>
@@ -135,6 +136,7 @@
                                         <td class="py-3 pr-4 text-gray-600">{{ \App\Models\Supplier::labelForType($supplier->type) }} ({{ $supplierDiscountRates[$supplier->type] ?? 0 }}%)</td>
                                         <td class="py-3 pr-4 text-gray-600">{{ $supplier->responsible_name ?: '---' }}</td>
                                         <td class="py-3 pr-4 text-gray-600">{{ $supplier->bank_name ?: '---' }}</td>
+                                        <td class="py-3 pr-4 text-gray-600 whitespace-nowrap">{{ optional($supplier->created_at)->format('d/m/Y H:i') ?? '---' }}</td>
                                         <td class="py-3 pr-4 text-right">
                                             @canany(['suppliers.update', 'suppliers.manage'])
                                                 <a href="{{ route('suppliers.edit', $supplier) }}" class="text-slate-900 hover:underline">Sửa</a>
@@ -154,7 +156,7 @@
                                         </td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="5" class="py-8 text-center text-gray-500">Chưa có nhà cung cấp nào.</td></tr>
+                                    <tr><td colspan="7" class="py-8 text-center text-gray-500">Chưa có nhà cung cấp nào.</td></tr>
                                 @endforelse
                             </tbody>
                         </table>
