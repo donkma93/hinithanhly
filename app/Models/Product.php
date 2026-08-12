@@ -80,8 +80,27 @@ class Product extends Model
         return $this->consignmentNote?->sent_date;
     }
 
+    /**
+     * Products from gift (cho tặng), wholesale (khách sỉ) and buyout (hàng thu mua)
+     * suppliers do not use the 45-day consignment deadline.
+     */
+    public function tracksConsignmentExpiry(): bool
+    {
+        $this->loadMissing('supplier:id,type');
+
+        if ($this->supplier === null) {
+            return true;
+        }
+
+        return $this->supplier->tracksConsignmentExpiry();
+    }
+
     public function consignmentDueDate(): ?\Illuminate\Support\Carbon
     {
+        if (! $this->tracksConsignmentExpiry()) {
+            return null;
+        }
+
         $sentDate = $this->consignmentSentDate();
 
         return $sentDate?->copy()->startOfDay()->addDays(self::CONSIGNMENT_TERM_DAYS);
@@ -120,7 +139,7 @@ class Product extends Model
 
     public function isConsignmentExpiringSoon(): bool
     {
-        if ($this->isReturned()) {
+        if ($this->isReturned() || ! $this->tracksConsignmentExpiry()) {
             return false;
         }
 
@@ -135,6 +154,10 @@ class Product extends Model
     {
         if ($this->isReturned()) {
             return 'Đã trả cho người gửi';
+        }
+
+        if (! $this->tracksConsignmentExpiry()) {
+            return 'Không có hạn';
         }
 
         $daysRemaining = $this->consignmentDaysRemaining();
@@ -156,7 +179,7 @@ class Product extends Model
 
     public function getConsignmentStatusToneAttribute(): string
     {
-        if ($this->isReturned()) {
+        if ($this->isReturned() || ! $this->tracksConsignmentExpiry()) {
             return 'gray';
         }
 
@@ -175,9 +198,34 @@ class Product extends Model
     {
         return $query
             ->whereNull('returned_at')
-            ->whereHas('consignmentNote', function (Builder $consignmentQuery): void {
-                $consignmentQuery->whereDate('sent_date', '>=', now()->subDays(self::CONSIGNMENT_TERM_DAYS)->toDateString());
+            ->where(function (Builder $sellableQuery): void {
+                // Gift / wholesale / buyout stock is never blocked by the 45-day deadline.
+                $sellableQuery
+                    ->whereHas('supplier', function (Builder $supplierQuery): void {
+                        $supplierQuery->whereIn('type', Supplier::NO_CONSIGNMENT_EXPIRY_TYPES);
+                    })
+                    ->orWhereHas('consignmentNote', function (Builder $consignmentQuery): void {
+                        $consignmentQuery->whereDate(
+                            'sent_date',
+                            '>=',
+                            now()->subDays(self::CONSIGNMENT_TERM_DAYS)->toDateString()
+                        );
+                    });
             });
+    }
+
+    /**
+     * Limit queries to products that participate in consignment expiry tracking.
+     */
+    public function scopeTracksConsignmentExpiry(Builder $query): Builder
+    {
+        return $query->where(function (Builder $expiryQuery): void {
+            $expiryQuery
+                ->whereDoesntHave('supplier')
+                ->orWhereHas('supplier', function (Builder $supplierQuery): void {
+                    $supplierQuery->whereNotIn('type', Supplier::NO_CONSIGNMENT_EXPIRY_TYPES);
+                });
+        });
     }
 
     private function formatConsignmentOffset(int $days): int

@@ -137,6 +137,72 @@ class ConsignmentExpiryWorkflowTest extends TestCase
             ->assertDontSee('Trả hàng');
     }
 
+    public function test_gift_wholesale_and_buyout_products_have_no_consignment_expiry(): void
+    {
+        $this->signInAsAdmin();
+
+        $category = $this->createCategory();
+
+        $giftSupplier = $this->createSupplier('cho_tang', 'NCC cho tang');
+        $wholesaleSupplier = $this->createSupplier('khach_si', 'NCC khach si');
+        $buyoutSupplier = $this->createSupplier('hang_thu_mua', 'NCC hang thu mua');
+        $consignmentSupplier = $this->createSupplier('ncc_it_san_pham', 'NCC ky gui');
+
+        $giftConsignment = $this->createConsignmentNote($giftSupplier, now()->subDays(60));
+        $wholesaleConsignment = $this->createConsignmentNote($wholesaleSupplier, now()->subDays(60));
+        $buyoutConsignment = $this->createConsignmentNote($buyoutSupplier, now()->subDays(60));
+        $expiredConsignment = $this->createConsignmentNote($consignmentSupplier, now()->subDays(46));
+
+        $giftProduct = $this->createProduct($category, $giftSupplier, $giftConsignment, 'Hang cho tang');
+        $wholesaleProduct = $this->createProduct($category, $wholesaleSupplier, $wholesaleConsignment, 'Hang khach si');
+        $buyoutProduct = $this->createProduct($category, $buyoutSupplier, $buyoutConsignment, 'Hang thu mua');
+        $expiredProduct = $this->createProduct($category, $consignmentSupplier, $expiredConsignment, 'Hang ky gui qua han');
+
+        foreach ([$giftProduct, $wholesaleProduct, $buyoutProduct] as $product) {
+            $this->assertFalse($product->tracksConsignmentExpiry());
+            $this->assertNull($product->consignmentDueDate());
+            $this->assertFalse($product->isConsignmentExpired());
+            $this->assertSame('Không có hạn', $product->consignment_status_label);
+        }
+
+        $this->getJson(route('sales.lookup', $giftProduct->public_id))
+            ->assertOk()
+            ->assertJsonPath('name', $giftProduct->name);
+
+        $this->getJson(route('sales.lookup', $wholesaleProduct->public_id))
+            ->assertOk()
+            ->assertJsonPath('name', $wholesaleProduct->name);
+
+        $this->getJson(route('sales.lookup', $buyoutProduct->public_id))
+            ->assertOk()
+            ->assertJsonPath('name', $buyoutProduct->name);
+
+        $this->getJson(route('sales.search', ['query' => $giftProduct->public_id]))
+            ->assertOk()
+            ->assertJsonCount(1, 'items');
+
+        $this->get(route('products.index'))
+            ->assertOk()
+            ->assertSee('Không có hạn')
+            ->assertSee($giftProduct->name)
+            ->assertSee($wholesaleProduct->name)
+            ->assertSee($buyoutProduct->name);
+
+        $this->get(route('products.expiry'))
+            ->assertOk()
+            ->assertDontSee($giftProduct->name)
+            ->assertDontSee($wholesaleProduct->name)
+            ->assertDontSee($buyoutProduct->name)
+            ->assertSee($expiredProduct->name);
+
+        $this->get(route('products.expiry', ['status' => 'expired']))
+            ->assertOk()
+            ->assertDontSee($giftProduct->name)
+            ->assertDontSee($wholesaleProduct->name)
+            ->assertDontSee($buyoutProduct->name)
+            ->assertSee($expiredProduct->name);
+    }
+
     private function signInAsAdmin(): User
     {
         $user = User::factory()->create([

@@ -374,7 +374,7 @@
                                         <td class="py-3 pr-4 align-top text-gray-600">
                                             <div class="font-medium text-gray-900">Lần {{ $product->send_round ?? 1 }}</div>
                                             <div class="text-xs text-gray-500">{{ $product->send_summary ?? '---' }}</div>
-                                            <div class="mt-1 text-xs {{ $product->isReturned() ? 'text-rose-600' : ($product->isConsignmentExpired() ? 'text-rose-600' : ($product->isConsignmentExpiringSoon() ? 'text-amber-600' : 'text-emerald-600')) }}">
+                                            <div class="mt-1 text-xs {{ $product->isReturned() ? 'text-rose-600' : (! $product->tracksConsignmentExpiry() ? 'text-slate-500' : ($product->isConsignmentExpired() ? 'text-rose-600' : ($product->isConsignmentExpiringSoon() ? 'text-amber-600' : 'text-emerald-600'))) }}">
                                                 {{ $product->consignment_status_label }}
                                             </div>
                                             @if ($product->returned_at)

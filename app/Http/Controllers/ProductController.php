@@ -44,7 +44,7 @@ class ProductController extends Controller
             ->select(['id', 'public_id', 'consignment_note_id', 'supplier_id', 'category_id', 'created_by_id', 'name', 'sale_price', 'quantity', 'image_path', 'description', 'returned_at', 'returned_by_id', 'created_at'])
             ->with([
                 'category:id,public_id,name',
-                'supplier:id,public_id,name',
+                'supplier:id,public_id,name,type',
                 'consignmentNote:id,public_id,supplier_id,responsible_user_id,sent_date',
                 'consignmentNote.responsibleUser:id,public_id,name',
                 'returner:id,public_id,name',
@@ -134,11 +134,12 @@ class ProductController extends Controller
             ->leftJoin('consignment_notes', 'consignment_notes.id', '=', 'products.consignment_note_id')
             ->with([
                 'category:id,public_id,name',
-                'supplier:id,public_id,name',
+                'supplier:id,public_id,name,type',
                 'consignmentNote:id,public_id,supplier_id,responsible_user_id,sent_date',
                 'consignmentNote.responsibleUser:id,public_id,name',
                 'returner:id,public_id,name',
             ])
+            ->tracksConsignmentExpiry()
             ->when($supplierId !== null, function (Builder $query) use ($supplierId): void {
                 $query->where('products.supplier_id', $supplierId);
             }), $exactFilters);
@@ -923,6 +924,7 @@ class ProductController extends Controller
 
         $baseQuery = function () use ($supplierId): Builder {
             return Product::query()
+                ->tracksConsignmentExpiry()
                 ->when($supplierId !== null, function (Builder $query) use ($supplierId): void {
                     $query->where('supplier_id', $supplierId);
                 });
