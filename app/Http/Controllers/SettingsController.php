@@ -16,9 +16,9 @@ class SettingsController extends Controller
         $accountName = Setting::get('bank_account_name', env('APP_BANK_ACCOUNT_NAME', ''));
         $supplierDiscountRates = Setting::supplierDiscountRates();
         $portalCards = Setting::getJson('portal_cards');
-        $portalHeroBadge = Setting::get('portal_hero_badge', 'Tra cứu nhà cung cấp');
-        $portalHeroTitle = Setting::get('portal_hero_title', 'Tra cứu nhanh doanh số, thanh toán và thông tin cần thiết');
-        $portalHeroDescription = Setting::get('portal_hero_description', 'Nhập số điện thoại đã đăng ký để xem ngay tình trạng thanh toán, số tiền và các kỳ doanh số của nhà cung cấp.');
+        $portalHeroBadge = Setting::get('portal_hero_badge', 'Tra cứu tồn kho ký gửi');
+        $portalHeroTitle = Setting::get('portal_hero_title', 'Theo dõi tồn kho theo từng lần ký gửi');
+        $portalHeroDescription = Setting::get('portal_hero_description', 'Nhập số điện thoại đã đăng ký để xem số lượng sản phẩm còn trong kho của từng lần ký gửi.');
 
         return view('settings.payment', compact(
             'bankName',

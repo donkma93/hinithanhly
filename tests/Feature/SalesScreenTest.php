@@ -22,8 +22,8 @@ class SalesScreenTest extends TestCase
 
         $response->assertOk();
         $response->assertViewIs('welcome');
-        $response->assertSee('NHÀ CUNG CẤP - TRA CỨU');
-        $response->assertSee('Mã nhà cung cấp');
+        $response->assertSee('Tra cứu tồn kho ký gửi');
+        $response->assertSee('Số điện thoại');
         $response->assertSee('Home');
         $response->assertSee('Tra cứu');
         $response->assertSee('Địa chỉ');

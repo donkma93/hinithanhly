@@ -4,7 +4,7 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <title>{{ config('app.name', 'HINITHANLYKYGUI') }} - Tra cứu nhà cung cấp</title>
+        <title>{{ config('app.name', 'HINITHANLYKYGUI') }} - Tra cứu tồn kho ký gửi</title>
 
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=manrope:400,500,600,700,800,900&display=swap" rel="stylesheet" />
@@ -44,7 +44,7 @@
                         </div>
                         <div>
                             <p class="text-xs font-bold uppercase tracking-[0.35em] text-sky-600">HINITHANLYKYGUI</p>
-                            <p class="mt-1 text-sm font-medium text-slate-600">Cổng tra cứu doanh số & thanh toán cho nhà cung cấp</p>
+                            <p class="mt-1 text-sm font-medium text-slate-600">Cổng tra cứu tồn kho dành cho người ký gửi</p>
                         </div>
                     </div>
 
@@ -63,44 +63,15 @@
 
             <main class="relative z-10">
                 <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
-                    <section class="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-                        <div class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)] sm:p-8 lg:p-10">
-                            <span class="inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.3em] text-sky-700">
-                                {{ $portalHeroBadge }}
-                            </span>
-
-                            <h1 class="mt-5 max-w-4xl text-4xl font-black tracking-tight text-slate-950 sm:text-5xl lg:text-6xl lg:leading-[0.96]">
-                                {{ $portalHeroTitle }}
-                            </h1>
-
-                            <p class="mt-4 max-w-3xl text-base leading-8 text-slate-700 sm:text-lg">
-                                {{ $portalHeroDescription }}
+                    <section>
+                        <article id="tra-cuu" class="scroll-mt-24 rounded-[2rem] border border-slate-200 bg-slate-950 p-6 text-white shadow-[0_20px_60px_rgba(15,23,42,0.18)] sm:p-8 lg:p-10">
+                            <p class="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">TRA CỨU TỒN KHO</p>
+                            <h1 class="mt-4 text-3xl font-black text-white sm:text-4xl">Tra cứu tồn kho nhà cung cấp</h1>
+                            <p class="mt-3 max-w-3xl text-sm leading-7 text-slate-200 sm:text-base">
+                                Nhập số điện thoại đã đăng ký để xem sản phẩm còn tồn theo từng lần ký gửi của bạn.
                             </p>
 
-                            <div class="mt-8 grid gap-4 sm:grid-cols-3">
-                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                                    <p class="text-xs font-bold uppercase tracking-[0.25em] text-slate-500">Tra cứu</p>
-                                    <p class="mt-2 text-sm font-semibold text-slate-900">Chỉ cần số điện thoại đã đăng ký</p>
-                                </div>
-                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                                    <p class="text-xs font-bold uppercase tracking-[0.25em] text-slate-500">Thông tin</p>
-                                    <p class="mt-2 text-sm font-semibold text-slate-900">Xem doanh số, số tiền và trạng thái thanh toán</p>
-                                </div>
-                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                                    <p class="text-xs font-bold uppercase tracking-[0.25em] text-slate-500">Liên hệ</p>
-                                    <p class="mt-2 text-sm font-semibold text-slate-900">Có thể gọi cửa hàng hoặc bấm gọi ngay cho nhà cung cấp</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <article id="tra-cuu" class="scroll-mt-24 rounded-[2rem] border border-slate-200 bg-slate-950 p-6 text-white shadow-[0_20px_60px_rgba(15,23,42,0.18)] sm:p-8">
-                            <p class="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">TRA CỨU THÔNG TIN</p>
-                            <h2 class="mt-4 text-2xl font-black text-white">Tìm thông tin nhà cung cấp</h2>
-                            <p class="mt-2 text-sm leading-7 text-slate-200">
-                                Nhập số điện thoại để tra cứu nhanh thông tin sản phẩm đã bán, kỳ doanh số và tình trạng thanh toán.
-                            </p>
-
-                            <form method="GET" action="{{ route('home') }}" class="mt-6 space-y-4">
+                            <form method="GET" action="{{ route('home') }}" class="mt-7 space-y-4">
                                 <div>
                                     <label for="phone" class="mb-2 block text-sm font-semibold text-white">Số điện thoại</label>
                                     <div class="flex flex-col gap-3 sm:flex-row">
@@ -144,20 +115,10 @@
                                 </div>
                             @endif
 
-                            <div class="mt-6 grid gap-3 sm:grid-cols-2">
-                                <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
-                                    <p class="text-xs font-bold uppercase tracking-[0.25em] text-slate-300">Hiển thị</p>
-                                    <p class="mt-2 text-sm font-semibold text-white">Toàn bộ các kỳ doanh số theo bảng ngắn gọn, dễ xem trên điện thoại</p>
-                                </div>
-                                <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
-                                    <p class="text-xs font-bold uppercase tracking-[0.25em] text-slate-300">Dữ liệu</p>
-                                    <p class="mt-2 text-sm font-semibold text-white">Thông tin lấy trực tiếp từ hệ thống quản lý của cửa hàng</p>
-                                </div>
-                            </div>
                         </article>
                     </section>
 
-                    @if ($supplier && $paymentSummaries->isNotEmpty())
+                    @if ($supplier && $inventorySummaries->isNotEmpty())
                         <section class="mt-6 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)] sm:p-8">
                             <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                                 <div class="max-w-3xl">
@@ -179,34 +140,59 @@
                                 </div>
                             </div>
 
-                            <div class="mt-6 overflow-hidden rounded-[1.5rem] border border-slate-200">
-                                <div class="overflow-x-auto">
-                                    <table class="min-w-full divide-y divide-slate-200 text-sm">
-                                        <thead class="bg-slate-50 text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
-                                            <tr>
-                                                <th class="px-4 py-3">Trạng thái thanh toán</th>
-                                                <th class="px-4 py-3">Số tiền</th>
-                                                <th class="px-4 py-3">Đã bán</th>
-                                                <th class="px-4 py-3">Kỳ doanh số</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="divide-y divide-slate-100 bg-white">
-                                            @foreach ($paymentSummaries as $paymentSummary)
-                                                <tr>
-                                                    <td class="px-4 py-4">
-                                                        <span class="inline-flex rounded-full px-3 py-1 text-xs font-bold {{ $paymentSummary['status'] === 'paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
-                                                            {{ $paymentSummary['status_label'] }}
-                                                        </span>
-                                                    </td>
-                                                    <td class="px-4 py-4 font-semibold text-slate-950">{{ number_format($paymentSummary['payable_amount'], 0, ',', '.') }} đ</td>
-                                                    <td class="px-4 py-4 text-slate-700">{{ number_format($paymentSummary['units_sold']) }}</td>
-                                                    <td class="px-4 py-4 text-slate-700">{{ $paymentSummary['period_label'] }}</td>
-                                                </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
-                                </div>
+                            <div class="mt-6 space-y-4">
+                                @foreach ($inventorySummaries as $inventorySummary)
+                                    <article class="overflow-hidden rounded-[1.5rem] border border-slate-200">
+                                        <div class="flex flex-col gap-3 bg-slate-50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                                            <div>
+                                                <h3 class="text-lg font-black text-slate-950">Lần ký gửi {{ $inventorySummary['round'] }}</h3>
+                                                <p class="mt-1 text-sm text-slate-600">Ngày gửi: {{ $inventorySummary['sent_date_label'] }}</p>
+                                            </div>
+                                            <div class="flex flex-wrap gap-2">
+                                                <span class="inline-flex rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-700 ring-1 ring-slate-200">
+                                                    {{ number_format($inventorySummary['product_count']) }} mặt hàng
+                                                </span>
+                                                <span class="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700">
+                                                    Tồn kho: {{ number_format($inventorySummary['stock_quantity']) }}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        @if ($inventorySummary['products']->isNotEmpty())
+                                            <div class="overflow-x-auto">
+                                                <table class="min-w-full divide-y divide-slate-200 text-sm">
+                                                    <thead class="bg-white text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
+                                                        <tr>
+                                                            <th class="px-4 py-3">Mã hàng</th>
+                                                            <th class="px-4 py-3">Sản phẩm</th>
+                                                            <th class="px-4 py-3 text-right">Tồn kho</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody class="divide-y divide-slate-100 bg-white">
+                                                        @foreach ($inventorySummary['products'] as $product)
+                                                            <tr>
+                                                                <td class="px-4 py-4 font-semibold text-slate-700">#{{ $product->public_id_display }}</td>
+                                                                <td class="px-4 py-4 font-semibold text-slate-950">{{ $product->name }}</td>
+                                                                <td class="px-4 py-4 text-right font-black text-emerald-700">{{ number_format($product->quantity) }}</td>
+                                                            </tr>
+                                                        @endforeach
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        @else
+                                            <p class="bg-white px-5 py-5 text-sm font-medium text-slate-500">Lần ký gửi này hiện không còn sản phẩm tồn kho.</p>
+                                        @endif
+                                    </article>
+                                @endforeach
                             </div>
+                        </section>
+                    @elseif ($supplier)
+                        <section class="mt-6 rounded-[2rem] border border-amber-200 bg-amber-50 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)] sm:p-8">
+                            <p class="text-xs font-bold uppercase tracking-[0.35em] text-amber-700">CHƯA CÓ HÀNG KÝ GỬI</p>
+                            <h2 class="mt-3 text-2xl font-black text-slate-950">{{ $supplier->name }} chưa có dữ liệu tồn kho</h2>
+                            <p class="mt-2 max-w-3xl text-sm leading-7 text-slate-700">
+                                Chưa ghi nhận lần ký gửi nào cho số điện thoại này. Vui lòng liên hệ cửa hàng nếu bạn cần kiểm tra thêm.
+                            </p>
                         </section>
                     @elseif ($searchPerformed)
                         <section class="mt-6 rounded-[2rem] border border-rose-200 bg-rose-50 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)] sm:p-8">
@@ -215,58 +201,6 @@
                             <p class="mt-2 max-w-3xl text-sm leading-7 text-slate-700">
                                 Vui lòng kiểm tra lại số điện thoại đã đăng ký. Nếu chưa thấy thông tin của mình, hãy liên hệ cửa hàng để được hỗ trợ tra cứu.
                             </p>
-                        </section>
-                    @else
-                        <section class="mt-6 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)] sm:p-8">
-                            <div class="mb-5 max-w-3xl">
-                                <p class="text-xs font-bold uppercase tracking-[0.35em] text-sky-600">HƯỚNG DẪN NHANH</p>
-                                <h2 class="mt-3 text-2xl font-black text-slate-950">Một màn hình tra cứu ngắn gọn, đủ thông tin cần thiết</h2>
-                            </div>
-
-                            <div class="grid gap-4 lg:grid-cols-3">
-                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                                    <p class="text-sm font-bold text-slate-950">Bước 1</p>
-                                    <p class="mt-2 text-sm leading-7 text-slate-700">Nhập số điện thoại vào form tra cứu bên trên.</p>
-                                </div>
-                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                                    <p class="text-sm font-bold text-slate-950">Bước 2</p>
-                                    <p class="mt-2 text-sm leading-7 text-slate-700">Bấm tra cứu để lấy toàn bộ các kỳ doanh số và thanh toán của mình.</p>
-                                </div>
-                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                                    <p class="text-sm font-bold text-slate-950">Bước 3</p>
-                                    <p class="mt-2 text-sm leading-7 text-slate-700">Xem ngay bảng trạng thái thanh toán, số tiền, đã bán và kỳ doanh số.</p>
-                                </div>
-                            </div>
-                        </section>
-                    @endif
-
-
-
-                    @if ($portalCards->isNotEmpty())
-                        <section class="mt-6 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)] sm:p-8">
-                            <div class="max-w-3xl">
-                                <p class="text-xs font-bold uppercase tracking-[0.35em] text-sky-600">NỘI DUNG TRANG CHỦ</p>
-                                <h2 class="mt-4 text-2xl font-black text-slate-950">{{ $portalInfoSectionTitle }}</h2>
-                                @if (filled($portalInfoSectionIntro))
-                                    <p class="mt-3 text-sm leading-7 text-slate-700">{{ $portalInfoSectionIntro }}</p>
-                                @endif
-                            </div>
-
-                            <div class="mt-6 grid gap-4 lg:grid-cols-3">
-                                @foreach ($portalCards as $card)
-                                    <article class="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-5">
-                                        @if (filled($card['eyebrow']))
-                                            <p class="text-xs font-bold uppercase tracking-[0.3em] text-sky-600">{{ $card['eyebrow'] }}</p>
-                                        @endif
-                                        @if (filled($card['title']))
-                                            <h3 class="mt-3 text-xl font-black text-slate-950">{{ $card['title'] }}</h3>
-                                        @endif
-                                        @if (filled($card['description']))
-                                            <p class="mt-3 text-sm leading-7 text-slate-700">{{ $card['description'] }}</p>
-                                        @endif
-                                    </article>
-                                @endforeach
-                            </div>
                         </section>
                     @endif
 

@@ -2,13 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\SaleItem;
+use App\Models\ConsignmentNote;
+use App\Models\Product;
 use App\Models\Setting;
 use App\Models\Supplier;
-use App\Models\SupplierPayment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class SupplierPortalController extends Controller
@@ -22,9 +21,9 @@ class SupplierPortalController extends Controller
             ? $this->resolveSupplier($phone)
             : null;
 
-        $paymentSummaries = collect();
+        $inventorySummaries = collect();
         if ($supplier) {
-            $paymentSummaries = $this->buildPaymentSummaries($supplier);
+            $inventorySummaries = $this->buildInventorySummaries($supplier);
         }
 
         return view('welcome', [
@@ -34,22 +33,7 @@ class SupplierPortalController extends Controller
             'searchError' => $searchPerformed && $supplier === null
                 ? 'Không tìm thấy nhà cung cấp phù hợp. Hãy kiểm tra lại số điện thoại đã đăng ký.'
                 : null,
-            'paymentSummaries' => $paymentSummaries,
-            'portalHeroBadge' => Setting::get('portal_hero_badge', 'Tra cứu nhà cung cấp'),
-            'portalHeroTitle' => Setting::get('portal_hero_title', 'Tra cứu nhanh doanh số, thanh toán và thông tin cần thiết'),
-            'portalHeroDescription' => Setting::get('portal_hero_description', 'Nhập số điện thoại đã đăng ký để xem ngay tình trạng thanh toán, số tiền và các kỳ doanh số của nhà cung cấp.'),
-            'portalInfoSectionTitle' => Setting::get('portal_info_section_title', 'Thông tin từ cửa hàng'),
-            'portalInfoSectionIntro' => Setting::get('portal_info_section_intro', 'Cập nhật những thông tin quan trọng để nhà cung cấp nắm nhanh ngay ngoài trang chủ.'),
-            'portalCards' => collect(Setting::getJson('portal_cards'))
-                ->map(function (array $card): array {
-                    return [
-                        'eyebrow' => trim((string) ($card['eyebrow'] ?? '')),
-                        'title' => trim((string) ($card['title'] ?? '')),
-                        'description' => trim((string) ($card['description'] ?? '')),
-                    ];
-                })
-                ->filter(fn (array $card): bool => $card['eyebrow'] !== '' || $card['title'] !== '' || $card['description'] !== '')
-                ->values(),
+            'inventorySummaries' => $inventorySummaries,
             'portalAddress' => Setting::get('store_address', 'Địa chỉ cửa hàng đang được cập nhật'),
             'portalHotline' => Setting::get('store_hotline', 'Liên hệ trực tiếp cửa hàng để được hỗ trợ'),
             'portalHours' => Setting::get('store_hours', '08:30 - 21:00 mỗi ngày'),
@@ -74,56 +58,78 @@ class SupplierPortalController extends Controller
         return $value;
     }
 
-    private function buildPaymentSummaries(Supplier $supplier): Collection
+    private function buildInventorySummaries(Supplier $supplier): Collection
     {
-        $salesByMonth = SaleItem::query()
-            ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
-            ->join('products', 'sale_items.product_id', '=', 'products.id')
-            ->where('products.supplier_id', $supplier->id)
-            ->groupBy(DB::raw("DATE_FORMAT(COALESCE(sales.completed_at, sales.created_at), '%Y-%m')"))
-            ->orderByDesc(DB::raw("DATE_FORMAT(COALESCE(sales.completed_at, sales.created_at), '%Y-%m')"))
-            ->get([
-                DB::raw("DATE_FORMAT(COALESCE(sales.completed_at, sales.created_at), '%Y-%m') as period_key"),
-                DB::raw('SUM(sale_items.line_total) as gross_amount'),
-                DB::raw('SUM(sale_items.quantity) as units_sold'),
-            ])
-            ->keyBy('period_key');
-
-        $paymentsByMonth = SupplierPayment::query()
+        $consignments = ConsignmentNote::query()
+            ->withTrashed()
             ->where('supplier_id', $supplier->id)
-            ->whereNotNull('paid_at')
-            ->get()
-            ->keyBy(fn (SupplierPayment $payment) => $payment->period_from?->format('Y-m'));
+            ->orderBy('sent_date')
+            ->orderBy('id')
+            ->get(['id', 'sent_date']);
 
-        $periodKeys = $salesByMonth->keys()
-            ->merge($paymentsByMonth->keys())
-            ->filter()
-            ->unique()
-            ->sortDesc()
+        if ($consignments->isEmpty()) {
+            return collect();
+        }
+
+        $roundByConsignment = [];
+        $rounds = collect();
+        $currentRound = 0;
+        $previousSentDate = null;
+
+        foreach ($consignments as $consignment) {
+            if ($previousSentDate === null || $previousSentDate->diffInDays($consignment->sent_date) > 15) {
+                $currentRound++;
+            }
+
+            $roundByConsignment[$consignment->id] = $currentRound;
+            $round = $rounds->get($currentRound, [
+                'round' => $currentRound,
+                'first_sent_date' => $consignment->sent_date,
+                'last_sent_date' => $consignment->sent_date,
+                'products' => collect(),
+            ]);
+            $round['last_sent_date'] = $consignment->sent_date;
+            $rounds->put($currentRound, $round);
+            $previousSentDate = $consignment->sent_date;
+        }
+
+        $products = Product::query()
+            ->where('supplier_id', $supplier->id)
+            ->whereIn('consignment_note_id', $consignments->pluck('id'))
+            ->whereNull('returned_at')
+            ->where('quantity', '>', 0)
+            ->orderBy('name')
+            ->orderBy('id')
+            ->get(['id', 'public_id', 'consignment_note_id', 'name', 'quantity']);
+
+        foreach ($products as $product) {
+            $roundNumber = $roundByConsignment[$product->consignment_note_id] ?? null;
+
+            if ($roundNumber === null || ! $rounds->has($roundNumber)) {
+                continue;
+            }
+
+            $round = $rounds->get($roundNumber);
+            $round['products']->push($product);
+            $rounds->put($roundNumber, $round);
+        }
+
+        return $rounds
+            ->map(function (array $round): array {
+                $firstSentDate = $round['first_sent_date'];
+                $lastSentDate = $round['last_sent_date'];
+
+                return [
+                    'round' => $round['round'],
+                    'sent_date_label' => $firstSentDate->isSameDay($lastSentDate)
+                        ? $firstSentDate->format('d/m/Y')
+                        : $firstSentDate->format('d/m/Y').' - '.$lastSentDate->format('d/m/Y'),
+                    'product_count' => $round['products']->count(),
+                    'stock_quantity' => (int) $round['products']->sum('quantity'),
+                    'products' => $round['products'],
+                ];
+            })
+            ->sortByDesc('round')
             ->values();
-
-        $discountRate = (float) Setting::supplierDiscountRate($supplier->type);
-
-        return $periodKeys->map(function (string $periodKey) use ($salesByMonth, $paymentsByMonth, $discountRate) {
-            $sales = $salesByMonth->get($periodKey);
-            $payment = $paymentsByMonth->get($periodKey);
-            $grossAmount = (float) ($sales->gross_amount ?? $payment?->gross_amount ?? 0);
-            $unitsSold = (int) ($sales->units_sold ?? 0);
-            $discountAmount = $payment
-                ? (float) $payment->discount_amount
-                : round($grossAmount * $discountRate / 100, 2);
-            $payableAmount = $payment
-                ? (float) $payment->payable_amount
-                : max(0, round($grossAmount - $discountAmount, 2));
-            $isPaid = $payment !== null;
-
-            return [
-                'status' => $isPaid ? 'paid' : 'unpaid',
-                'status_label' => $isPaid ? 'Đã thanh toán' : 'Chưa thanh toán',
-                'payable_amount' => $payableAmount,
-                'units_sold' => $unitsSold,
-                'period_label' => substr($periodKey, 5, 2).'/'.substr($periodKey, 0, 4),
-            ];
-        });
     }
 }

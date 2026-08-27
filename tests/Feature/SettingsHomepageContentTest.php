@@ -20,7 +20,7 @@ class SettingsHomepageContentTest extends TestCase
         $this->seed(DatabaseSeeder::class);
     }
 
-    public function test_admin_can_update_homepage_content_and_public_homepage_displays_it(): void
+    public function test_public_homepage_only_displays_store_contact_settings(): void
     {
         $admin = User::query()->where('email', 'admin@kygui.local')->firstOrFail();
         $this->actingAs($admin);
@@ -39,8 +39,8 @@ class SettingsHomepageContentTest extends TestCase
             'store_hours' => '08:00 - 21:30',
             'store_map_url' => 'https://example.com/map',
             'portal_hero_badge' => 'TRA CUU NCC',
-            'portal_hero_title' => 'Tra cuu nhanh thong tin can thiet',
-            'portal_hero_description' => 'Nhap so dien thoai de xem doanh so, thanh toan va thong tin san pham da ban.',
+            'portal_hero_title' => 'Tra cuu ton kho theo lan ky gui',
+            'portal_hero_description' => 'Nhap so dien thoai de xem san pham va so luong con trong kho.',
             'portal_info_section_title' => 'Thong tin noi bat',
             'portal_info_section_intro' => 'Noi dung do admin tu cau hinh.',
             'portal_cards' => [
@@ -62,17 +62,15 @@ class SettingsHomepageContentTest extends TestCase
         $home = $this->get(route('home'));
 
         $home->assertOk();
-        $home->assertSee('TRA CUU NCC');
-        $home->assertSee('Tra cuu nhanh thong tin can thiet');
-        $home->assertSee('Nhap so dien thoai de xem doanh so, thanh toan va thong tin san pham da ban.');
-        $home->assertSee('Thong tin noi bat');
-        $home->assertSee('Noi dung do admin tu cau hinh.');
-        $home->assertSee('THONG BAO');
-        $home->assertSee('Nhan hang truoc 17h');
-        $home->assertSee('Cua hang nhan hang ky gui moi ngay den 17h.');
-        $home->assertSee('HO TRO');
-        $home->assertSee('Bao cao hang tuan');
-        $home->assertSee('Ket qua doanh so duoc cap nhat theo tung ky trong bang tra cuu.');
+        $home->assertSee('Tra cứu tồn kho nhà cung cấp');
+        $home->assertSee('Số điện thoại');
+        $home->assertDontSee('TRA CUU NCC');
+        $home->assertDontSee('Tra cuu ton kho theo lan ky gui');
+        $home->assertDontSee('Thong tin noi bat');
+        $home->assertDontSee('Nhan hang truoc 17h');
+        $home->assertDontSee('Bao cao hang tuan');
+        $home->assertDontSee('HƯỚNG DẪN NHANH');
+        $home->assertDontSee('NỘI DUNG TRANG CHỦ');
         $home->assertSee('123 Duong ABC, Quan 1, TP HCM');
         $home->assertSee('0909 000 111');
         $home->assertSee('08:00 - 21:30');
