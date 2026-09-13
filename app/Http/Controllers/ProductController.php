@@ -348,7 +348,8 @@ class ProductController extends Controller
         );
 
         $suppliers = Supplier::query()
-            ->orderBy('name')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
             ->get(['id', 'public_id', 'name']);
 
         return view('products.label-index', [
