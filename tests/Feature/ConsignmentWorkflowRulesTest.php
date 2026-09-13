@@ -274,6 +274,7 @@ class ConsignmentWorkflowRulesTest extends TestCase
         ]));
 
         $response->assertOk();
+        $response->assertSee('Tìm NCC theo mã hoặc tên');
         $response->assertSee('Ao khoac B');
         $response->assertDontSee('Ao khoac A');
     }
@@ -350,6 +351,42 @@ class ConsignmentWorkflowRulesTest extends TestCase
                 && $printedProduct->label_code === $labelCode
                 && $printedProduct->barcode_payload === $barcodePayload
                 && $printedProduct->barcode_svg === $expectedSvg;
+        });
+    }
+
+    public function test_product_label_print_keeps_the_consignment_round_for_a_supplier_with_few_products(): void
+    {
+        $user = $this->signInAsAdmin();
+        $category = $this->createCategory();
+        $supplier = $this->createSupplier('ncc_it_san_pham', 'NCC it san pham in tem');
+        $consignment = ConsignmentNote::create([
+            'responsible_user_id' => $user->id,
+            'supplier_id' => $supplier->id,
+            'sent_date' => now()->toDateString(),
+            'quantity' => 1,
+            'notes' => null,
+        ]);
+
+        $this->post(route('products.store'), [
+            'supplier_id' => $supplier->id,
+            'consignment_note_id' => $consignment->id,
+            'category_id' => $category->id,
+            'name' => 'Ao NCC it san pham',
+            'sale_price' => 150000,
+            'quantity' => 1,
+        ])->assertRedirect(route('products.index'));
+
+        $product = Product::query()->where('name', 'Ao NCC it san pham')->sole();
+        $labelCode = $product->id.'-'.$supplier->id.'-1';
+
+        $response = $this->post(route('product-labels.print'), [
+            'ids' => [$product->id],
+        ]);
+
+        $response->assertOk();
+        $response->assertSee($labelCode);
+        $response->assertViewHas('products', function ($products) use ($labelCode): bool {
+            return $products->first()?->label_code === $labelCode;
         });
     }
 

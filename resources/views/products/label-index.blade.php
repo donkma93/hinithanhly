@@ -17,23 +17,15 @@
             <div class="no-print mb-6 rounded-3xl bg-white p-4 shadow-sm ring-1 ring-gray-200">
                 <form method="GET" action="{{ route('product-labels.index') }}" class="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
                     <x-per-page-select :value="request('per_page', 24)" />
-                    <div>
-                        <select
-                            name="supplier_id"
-                            class="w-full rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900"
-                            onchange="this.form.requestSubmit()"
-                        >
-                            <option value="">Tất cả nhà cung cấp</option>
-                            @foreach ($filterSupplierOptions as $supplierOption)
-                                <option
-                                    value="{{ $supplierOption['value'] }}"
-                                    @selected((string) request('supplier_id', $filterSupplierId) === (string) $supplierOption['value'])
-                                >
-                                    {{ $supplierOption['label'] }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
+                    <x-searchable-select
+                        name="supplier_id"
+                        :options="$filterSupplierOptions"
+                        :selected="request('supplier_id', $filterSupplierId)"
+                        placeholder="Tất cả nhà cung cấp"
+                        search-placeholder="Tìm NCC theo mã hoặc tên"
+                        empty-text="Không có NCC phù hợp"
+                        submit-on-select
+                    />
                     <input name="product_public_id" value="{{ $exactFilters['product_public_id'] ?? '' }}" class="w-full rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Đúng mã hàng">
                     <input name="product_name" value="{{ $exactFilters['product_name'] ?? '' }}" class="w-full rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Đúng tên sản phẩm">
                     <input name="supplier_public_id" value="{{ $exactFilters['supplier_public_id'] ?? '' }}" class="w-full rounded-xl border-gray-300 text-sm focus:border-slate-900 focus:ring-slate-900" placeholder="Đúng mã NCC">

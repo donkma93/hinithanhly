@@ -316,7 +316,7 @@ class ProductController extends Controller
         $products = $this->applyProductExactFilters(Product::query()
             ->select(['id', 'public_id', 'consignment_note_id', 'supplier_id', 'image_path', 'name', 'sale_price', 'quantity', 'returned_at', 'created_at'])
             ->with([
-                'supplier:id,public_id,name',
+                'supplier:id,public_id,name,type',
                 'consignmentNote:id,public_id,supplier_id,sent_date',
             ])
             ->sellable()
@@ -340,7 +340,7 @@ class ProductController extends Controller
                 $product->setAttribute('send_round', $sendSummary['round']);
                 $product->setAttribute('send_days', $sendSummary['days']);
                 $product->setAttribute('send_summary', $sendSummary['label']);
-                $product->setAttribute('label_code', $this->buildLabelCode($product));
+                $product->setAttribute('label_code', $this->buildLabelCode($product, $sendSummary['round']));
                 $product->setAttribute('barcode_payload', $this->buildBarcodePayload($product));
 
                 return $product;
@@ -374,7 +374,7 @@ class ProductController extends Controller
         $products = Product::query()
             ->select(['id', 'public_id', 'consignment_note_id', 'supplier_id', 'name', 'sale_price', 'quantity', 'returned_at', 'created_at'])
             ->with([
-                'supplier:id,public_id,name',
+                'supplier:id,public_id,name,type',
                 'consignmentNote:id,public_id,supplier_id,sent_date',
             ])
             ->sellable()
@@ -889,7 +889,7 @@ class ProductController extends Controller
                 'label' => 'Lần 1 / 0 ngày / ---',
             ];
 
-            $labelCode = $this->buildLabelCode($product);
+            $labelCode = $this->buildLabelCode($product, $sendSummary['round']);
 
             $product->setAttribute('send_round', $sendSummary['round']);
             $product->setAttribute('send_days', $sendSummary['days']);
@@ -964,12 +964,12 @@ class ProductController extends Controller
     private function buildProductBarcodeData(Product $product): array
     {
         $product->loadMissing([
-            'supplier:id,public_id,name',
+            'supplier:id,public_id,name,type',
             'consignmentNote:id,public_id,supplier_id,sent_date',
         ]);
 
         $sendSummary = $this->resolveProductSendSummary($product);
-        $labelCode = $this->buildLabelCode($product);
+        $labelCode = $this->buildLabelCode($product, $sendSummary['round']);
 
         return [
             'sendSummary' => $sendSummary,
@@ -989,9 +989,17 @@ class ProductController extends Controller
         );
     }
 
-    private function buildLabelCode(Product $product): string
+    private function buildLabelCode(Product $product, int $sendRound): string
     {
-        return $product->id.'-'.$product->supplier_id;
+        if (! $product->relationLoaded('supplier')) {
+            $product->load('supplier:id,type');
+        }
+
+        $code = $product->id.'-'.$product->supplier_id;
+
+        return $product->supplier?->type === 'ncc_it_san_pham'
+            ? $code.'-'.$sendRound
+            : $code;
     }
 
     private function buildBarcodePayload(Product $product): string
