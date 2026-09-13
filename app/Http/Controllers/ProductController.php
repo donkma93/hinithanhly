@@ -340,7 +340,7 @@ class ProductController extends Controller
                 $product->setAttribute('send_round', $sendSummary['round']);
                 $product->setAttribute('send_days', $sendSummary['days']);
                 $product->setAttribute('send_summary', $sendSummary['label']);
-                $product->setAttribute('label_code', $this->buildLabelCode($product, $sendSummary['round']));
+                $product->setAttribute('label_code', $this->buildLabelCode($product));
                 $product->setAttribute('barcode_payload', $this->buildBarcodePayload($product));
 
                 return $product;
@@ -889,7 +889,7 @@ class ProductController extends Controller
                 'label' => 'Lần 1 / 0 ngày / ---',
             ];
 
-            $labelCode = $this->buildLabelCode($product, $sendSummary['round']);
+            $labelCode = $this->buildLabelCode($product);
 
             $product->setAttribute('send_round', $sendSummary['round']);
             $product->setAttribute('send_days', $sendSummary['days']);
@@ -969,7 +969,7 @@ class ProductController extends Controller
         ]);
 
         $sendSummary = $this->resolveProductSendSummary($product);
-        $labelCode = $this->buildLabelCode($product, $sendSummary['round']);
+        $labelCode = $this->buildLabelCode($product);
 
         return [
             'sendSummary' => $sendSummary,
@@ -989,9 +989,9 @@ class ProductController extends Controller
         );
     }
 
-    private function buildLabelCode(Product $product, int $sendRound): string
+    private function buildLabelCode(Product $product): string
     {
-        return $product->id.'-'.$product->supplier_id.'-'.$sendRound;
+        return $product->id.'-'.$product->supplier_id;
     }
 
     private function buildBarcodePayload(Product $product): string

@@ -100,7 +100,7 @@
     <div class="sheet">
         @foreach ($products as $product)
             <div class="barcode-block">
-                <div class="barcode-top">{{ $product->id }} - {{ $product->supplier_id }} - {{ $product->send_round }}</div>
+                <div class="barcode-top">{{ $product->label_code }}</div>
                 <div class="barcode">{!! $product->barcode_svg !!}</div>
                 <div class="barcode-bottom">{{ number_format($product->sale_price ?? 0, 0, ',', '.') }} đ</div>
                 <div class="return-policy">Hàng đã mua không đổi trả</div>

@@ -120,7 +120,7 @@ class SalesScreenTest extends TestCase
             'description' => null,
         ]);
 
-        $labelCode = $product->id.'-'.$product->supplier_id.'-1';
+        $labelCode = $product->id.'-'.$product->supplier_id;
 
         $response = $this->getJson('/ban-hang/products/'.$labelCode);
 

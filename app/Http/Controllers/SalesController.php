@@ -345,7 +345,7 @@ class SalesController extends Controller
         $code = preg_replace('/\s+/', '', $code) ?? $code;
 
         if (str_contains($code, '-')) {
-            if (! preg_match('/^\d+-\d+-\d+$/', $code)) {
+            if (! preg_match('/^\d+-\d+(?:-\d+)?$/', $code)) {
                 return null;
             }
 

@@ -278,7 +278,7 @@ class ConsignmentWorkflowRulesTest extends TestCase
         $response->assertDontSee('Ao khoac A');
     }
 
-    public function test_product_label_print_uses_a_shorter_product_code_for_the_barcode(): void
+    public function test_product_label_print_omits_the_supplier_consignment_round_from_the_label_code(): void
     {
         $this->signInAsAdmin();
         $category = $this->createCategory();
@@ -293,7 +293,7 @@ class ConsignmentWorkflowRulesTest extends TestCase
         ])->assertRedirect(route('products.index'));
 
         $product = Product::query()->where('name', 'Ao in tem')->sole();
-        $labelCode = $product->id.'-'.$supplier->id.'-1';
+        $labelCode = $product->id.'-'.$supplier->id;
         $barcodePayload = (string) $product->id;
         $expectedSvg = (new BarcodeGeneratorSVG())
             ->getBarcode($barcodePayload, BarcodeGeneratorSVG::TYPE_CODE_128, 3, 75);
@@ -316,7 +316,7 @@ class ConsignmentWorkflowRulesTest extends TestCase
         });
     }
 
-    public function test_single_product_label_page_uses_a_shorter_product_code_for_the_barcode(): void
+    public function test_single_product_label_page_omits_the_supplier_consignment_round_from_the_label_code(): void
     {
         $this->signInAsAdmin();
         $category = $this->createCategory();
@@ -331,7 +331,7 @@ class ConsignmentWorkflowRulesTest extends TestCase
         ])->assertRedirect(route('products.index'));
 
         $product = Product::query()->where('name', 'Ao in le')->sole();
-        $labelCode = $product->id.'-'.$supplier->id.'-1';
+        $labelCode = $product->id.'-'.$supplier->id;
         $barcodePayload = (string) $product->id;
         $expectedSvg = (new BarcodeGeneratorSVG())
             ->getBarcode($barcodePayload, BarcodeGeneratorSVG::TYPE_CODE_128, 3, 75);
@@ -341,7 +341,7 @@ class ConsignmentWorkflowRulesTest extends TestCase
         $response->assertOk();
         $response->assertViewIs('products.label-print');
         $response->assertSee('Hàng đã mua không đổi trả');
-        $response->assertSee($product->id.' - '.$supplier->id.' - 1');
+        $response->assertSee($labelCode);
         $response->assertViewHas('products', function ($products) use ($product, $labelCode, $barcodePayload, $expectedSvg): bool {
             $printedProduct = $products->first();
 
