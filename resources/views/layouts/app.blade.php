@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ config('app.name', 'cohankygui') }}</title>
+        <title>{{ isset($title) && filled($title) ? trim($title) . ' - ' : (request()->routeIs('dashboard') ? 'Bảng điều khiển - ' : '') }}{{ config('app.name', 'cohankygui') }}</title>
 
         @include('layouts.partials.no-build-assets')
         @stack('head')
