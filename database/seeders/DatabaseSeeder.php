@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace Database\Seeders;
 
@@ -52,21 +52,22 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $admin = User::updateOrCreate(
-            ['email' => 'admin@kygui.local'],
+            ['email' => 'admin@cohankygui.local'],
             ['name' => 'Administrator', 'password' => 'password']
         );
         $admin->syncRoles(['admin']);
 
         $superAdmin = User::updateOrCreate(
-            ['email' => 'superadmin@kygui.local'],
+            ['email' => 'superadmin@cohankygui.local'],
             ['name' => 'Super Admin', 'password' => 'password']
         );
         $superAdmin->syncRoles(['super-admin']);
 
         $staff = User::updateOrCreate(
-            ['email' => 'staff@kygui.local'],
+            ['email' => 'staff@cohankygui.local'],
             ['name' => 'Staff User', 'password' => 'password']
         );
         $staff->syncRoles(['staff']);
     }
 }
+

@@ -1,18 +1,18 @@
-@php($activeRole = auth()->user()?->getRoleNames()->first() ?? 'staff')
+﻿@php($activeRole = auth()->user()?->getRoleNames()->first() ?? 'staff')
 
 <aside class="fixed inset-y-0 left-0 z-50 w-72 -translate-x-full transform border-r border-slate-800 bg-slate-950 text-white transition-transform duration-200 lg:translate-x-0" :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
     <div class="flex h-full flex-col">
         <div class="flex h-16 items-center gap-3 border-b border-white/10 px-6">
             <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 text-sm font-bold">K</div>
             <div>
-                <p class="text-sm font-semibold">{{ config('app.name', 'HINITHANLYKYGUI') }}</p>
-                <p class="text-xs text-slate-400">Quản lý ký gửi</p>
+                <p class="text-sm font-semibold">{{ config('app.name', 'COHAN_KYGUI') }}</p>
+                <p class="text-xs text-slate-400">Quáº£n lÃ½ kÃ½ gá»­i</p>
             </div>
         </div>
 
         <div class="flex-1 overflow-y-auto px-4 py-6">
             <div class="mb-6 rounded-2xl bg-white/5 px-4 py-3">
-                <p class="text-xs uppercase tracking-[0.25em] text-slate-400">Tài khoản</p>
+                <p class="text-xs uppercase tracking-[0.25em] text-slate-400">TÃ i khoáº£n</p>
                 <p class="mt-1 text-sm font-semibold text-white">{{ Auth::user()->name }}</p>
                 <p class="text-xs text-slate-400">{{ $activeRole }}</p>
             </div>
@@ -48,7 +48,7 @@
                     <span>Dashboard</span>
                 </a>
                 <a href="{{ route('sales.index') }}" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition {{ request()->routeIs('sales.*') ? 'bg-white text-slate-950' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
-                    <span>Bán hàng</span>
+                    <span>BÃ¡n hÃ ng</span>
                 </a>
 
                 <div class="group rounded-3xl bg-white/5 p-1">
@@ -61,33 +61,33 @@
                     <div class="mt-1 space-y-1 px-2 pb-2" x-cloak x-show="commonOpen" x-transition>
                         @can('categories.view')
                             <a href="{{ route('categories.index') }}" @click="openCommon()" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition {{ request()->routeIs('categories.*') ? 'bg-white text-slate-950' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
-                                <span>Danh mục</span>
+                                <span>Danh má»¥c</span>
                             </a>
                         @endcan
                         @can('suppliers.view')
                             <a href="{{ route('suppliers.index') }}" @click="openCommon()" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition {{ request()->routeIs('suppliers.*') ? 'bg-white text-slate-950' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
-                                <span>Nhà cung cấp</span>
+                                <span>NhÃ  cung cáº¥p</span>
                             </a>
                         @endcan
                         @can('consignments.view')
                             <a href="{{ route('consignments.index') }}" @click="openCommon()" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition {{ request()->routeIs('consignments.*') ? 'bg-white text-slate-950' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
-                                <span>Phiếu ký gửi</span>
+                                <span>Phiáº¿u kÃ½ gá»­i</span>
                             </a>
                         @endcan
                         @can('products.view')
                             <a href="{{ route('products.index') }}" @click="openCommon()" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition {{ request()->routeIs('products.*') ? 'bg-white text-slate-950' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
-                                <span>Sản phẩm</span>
+                                <span>Sáº£n pháº©m</span>
                             </a>
                             <a href="{{ route('products.expiry') }}" @click="openCommon()" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition {{ request()->routeIs('products.expiry') ? 'bg-white text-slate-950' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
-                                <span>Hạn ký gửi</span>
+                                <span>Háº¡n kÃ½ gá»­i</span>
                             </a>
                             <a href="{{ route('product-labels.index') }}" @click="openCommon()" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition {{ request()->routeIs('product-labels.*') ? 'bg-white text-slate-950' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
-                                <span>In mã hàng</span>
+                                <span>In mÃ£ hÃ ng</span>
                             </a>
                         @endcan
                         @can('sales.records.view')
                             <a href="{{ route('sold-products.index') }}" @click="openCommon()" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition {{ request()->routeIs('sold-products.*') ? 'bg-white text-slate-950' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
-                                <span>Sản phẩm đã bán</span>
+                                <span>Sáº£n pháº©m Ä‘Ã£ bÃ¡n</span>
                             </a>
                         @endcan
                         @can('sales.revenue.view')
@@ -97,7 +97,7 @@
                         @endcan
                         @if(in_array($activeRole, ['admin', 'super-admin'], true))
                             <a href="{{ route('supplier-payments.index') }}" @click="openCommon()" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition {{ request()->routeIs('supplier-payments.*') ? 'bg-white text-slate-950' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
-                                <span>Thanh toán NCC</span>
+                                <span>Thanh toÃ¡n NCC</span>
                             </a>
                         @endif
                     </div>
@@ -105,7 +105,7 @@
 
                 <div class="group rounded-3xl bg-white/5 p-1">
                     <button type="button" class="flex w-full items-center justify-between rounded-2xl px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10" @click="toggleSystem()">
-                        <span>Hệ thống</span>
+                        <span>Há»‡ thá»‘ng</span>
                         <svg class="h-4 w-4 transition group-open:rotate-180" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                             <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd" />
                         </svg>
@@ -113,42 +113,42 @@
                     <div class="mt-1 space-y-1 px-2 pb-2" x-cloak x-show="systemOpen" x-transition>
                         @can('logs.view')
                             <a href="{{ route('logs.index') }}" @click="openSystem()" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition {{ request()->routeIs('logs.*') ? 'bg-white text-slate-950' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
-                                <span>Nhật ký</span>
+                                <span>Nháº­t kÃ½</span>
                             </a>
                         @endcan
                         @can('system-logs.view')
                             <a href="{{ route('system-logs.index') }}" @click="openSystem()" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition {{ request()->routeIs('system-logs.*') ? 'bg-white text-slate-950' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
-                                <span>Log hệ thống</span>
+                                <span>Log há»‡ thá»‘ng</span>
                             </a>
                         @endcan
                         @if(in_array($activeRole, ['admin', 'super-admin'], true))
                             <a href="{{ route('trash.index') }}" @click="openSystem()" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition {{ request()->routeIs('trash.*') ? 'bg-white text-slate-950' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
-                                <span>Thùng rác</span>
+                                <span>ThÃ¹ng rÃ¡c</span>
                             </a>
                         @endif
                         @canany(['users.view', 'users.manage'])
                             <a href="{{ route('users.index') }}" @click="openSystem()" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition {{ request()->routeIs('users.*') ? 'bg-white text-slate-950' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
-                                <span>Tài khoản</span>
+                                <span>TÃ i khoáº£n</span>
                             </a>
                         @endcanany
                         @canany(['permissions.view', 'permissions.manage'])
                             <a href="{{ route('permissions.index') }}" @click="openSystem()" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition {{ request()->routeIs('permissions.*') ? 'bg-white text-slate-950' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
-                                <span>Phân quyền</span>
+                                <span>PhÃ¢n quyá»n</span>
                             </a>
                             <a href="{{ route('roles.index') }}" @click="openSystem()" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition {{ request()->routeIs('roles.*') ? 'bg-white text-slate-950' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
-                                <span>Vai trò</span>
+                                <span>Vai trÃ²</span>
                             </a>
                         @endcanany
                         @can('settings.manage')
                             <a href="{{ route('settings.payment.edit') }}" @click="openSystem()" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition {{ request()->routeIs('settings.*') ? 'bg-white text-slate-950' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
-                                <span>Cài đặt</span>
+                                <span>CÃ i Ä‘áº·t</span>
                             </a>
                         @endcan
                     </div>
                 </div>
 
                 <a href="{{ route('profile.edit') }}" class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-slate-300 transition hover:bg-white/10 hover:text-white">
-                    <span>Hồ sơ</span>
+                    <span>Há»“ sÆ¡</span>
                 </a>
             </nav>
         </div>
@@ -157,9 +157,10 @@
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button class="flex w-full items-center justify-center rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-100" onclick="event.preventDefault(); this.closest('form').submit();">
-                    Đăng xuất
+                    ÄÄƒng xuáº¥t
                 </button>
             </form>
         </div>
     </div>
 </aside>
+

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace Tests\Feature;
 
@@ -44,13 +44,13 @@ class SupplierPaymentFilterTest extends TestCase
 
         $response->assertOk();
         $response->assertSee($month->format('Y-m'));
-        $response->assertSee('120.000 đ');
-        $response->assertSee('240.000 đ');
-        $response->assertSee('360.000 đ');
+        $response->assertSee('120.000 Ä‘');
+        $response->assertSee('240.000 Ä‘');
+        $response->assertSee('360.000 Ä‘');
         $response->assertSee($paid['supplier']->name);
         $response->assertSee($unpaid['supplier']->name);
-        $response->assertSee('Đã thanh toán');
-        $response->assertSee('Chưa thanh toán');
+        $response->assertSee('ÄÃ£ thanh toÃ¡n');
+        $response->assertSee('ChÆ°a thanh toÃ¡n');
     }
 
     public function test_supplier_payment_index_filters_to_the_selected_supplier_for_the_month(): void
@@ -90,12 +90,12 @@ class SupplierPaymentFilterTest extends TestCase
 
         $response->assertOk();
         $response->assertSee($unpaid['supplier']->name);
-        $response->assertSee('Chưa thanh toán');
+        $response->assertSee('ChÆ°a thanh toÃ¡n');
     }
 
     private function actingAsAdmin(): User
     {
-        $user = User::query()->where('email', 'admin@kygui.local')->firstOrFail();
+        $user = User::query()->where('email', 'admin@cohankygui.local')->firstOrFail();
         $this->actingAs($user);
 
         return $user;
@@ -203,3 +203,4 @@ class SupplierPaymentFilterTest extends TestCase
         ];
     }
 }
+

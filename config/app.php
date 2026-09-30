@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 use Illuminate\Support\Facades\Facade;
 
@@ -15,7 +15,7 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'HINITHANLYKYGUI'),
+    'name' => env('APP_NAME', 'COHAN_KYGUI'),
 
     /*
     |--------------------------------------------------------------------------
@@ -213,3 +213,4 @@ return [
     ])->toArray(),
 
 ];
+

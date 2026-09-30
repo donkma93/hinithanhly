@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace Database\Seeders;
 
@@ -12,13 +12,14 @@ class PromoteAdminUserSeeder extends Seeder
      */
     public function run(): void
     {
-        $admin = User::where('email', 'admin@kygui.local')->first();
+        $admin = User::where('email', 'admin@cohankygui.local')->first();
 
         if ($admin) {
             $admin->syncRoles(['super-admin']);
-            $this->command->info('✓ Admin user promoted to super-admin role');
+            $this->command->info('âœ“ Admin user promoted to super-admin role');
         } else {
-            $this->command->error('✗ Admin user not found');
+            $this->command->error('âœ— Admin user not found');
         }
     }
 }
+

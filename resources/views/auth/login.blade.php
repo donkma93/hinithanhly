@@ -1,11 +1,11 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ config('app.name', 'HINITHANLYKYGUI') }} | Đăng nhập</title>
+        <title>{{ config('app.name', 'COHAN_KYGUI') }} | ÄÄƒng nháº­p</title>
 
         @include('layouts.partials.no-build-assets')
     </head>
@@ -15,7 +15,7 @@
                 <a href="/">
                     <x-application-logo class="w-20 h-20 fill-current text-gray-500" />
                 </a>
-                <div class="text-sm text-slate-600">Màn hình bán hàng luôn sẵn sàng. Đăng nhập để ghi log người bán.</div>
+                <div class="text-sm text-slate-600">MÃ n hÃ¬nh bÃ¡n hÃ ng luÃ´n sáºµn sÃ ng. ÄÄƒng nháº­p Ä‘á»ƒ ghi log ngÆ°á»i bÃ¡n.</div>
             </div>
 
             <div class="grid gap-6 lg:grid-cols-3">
@@ -25,7 +25,7 @@
 
                 <div class="lg:col-span-1">
                     <div class="w-full bg-white shadow-md rounded-lg p-6">
-                        <h2 class="text-lg font-semibold mb-4">Đăng nhập</h2>
+                        <h2 class="text-lg font-semibold mb-4">ÄÄƒng nháº­p</h2>
 
                         <!-- Session Status -->
                         <x-auth-session-status class="mb-4" :status="session('status')" />
@@ -78,3 +78,4 @@
         </div>
     </body>
 </html>
+

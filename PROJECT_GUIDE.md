@@ -1,15 +1,15 @@
-# HINITHANHLYKYGUI - Project Guide
+﻿# cohankygui - Project Guide
 
-## 1. Giới thiệu
-Đây là hệ thống quản lý hàng ký gửi được xây dựng bằng Laravel 10, giao diện Blade + Tailwind, xác thực bằng Breeze, và phân quyền bằng Spatie Permission.
+## 1. Giá»›i thiá»‡u
+ÄÃ¢y lÃ  há»‡ thá»‘ng quáº£n lÃ½ hÃ ng kÃ½ gá»­i Ä‘Æ°á»£c xÃ¢y dá»±ng báº±ng Laravel 10, giao diá»‡n Blade + Tailwind, xÃ¡c thá»±c báº±ng Breeze, vÃ  phÃ¢n quyá»n báº±ng Spatie Permission.
 
-Mục tiêu của dự án:
-- Quản lý danh mục, nhà cung cấp, phiếu ký gửi, sản phẩm, tài khoản và phân quyền.
-- Dùng mã công khai ngắn (`public_id`) để thao tác thay vì lộ ID tăng dần.
-- Có nhật ký thao tác để dễ kiểm tra lịch sử thay đổi.
-- Giao diện tối ưu cho desktop và mobile.
+Má»¥c tiÃªu cá»§a dá»± Ã¡n:
+- Quáº£n lÃ½ danh má»¥c, nhÃ  cung cáº¥p, phiáº¿u kÃ½ gá»­i, sáº£n pháº©m, tÃ i khoáº£n vÃ  phÃ¢n quyá»n.
+- DÃ¹ng mÃ£ cÃ´ng khai ngáº¯n (`public_id`) Ä‘á»ƒ thao tÃ¡c thay vÃ¬ lá»™ ID tÄƒng dáº§n.
+- CÃ³ nháº­t kÃ½ thao tÃ¡c Ä‘á»ƒ dá»… kiá»ƒm tra lá»‹ch sá»­ thay Ä‘á»•i.
+- Giao diá»‡n tá»‘i Æ°u cho desktop vÃ  mobile.
 
-## 2. Công nghệ chính
+## 2. CÃ´ng nghá»‡ chÃ­nh
 - Laravel 10
 - PHP 8.x
 - MySQL
@@ -17,145 +17,146 @@ Mục tiêu của dự án:
 - Tailwind CSS / Vite
 - Spatie Laravel Permission
 
-## 3. Cách chạy dự án
-### Cài đặt
+## 3. CÃ¡ch cháº¡y dá»± Ã¡n
+### CÃ i Ä‘áº·t
 ```bash
 composer install
 npm install
 ```
 
-### Cấu hình môi trường
-- Sao chép `.env.example` thành `.env`
-- Cấu hình database trong `.env`
-- Tạo key ứng dụng:
+### Cáº¥u hÃ¬nh mÃ´i trÆ°á»ng
+- Sao chÃ©p `.env.example` thÃ nh `.env`
+- Cáº¥u hÃ¬nh database trong `.env`
+- Táº¡o key á»©ng dá»¥ng:
 ```bash
 php artisan key:generate
 ```
 
-### Khởi tạo dữ liệu
+### Khá»Ÿi táº¡o dá»¯ liá»‡u
 ```bash
 php artisan migrate --seed
 ```
 
-### Chạy ứng dụng
+### Cháº¡y á»©ng dá»¥ng
 ```bash
 php artisan serve
 npm run dev
 ```
 
-## 4. Dữ liệu tài khoản mẫu
-Sau khi seed, hệ thống có các tài khoản mẫu:
-- `admin@kygui.local` / `password`
-- `superadmin@kygui.local` / `password`
-- `staff@kygui.local` / `password`
+## 4. Dá»¯ liá»‡u tÃ i khoáº£n máº«u
+Sau khi seed, há»‡ thá»‘ng cÃ³ cÃ¡c tÃ i khoáº£n máº«u:
+- `admin@cohankygui.local` / `password`
+- `superadmin@cohankygui.local` / `password`
+- `staff@cohankygui.local` / `password`
 
-## 5. Luồng sử dụng chính
-### 5.1 Đăng nhập
-Người dùng đăng nhập qua màn hình auth của Breeze.
+## 5. Luá»“ng sá»­ dá»¥ng chÃ­nh
+### 5.1 ÄÄƒng nháº­p
+NgÆ°á»i dÃ¹ng Ä‘Äƒng nháº­p qua mÃ n hÃ¬nh auth cá»§a Breeze.
 
 ### 5.2 Dashboard
-Sau khi đăng nhập, người dùng được chuyển vào dashboard nếu có quyền `dashboard.view`.
+Sau khi Ä‘Äƒng nháº­p, ngÆ°á»i dÃ¹ng Ä‘Æ°á»£c chuyá»ƒn vÃ o dashboard náº¿u cÃ³ quyá»n `dashboard.view`.
 
-### 5.3 Quản lý danh mục
-Luồng cơ bản:
-1. Xem danh sách.
-2. Thêm mới.
-3. Sửa.
-4. Xoá.
-5. Tìm kiếm theo mã công khai hoặc tên.
+### 5.3 Quáº£n lÃ½ danh má»¥c
+Luá»“ng cÆ¡ báº£n:
+1. Xem danh sÃ¡ch.
+2. ThÃªm má»›i.
+3. Sá»­a.
+4. XoÃ¡.
+5. TÃ¬m kiáº¿m theo mÃ£ cÃ´ng khai hoáº·c tÃªn.
 
-### 5.4 Quản lý nhà cung cấp
-Tương tự danh mục:
+### 5.4 Quáº£n lÃ½ nhÃ  cung cáº¥p
+TÆ°Æ¡ng tá»± danh má»¥c:
 - Xem
-- Thêm
-- Sửa
-- Xoá
-- Tìm kiếm
+- ThÃªm
+- Sá»­a
+- XoÃ¡
+- TÃ¬m kiáº¿m
 
-### 5.5 Quản lý phiếu ký gửi
-Luồng:
-1. Tạo phiếu.
-2. Gắn sản phẩm.
-3. Cập nhật trạng thái.
-4. Xem chi tiết.
-5. Duyệt / xử lý theo quyền.
+### 5.5 Quáº£n lÃ½ phiáº¿u kÃ½ gá»­i
+Luá»“ng:
+1. Táº¡o phiáº¿u.
+2. Gáº¯n sáº£n pháº©m.
+3. Cáº­p nháº­t tráº¡ng thÃ¡i.
+4. Xem chi tiáº¿t.
+5. Duyá»‡t / xá»­ lÃ½ theo quyá»n.
 
-### 5.6 Quản lý sản phẩm
-Luồng:
-1. Tạo sản phẩm.
-2. Gắn danh mục / nhà cung cấp / phiếu.
-3. Sửa thông tin.
-4. Xoá nếu được phép.
-5. Tìm theo mã công khai.
+### 5.6 Quáº£n lÃ½ sáº£n pháº©m
+Luá»“ng:
+1. Táº¡o sáº£n pháº©m.
+2. Gáº¯n danh má»¥c / nhÃ  cung cáº¥p / phiáº¿u.
+3. Sá»­a thÃ´ng tin.
+4. XoÃ¡ náº¿u Ä‘Æ°á»£c phÃ©p.
+5. TÃ¬m theo mÃ£ cÃ´ng khai.
 
-### 5.7 Quản lý tài khoản
-Màn hình `Tài khoản` dùng để:
-- Thêm tài khoản mới
-- Sửa thông tin người dùng
-- Gán vai trò
-- Gán quyền trực tiếp
-- Xoá tài khoản
+### 5.7 Quáº£n lÃ½ tÃ i khoáº£n
+MÃ n hÃ¬nh `TÃ i khoáº£n` dÃ¹ng Ä‘á»ƒ:
+- ThÃªm tÃ i khoáº£n má»›i
+- Sá»­a thÃ´ng tin ngÆ°á»i dÃ¹ng
+- GÃ¡n vai trÃ²
+- GÃ¡n quyá»n trá»±c tiáº¿p
+- XoÃ¡ tÃ i khoáº£n
 
-### 5.8 Quản lý phân quyền
-Màn hình `Phân quyền` dùng để:
-- Tạo quyền mới
-- Sửa tên quyền
-- Xoá quyền
-- Mở rộng hệ thống khi thêm chức năng mới
+### 5.8 Quáº£n lÃ½ phÃ¢n quyá»n
+MÃ n hÃ¬nh `PhÃ¢n quyá»n` dÃ¹ng Ä‘á»ƒ:
+- Táº¡o quyá»n má»›i
+- Sá»­a tÃªn quyá»n
+- XoÃ¡ quyá»n
+- Má»Ÿ rá»™ng há»‡ thá»‘ng khi thÃªm chá»©c nÄƒng má»›i
 
-## 6. Cơ chế phân quyền
-Dự án dùng 2 lớp quyền:
-- **Vai trò**: ví dụ `admin`, `super-admin`, `staff`
-- **Quyền chi tiết**: ví dụ `products.create`, `users.delete`, `permissions.manage`
+## 6. CÆ¡ cháº¿ phÃ¢n quyá»n
+Dá»± Ã¡n dÃ¹ng 2 lá»›p quyá»n:
+- **Vai trÃ²**: vÃ­ dá»¥ `admin`, `super-admin`, `staff`
+- **Quyá»n chi tiáº¿t**: vÃ­ dá»¥ `products.create`, `users.delete`, `permissions.manage`
 
-Quy tắc chung:
-- `view` = xem danh sách / màn hình
-- `create` = thêm mới
-- `update` = sửa
-- `delete` = xoá
-- `manage` = quyền quản lý đầy đủ, có thể thay thế các quyền con
+Quy táº¯c chung:
+- `view` = xem danh sÃ¡ch / mÃ n hÃ¬nh
+- `create` = thÃªm má»›i
+- `update` = sá»­a
+- `delete` = xoÃ¡
+- `manage` = quyá»n quáº£n lÃ½ Ä‘áº§y Ä‘á»§, cÃ³ thá»ƒ thay tháº¿ cÃ¡c quyá»n con
 
-Khi thêm chức năng mới, chỉ cần:
-1. Thêm quyền vào `App\Support\PermissionCatalog`
-2. Seed lại quyền
-3. Gắn middleware / `@can` trong controller và view
+Khi thÃªm chá»©c nÄƒng má»›i, chá»‰ cáº§n:
+1. ThÃªm quyá»n vÃ o `App\Support\PermissionCatalog`
+2. Seed láº¡i quyá»n
+3. Gáº¯n middleware / `@can` trong controller vÃ  view
 
-## 7. Mã công khai
-Dự án không dùng ID tăng dần ở giao diện. Thay vào đó dùng `public_id` để:
-- Hiển thị ngắn gọn
-- Dễ tìm kiếm
-- Tránh lộ cấu trúc ID nội bộ
+## 7. MÃ£ cÃ´ng khai
+Dá»± Ã¡n khÃ´ng dÃ¹ng ID tÄƒng dáº§n á»Ÿ giao diá»‡n. Thay vÃ o Ä‘Ã³ dÃ¹ng `public_id` Ä‘á»ƒ:
+- Hiá»ƒn thá»‹ ngáº¯n gá»n
+- Dá»… tÃ¬m kiáº¿m
+- TrÃ¡nh lá»™ cáº¥u trÃºc ID ná»™i bá»™
 
-## 8. Nhật ký thao tác
-Hệ thống ghi lại thao tác quan trọng như:
-- Thêm / sửa / xoá dữ liệu
-- Thay đổi quyền
-- Thay đổi tài khoản
+## 8. Nháº­t kÃ½ thao tÃ¡c
+Há»‡ thá»‘ng ghi láº¡i thao tÃ¡c quan trá»ng nhÆ°:
+- ThÃªm / sá»­a / xoÃ¡ dá»¯ liá»‡u
+- Thay Ä‘á»•i quyá»n
+- Thay Ä‘á»•i tÃ i khoáº£n
 
-Điều này giúp kiểm tra lịch sử hoạt động khi cần.
+Äiá»u nÃ y giÃºp kiá»ƒm tra lá»‹ch sá»­ hoáº¡t Ä‘á»™ng khi cáº§n.
 
-## 9. Cấu trúc chức năng
-- `routes/web.php`: định tuyến chính
-- `app/Http/Controllers`: xử lý nghiệp vụ
-- `resources/views`: giao diện Blade
-- `database/seeders`: dữ liệu mẫu và quyền mặc định
-- `app/Support/PermissionCatalog.php`: danh sách quyền trung tâm
+## 9. Cáº¥u trÃºc chá»©c nÄƒng
+- `routes/web.php`: Ä‘á»‹nh tuyáº¿n chÃ­nh
+- `app/Http/Controllers`: xá»­ lÃ½ nghiá»‡p vá»¥
+- `resources/views`: giao diá»‡n Blade
+- `database/seeders`: dá»¯ liá»‡u máº«u vÃ  quyá»n máº·c Ä‘á»‹nh
+- `app/Support/PermissionCatalog.php`: danh sÃ¡ch quyá»n trung tÃ¢m
 
-## 10. Ghi chú cho người lấy code
-- Sau khi clone, hãy chạy seed để có tài khoản và quyền mẫu.
-- Nếu không thấy menu, kiểm tra tài khoản hiện tại có quyền `*.view` hoặc `*.manage` chưa.
-- Nếu thêm chức năng mới, nhớ cập nhật cả quyền, route, controller và menu.
+## 10. Ghi chÃº cho ngÆ°á»i láº¥y code
+- Sau khi clone, hÃ£y cháº¡y seed Ä‘á»ƒ cÃ³ tÃ i khoáº£n vÃ  quyá»n máº«u.
+- Náº¿u khÃ´ng tháº¥y menu, kiá»ƒm tra tÃ i khoáº£n hiá»‡n táº¡i cÃ³ quyá»n `*.view` hoáº·c `*.manage` chÆ°a.
+- Náº¿u thÃªm chá»©c nÄƒng má»›i, nhá»› cáº­p nháº­t cáº£ quyá»n, route, controller vÃ  menu.
 
-## 11. Luồng mở rộng khi thêm module mới
-Khi thêm 1 module mới, nên làm theo thứ tự:
-1. Tạo migration / model
-2. Tạo controller
-3. Tạo view list / create / edit
-4. Thêm route
-5. Thêm permission mới vào catalog
-6. Seed quyền
-7. Cập nhật menu và kiểm tra hiển thị bằng `@can`
-8. Ghi audit log nếu thao tác quan trọng
+## 11. Luá»“ng má»Ÿ rá»™ng khi thÃªm module má»›i
+Khi thÃªm 1 module má»›i, nÃªn lÃ m theo thá»© tá»±:
+1. Táº¡o migration / model
+2. Táº¡o controller
+3. Táº¡o view list / create / edit
+4. ThÃªm route
+5. ThÃªm permission má»›i vÃ o catalog
+6. Seed quyá»n
+7. Cáº­p nháº­t menu vÃ  kiá»ƒm tra hiá»ƒn thá»‹ báº±ng `@can`
+8. Ghi audit log náº¿u thao tÃ¡c quan trá»ng
 
-## 12. Tài khoản quản trị
-Nên dùng tài khoản `admin` hoặc `super-admin` để thiết lập ban đầu, sau đó phân quyền cho từng người dùng theo nhu cầu.
+## 12. TÃ i khoáº£n quáº£n trá»‹
+NÃªn dÃ¹ng tÃ i khoáº£n `admin` hoáº·c `super-admin` Ä‘á»ƒ thiáº¿t láº­p ban Ä‘áº§u, sau Ä‘Ã³ phÃ¢n quyá»n cho tá»«ng ngÆ°á»i dÃ¹ng theo nhu cáº§u.
+

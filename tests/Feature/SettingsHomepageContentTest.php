@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace Tests\Feature;
 
@@ -22,7 +22,7 @@ class SettingsHomepageContentTest extends TestCase
 
     public function test_public_homepage_only_displays_store_contact_settings(): void
     {
-        $admin = User::query()->where('email', 'admin@kygui.local')->firstOrFail();
+        $admin = User::query()->where('email', 'admin@cohankygui.local')->firstOrFail();
         $this->actingAs($admin);
 
         $response = $this->post(route('settings.payment.update'), [
@@ -62,18 +62,19 @@ class SettingsHomepageContentTest extends TestCase
         $home = $this->get(route('home'));
 
         $home->assertOk();
-        $home->assertSee('Tra cứu tồn kho nhà cung cấp');
-        $home->assertSee('Số điện thoại');
+        $home->assertSee('Tra cá»©u tá»“n kho nhÃ  cung cáº¥p');
+        $home->assertSee('Sá»‘ Ä‘iá»‡n thoáº¡i');
         $home->assertDontSee('TRA CUU NCC');
         $home->assertDontSee('Tra cuu ton kho theo lan ky gui');
         $home->assertDontSee('Thong tin noi bat');
         $home->assertDontSee('Nhan hang truoc 17h');
         $home->assertDontSee('Bao cao hang tuan');
-        $home->assertDontSee('HƯỚNG DẪN NHANH');
-        $home->assertDontSee('NỘI DUNG TRANG CHỦ');
+        $home->assertDontSee('HÆ¯á»šNG DáºªN NHANH');
+        $home->assertDontSee('Ná»˜I DUNG TRANG CHá»¦');
         $home->assertSee('123 Duong ABC, Quan 1, TP HCM');
         $home->assertSee('0909 000 111');
         $home->assertSee('08:00 - 21:30');
         $home->assertSee('href="https://example.com/map"', false);
     }
 }
+

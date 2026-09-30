@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <title>{{ config('app.name', 'HINITHANLYKYGUI') }} - Tra cứu tồn kho ký gửi</title>
+        <title>{{ config('app.name', 'COHAN_KYGUI') }} - Tra cá»©u tá»“n kho kÃ½ gá»­i</title>
 
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=manrope:400,500,600,700,800,900&display=swap" rel="stylesheet" />
@@ -43,8 +43,8 @@
                             HK
                         </div>
                         <div>
-                            <p class="text-xs font-bold uppercase tracking-[0.35em] text-sky-600">HINITHANLYKYGUI</p>
-                            <p class="mt-1 text-sm font-medium text-slate-600">Cổng tra cứu tồn kho dành cho người ký gửi</p>
+                            <p class="text-xs font-bold uppercase tracking-[0.35em] text-sky-600">COHAN_KYGUI</p>
+                            <p class="mt-1 text-sm font-medium text-slate-600">Cá»•ng tra cá»©u tá»“n kho dÃ nh cho ngÆ°á»i kÃ½ gá»­i</p>
                         </div>
                     </div>
 
@@ -54,7 +54,7 @@
                                 href="{{ route('dashboard') }}"
                                 class="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
                             >
-                                Vào Dashboard
+                                VÃ o Dashboard
                             </a>
                         </div>
                     @endauth
@@ -65,15 +65,15 @@
                 <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
                     <section>
                         <article id="tra-cuu" class="scroll-mt-24 rounded-[2rem] border border-slate-200 bg-slate-950 p-6 text-white shadow-[0_20px_60px_rgba(15,23,42,0.18)] sm:p-8 lg:p-10">
-                            <p class="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">TRA CỨU TỒN KHO</p>
-                            <h1 class="mt-4 text-3xl font-black text-white sm:text-4xl">Tra cứu tồn kho nhà cung cấp</h1>
+                            <p class="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">TRA Cá»¨U Tá»’N KHO</p>
+                            <h1 class="mt-4 text-3xl font-black text-white sm:text-4xl">Tra cá»©u tá»“n kho nhÃ  cung cáº¥p</h1>
                             <p class="mt-3 max-w-3xl text-sm leading-7 text-slate-200 sm:text-base">
-                                Nhập số điện thoại đã đăng ký để xem sản phẩm còn tồn theo từng lần ký gửi của bạn.
+                                Nháº­p sá»‘ Ä‘iá»‡n thoáº¡i Ä‘Ã£ Ä‘Äƒng kÃ½ Ä‘á»ƒ xem sáº£n pháº©m cÃ²n tá»“n theo tá»«ng láº§n kÃ½ gá»­i cá»§a báº¡n.
                             </p>
 
                             <form method="GET" action="{{ route('home') }}" class="mt-7 space-y-4">
                                 <div>
-                                    <label for="phone" class="mb-2 block text-sm font-semibold text-white">Số điện thoại</label>
+                                    <label for="phone" class="mb-2 block text-sm font-semibold text-white">Sá»‘ Ä‘iá»‡n thoáº¡i</label>
                                     <div class="flex flex-col gap-3 sm:flex-row">
                                         <input
                                             id="phone"
@@ -82,7 +82,7 @@
                                             value="{{ $phone }}"
                                             inputmode="numeric"
                                             autocomplete="tel"
-                                            placeholder="Nhập số điện thoại của bạn"
+                                            placeholder="Nháº­p sá»‘ Ä‘iá»‡n thoáº¡i cá»§a báº¡n"
                                             class="min-w-0 flex-1 rounded-2xl border border-white/10 bg-white/95 px-4 py-3 text-sm font-medium text-slate-950 shadow-sm focus:border-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-300/20"
                                         >
                                         <button
@@ -92,7 +92,7 @@
                                             <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                                 <path fill-rule="evenodd" d="M9 4a5 5 0 103.292 8.707l3.5 3.5a1 1 0 001.415-1.414l-3.5-3.5A5 5 0 009 4zm-3 5a3 3 0 116 0 3 3 0 01-6 0z" clip-rule="evenodd" />
                                             </svg>
-                                            Tra cứu
+                                            Tra cá»©u
                                         </button>
                                     </div>
                                 </div>
@@ -103,7 +103,7 @@
                                             href="{{ route('home') }}"
                                             class="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
                                         >
-                                            Xóa lọc
+                                            XÃ³a lá»c
                                         </a>
                                     @endif
                                 </div>
@@ -122,18 +122,18 @@
                         <section class="mt-6 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)] sm:p-8">
                             <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                                 <div class="max-w-3xl">
-                                    <p class="text-xs font-bold uppercase tracking-[0.35em] text-emerald-600">KẾT QUẢ TRA CỨU</p>
+                                    <p class="text-xs font-bold uppercase tracking-[0.35em] text-emerald-600">Káº¾T QUáº¢ TRA Cá»¨U</p>
                                     <h2 class="mt-3 text-3xl font-black tracking-tight text-slate-950">{{ $supplier->name }}</h2>
                                     @if ($supplier->phone)
                                         <div class="mt-3 flex flex-wrap items-center gap-3">
                                             <span class="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700">
-                                                SĐT: {{ $supplier->phone }}
+                                                SÄT: {{ $supplier->phone }}
                                             </span>
                                             <a
                                                 href="tel:{{ preg_replace('/\D+/', '', $supplier->phone) }}"
                                                 class="inline-flex items-center justify-center rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-600"
                                             >
-                                                Gọi ngay
+                                                Gá»i ngay
                                             </a>
                                         </div>
                                     @endif
@@ -145,15 +145,15 @@
                                     <article class="overflow-hidden rounded-[1.5rem] border border-slate-200">
                                         <div class="flex flex-col gap-3 bg-slate-50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                                             <div>
-                                                <h3 class="text-lg font-black text-slate-950">Lần ký gửi {{ $inventorySummary['round'] }}</h3>
-                                                <p class="mt-1 text-sm text-slate-600">Ngày gửi: {{ $inventorySummary['sent_date_label'] }}</p>
+                                                <h3 class="text-lg font-black text-slate-950">Láº§n kÃ½ gá»­i {{ $inventorySummary['round'] }}</h3>
+                                                <p class="mt-1 text-sm text-slate-600">NgÃ y gá»­i: {{ $inventorySummary['sent_date_label'] }}</p>
                                             </div>
                                             <div class="flex flex-wrap gap-2">
                                                 <span class="inline-flex rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-700 ring-1 ring-slate-200">
-                                                    {{ number_format($inventorySummary['product_count']) }} mặt hàng
+                                                    {{ number_format($inventorySummary['product_count']) }} máº·t hÃ ng
                                                 </span>
                                                 <span class="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700">
-                                                    Tồn kho: {{ number_format($inventorySummary['stock_quantity']) }}
+                                                    Tá»“n kho: {{ number_format($inventorySummary['stock_quantity']) }}
                                                 </span>
                                             </div>
                                         </div>
@@ -163,9 +163,9 @@
                                                 <table class="min-w-full divide-y divide-slate-200 text-sm">
                                                     <thead class="bg-white text-left text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
                                                         <tr>
-                                                            <th class="px-4 py-3">Mã hàng</th>
-                                                            <th class="px-4 py-3">Sản phẩm</th>
-                                                            <th class="px-4 py-3 text-right">Tồn kho</th>
+                                                            <th class="px-4 py-3">MÃ£ hÃ ng</th>
+                                                            <th class="px-4 py-3">Sáº£n pháº©m</th>
+                                                            <th class="px-4 py-3 text-right">Tá»“n kho</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody class="divide-y divide-slate-100 bg-white">
@@ -180,7 +180,7 @@
                                                 </table>
                                             </div>
                                         @else
-                                            <p class="bg-white px-5 py-5 text-sm font-medium text-slate-500">Lần ký gửi này hiện không còn sản phẩm tồn kho.</p>
+                                            <p class="bg-white px-5 py-5 text-sm font-medium text-slate-500">Láº§n kÃ½ gá»­i nÃ y hiá»‡n khÃ´ng cÃ²n sáº£n pháº©m tá»“n kho.</p>
                                         @endif
                                     </article>
                                 @endforeach
@@ -188,18 +188,18 @@
                         </section>
                     @elseif ($supplier)
                         <section class="mt-6 rounded-[2rem] border border-amber-200 bg-amber-50 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)] sm:p-8">
-                            <p class="text-xs font-bold uppercase tracking-[0.35em] text-amber-700">CHƯA CÓ HÀNG KÝ GỬI</p>
-                            <h2 class="mt-3 text-2xl font-black text-slate-950">{{ $supplier->name }} chưa có dữ liệu tồn kho</h2>
+                            <p class="text-xs font-bold uppercase tracking-[0.35em] text-amber-700">CHÆ¯A CÃ“ HÃ€NG KÃ Gá»¬I</p>
+                            <h2 class="mt-3 text-2xl font-black text-slate-950">{{ $supplier->name }} chÆ°a cÃ³ dá»¯ liá»‡u tá»“n kho</h2>
                             <p class="mt-2 max-w-3xl text-sm leading-7 text-slate-700">
-                                Chưa ghi nhận lần ký gửi nào cho số điện thoại này. Vui lòng liên hệ cửa hàng nếu bạn cần kiểm tra thêm.
+                                ChÆ°a ghi nháº­n láº§n kÃ½ gá»­i nÃ o cho sá»‘ Ä‘iá»‡n thoáº¡i nÃ y. Vui lÃ²ng liÃªn há»‡ cá»­a hÃ ng náº¿u báº¡n cáº§n kiá»ƒm tra thÃªm.
                             </p>
                         </section>
                     @elseif ($searchPerformed)
                         <section class="mt-6 rounded-[2rem] border border-rose-200 bg-rose-50 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)] sm:p-8">
-                            <p class="text-xs font-bold uppercase tracking-[0.35em] text-rose-600">CHƯA TÌM THẤY</p>
-                            <h2 class="mt-3 text-2xl font-black text-slate-950">Không có dữ liệu phù hợp để hiển thị</h2>
+                            <p class="text-xs font-bold uppercase tracking-[0.35em] text-rose-600">CHÆ¯A TÃŒM THáº¤Y</p>
+                            <h2 class="mt-3 text-2xl font-black text-slate-950">KhÃ´ng cÃ³ dá»¯ liá»‡u phÃ¹ há»£p Ä‘á»ƒ hiá»ƒn thá»‹</h2>
                             <p class="mt-2 max-w-3xl text-sm leading-7 text-slate-700">
-                                Vui lòng kiểm tra lại số điện thoại đã đăng ký. Nếu chưa thấy thông tin của mình, hãy liên hệ cửa hàng để được hỗ trợ tra cứu.
+                                Vui lÃ²ng kiá»ƒm tra láº¡i sá»‘ Ä‘iá»‡n thoáº¡i Ä‘Ã£ Ä‘Äƒng kÃ½. Náº¿u chÆ°a tháº¥y thÃ´ng tin cá»§a mÃ¬nh, hÃ£y liÃªn há»‡ cá»­a hÃ ng Ä‘á»ƒ Ä‘Æ°á»£c há»— trá»£ tra cá»©u.
                             </p>
                         </section>
                     @endif
@@ -207,8 +207,8 @@
                     <section id="dia-chi" class="scroll-mt-24 mt-6 rounded-[2rem] border border-slate-200 bg-slate-950 p-6 text-white shadow-[0_20px_60px_rgba(15,23,42,0.18)] sm:p-8">
                         <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
                             <div class="max-w-3xl">
-                                <p class="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">ĐỊA CHỈ</p>
-                                <h2 class="mt-4 text-2xl font-black text-white">Thông tin liên hệ và vị trí cửa hàng</h2>
+                                <p class="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">Äá»ŠA CHá»ˆ</p>
+                                <h2 class="mt-4 text-2xl font-black text-white">ThÃ´ng tin liÃªn há»‡ vÃ  vá»‹ trÃ­ cá»­a hÃ ng</h2>
                                 <p class="mt-3 text-sm leading-7 text-slate-200">
                                     {{ $portalAddress }}
                                 </p>
@@ -218,7 +218,7 @@
                                         <p class="mt-2 text-sm font-semibold text-white">{{ $portalHotline }}</p>
                                     </div>
                                     <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
-                                        <p class="text-xs font-bold uppercase tracking-[0.25em] text-slate-300">Giờ mở cửa</p>
+                                        <p class="text-xs font-bold uppercase tracking-[0.25em] text-slate-300">Giá» má»Ÿ cá»­a</p>
                                         <p class="mt-2 text-sm font-semibold text-white">{{ $portalHours }}</p>
                                     </div>
                                 </div>
@@ -232,11 +232,11 @@
                                         rel="noopener"
                                         class="inline-flex items-center justify-center rounded-full bg-cyan-300 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200"
                                     >
-                                        Xem bản đồ
+                                        Xem báº£n Ä‘á»“
                                     </a>
                                 @endif
                                 <a href="#home" class="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10">
-                                    Quay lên đầu trang
+                                    Quay lÃªn Ä‘áº§u trang
                                 </a>
                             </div>
                         </div>
@@ -255,15 +255,16 @@
                     <svg class="h-5 w-5 text-slate-900" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                         <path fill-rule="evenodd" d="M9 4a5 5 0 103.292 8.707l3.5 3.5a1 1 0 001.415-1.414l-3.5-3.5A5 5 0 009 4zm-3 5a3 3 0 116 0 3 3 0 01-6 0z" clip-rule="evenodd" />
                     </svg>
-                    <span>Tra cứu</span>
+                    <span>Tra cá»©u</span>
                 </a>
                 <a href="#dia-chi" class="flex flex-col items-center justify-center gap-1 rounded-2xl px-2 py-3 text-xs font-bold text-slate-700 transition hover:bg-slate-50">
                     <svg class="h-5 w-5 text-slate-900" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                         <path fill-rule="evenodd" d="M9.5 2a6.5 6.5 0 00-6.5 6.5c0 4.2 6.5 9.5 6.5 9.5s6.5-5.3 6.5-9.5A6.5 6.5 0 009.5 2zm0 9a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" clip-rule="evenodd" />
                     </svg>
-                    <span>Địa chỉ</span>
+                    <span>Äá»‹a chá»‰</span>
                 </a>
             </nav>
         </div>
     </body>
 </html>
+

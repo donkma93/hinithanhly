@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace Tests\Feature;
 
@@ -40,7 +40,7 @@ class SystemErrorLogTest extends TestCase
 
     public function test_admin_can_open_system_error_log_screen(): void
     {
-        $user = User::query()->where('email', 'admin@kygui.local')->firstOrFail();
+        $user = User::query()->where('email', 'admin@cohankygui.local')->firstOrFail();
         $this->actingAs($user);
 
         SystemErrorLog::query()->create([
@@ -67,3 +67,4 @@ class SystemErrorLogTest extends TestCase
         $response->assertSee('Stored for screen test');
     }
 }
+

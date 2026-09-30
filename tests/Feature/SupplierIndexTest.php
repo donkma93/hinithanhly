@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace Tests\Feature;
 
@@ -23,7 +23,7 @@ class SupplierIndexTest extends TestCase
 
     public function test_supplier_index_shows_clickable_phone_number_in_list(): void
     {
-        $user = User::query()->where('email', 'admin@kygui.local')->firstOrFail();
+        $user = User::query()->where('email', 'admin@cohankygui.local')->firstOrFail();
         $this->actingAs($user);
 
         Supplier::create([
@@ -40,14 +40,14 @@ class SupplierIndexTest extends TestCase
         $response = $this->get(route('suppliers.index'));
 
         $response->assertOk();
-        $response->assertSee('Số điện thoại');
+        $response->assertSee('Sá»‘ Ä‘iá»‡n thoáº¡i');
         $response->assertSee('0901 234 567');
         $response->assertSee('href="tel:0901234567"', false);
     }
 
     public function test_supplier_index_filters_by_exact_phone_number(): void
     {
-        $user = User::query()->where('email', 'admin@kygui.local')->firstOrFail();
+        $user = User::query()->where('email', 'admin@cohankygui.local')->firstOrFail();
         $this->actingAs($user);
 
         Supplier::create([
@@ -87,7 +87,7 @@ class SupplierIndexTest extends TestCase
 
     public function test_supplier_index_filters_by_partial_name_and_ignores_responsible_name_filter(): void
     {
-        $user = User::query()->where('email', 'admin@kygui.local')->firstOrFail();
+        $user = User::query()->where('email', 'admin@cohankygui.local')->firstOrFail();
         $this->actingAs($user);
 
         Supplier::create([
@@ -125,3 +125,4 @@ class SupplierIndexTest extends TestCase
         $responsibleResponse->assertSee('NCC MAI VANG');
     }
 }
+
