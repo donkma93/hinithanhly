@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ config('app.name', 'cohankygui') }} | Bán hàng</title>
+    <title>{{ config('app.name', 'COHANKYGUI') }} | Bán hàng</title>
 
     @include('layouts.partials.no-build-assets')
 </head>

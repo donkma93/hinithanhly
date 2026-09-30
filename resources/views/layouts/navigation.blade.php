@@ -13,7 +13,7 @@
         <div class="flex h-16 items-center gap-3 border-b border-white/10 px-6">
             <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 text-sm font-bold">CK</div>
             <div>
-                <p class="text-sm font-semibold">{{ config('app.name', 'cohankygui') }}</p>
+                <p class="text-sm font-semibold">{{ config('app.name', 'COHANKYGUI') }}</p>
                 <p class="text-xs text-slate-400">Quản lý ký gửi</p>
             </div>
         </div>

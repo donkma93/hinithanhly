@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ isset($title) && filled($title) ? trim($title) . ' - ' : (request()->routeIs('dashboard') ? 'Bảng điều khiển - ' : '') }}{{ config('app.name', 'cohankygui') }}</title>
+        <title>{{ isset($title) && filled($title) ? trim($title) . ' - ' : (request()->routeIs('dashboard') ? 'Bảng điều khiển - ' : '') }}{{ config('app.name', 'COHANKYGUI') }}</title>
 
         @include('layouts.partials.no-build-assets')
         @stack('head')
@@ -24,7 +24,7 @@
                     </button>
 
                     <div class="flex-1">
-                        <p class="text-sm font-medium text-slate-500">{{ config('app.name', 'cohankygui') }}</p>
+                        <p class="text-sm font-medium text-slate-500">{{ config('app.name', 'COHANKYGUI') }}</p>
                         <p class="text-base font-semibold text-slate-900">{{ auth()->user()?->name }}</p>
                     </div>
 

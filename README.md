@@ -1,4 +1,4 @@
-# cohankygui - Project Guide
+# COHANKYGUI - Project Guide
 
 ## 1. Giới thiệu
 Đây là hệ thống quản lý hàng ký gửi được xây dựng bằng Laravel 10, giao diện Blade + Tailwind, xác thực bằng Breeze, và phân quyền bằng Spatie Permission.

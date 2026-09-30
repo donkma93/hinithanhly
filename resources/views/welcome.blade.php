@@ -4,7 +4,7 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <title>{{ config('app.name', 'cohankygui') }} - Tra cứu tồn kho ký gửi</title>
+        <title>{{ config('app.name', 'COHANKYGUI') }} - Tra cứu tồn kho ký gửi</title>
 
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=manrope:400,500,600,700,800,900&display=swap" rel="stylesheet" />
@@ -43,7 +43,7 @@
                             CK
                         </div>
                         <div>
-                            <p class="text-xs font-bold uppercase tracking-[0.35em] text-sky-600">cohankygui</p>
+                            <p class="text-xs font-bold uppercase tracking-[0.35em] text-sky-600">COHANKYGUI</p>
                             <p class="mt-1 text-sm font-medium text-slate-600">Cổng tra cứu tồn kho dành cho người ký gửi</p>
                         </div>
                     </div>
