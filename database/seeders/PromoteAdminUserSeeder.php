@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 namespace Database\Seeders;
 
@@ -16,10 +16,9 @@ class PromoteAdminUserSeeder extends Seeder
 
         if ($admin) {
             $admin->syncRoles(['super-admin']);
-            $this->command->info('âœ“ Admin user promoted to super-admin role');
+            $this->command->info('✓ Admin user promoted to super-admin role');
         } else {
-            $this->command->error('âœ— Admin user not found');
+            $this->command->error('✗ Admin user not found');
         }
     }
 }
-

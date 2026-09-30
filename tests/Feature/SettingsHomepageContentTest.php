@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 namespace Tests\Feature;
 
@@ -62,19 +62,18 @@ class SettingsHomepageContentTest extends TestCase
         $home = $this->get(route('home'));
 
         $home->assertOk();
-        $home->assertSee('Tra cá»©u tá»“n kho nhÃ  cung cáº¥p');
-        $home->assertSee('Sá»‘ Ä‘iá»‡n thoáº¡i');
+        $home->assertSee('Tra cứu tồn kho nhà cung cấp');
+        $home->assertSee('Số điện thoại');
         $home->assertDontSee('TRA CUU NCC');
         $home->assertDontSee('Tra cuu ton kho theo lan ky gui');
         $home->assertDontSee('Thong tin noi bat');
         $home->assertDontSee('Nhan hang truoc 17h');
         $home->assertDontSee('Bao cao hang tuan');
-        $home->assertDontSee('HÆ¯á»šNG DáºªN NHANH');
-        $home->assertDontSee('Ná»˜I DUNG TRANG CHá»¦');
+        $home->assertDontSee('HƯỚNG DẪN NHANH');
+        $home->assertDontSee('NỘI DUNG TRANG CHỦ');
         $home->assertSee('123 Duong ABC, Quan 1, TP HCM');
         $home->assertSee('0909 000 111');
         $home->assertSee('08:00 - 21:30');
         $home->assertSee('href="https://example.com/map"', false);
     }
 }
-

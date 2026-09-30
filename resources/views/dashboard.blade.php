@@ -5,7 +5,15 @@
                 <h2 class="text-2xl font-semibold tracking-tight text-gray-900">
                     {{ __('Bảng điều khiển') }}
                 </h2>
-                <p class="text-sm text-gray-500">{{ __('Vai trò hiện tại: ') }}{{ $activeRole }}</p>
+                @php
+                    $roleMap = [
+                        'super-admin' => 'Quản trị cấp cao',
+                        'admin' => 'Quản trị viên',
+                        'staff' => 'Nhân viên',
+                    ];
+                    $displayRole = $roleMap[$activeRole] ?? $activeRole;
+                @endphp
+                <p class="text-sm text-gray-500">{{ __('Vai trò hiện tại: ') }}{{ $displayRole }}</p>
             </div>
             <div class="inline-flex items-center rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-sm">
                 {{ __('Hệ thống ký gửi') }}

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 namespace Tests\Feature;
 
@@ -40,7 +40,7 @@ class SupplierIndexTest extends TestCase
         $response = $this->get(route('suppliers.index'));
 
         $response->assertOk();
-        $response->assertSee('Sá»‘ Ä‘iá»‡n thoáº¡i');
+        $response->assertSee('Số điện thoại');
         $response->assertSee('0901 234 567');
         $response->assertSee('href="tel:0901234567"', false);
     }
@@ -125,4 +125,3 @@ class SupplierIndexTest extends TestCase
         $responsibleResponse->assertSee('NCC MAI VANG');
     }
 }
-

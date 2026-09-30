@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 namespace Tests\Feature;
 
@@ -63,8 +63,7 @@ class SystemErrorLogTest extends TestCase
         $response = $this->get(route('system-logs.index'));
 
         $response->assertOk();
-        $response->assertSee('Log he thong');
+        $response->assertSee('Log hệ thống');
         $response->assertSee('Stored for screen test');
     }
 }
-

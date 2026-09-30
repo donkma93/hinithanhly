@@ -1,11 +1,11 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ config('app.name', 'COHAN_KYGUI') }}</title>
+        <title>{{ config('app.name', 'cohankygui') }}</title>
 
         @include('layouts.partials.no-build-assets')
         @stack('head')
@@ -24,7 +24,7 @@
                     </button>
 
                     <div class="flex-1">
-                        <p class="text-sm font-medium text-slate-500">{{ config('app.name', 'COHAN_KYGUI') }}</p>
+                        <p class="text-sm font-medium text-slate-500">{{ config('app.name', 'cohankygui') }}</p>
                         <p class="text-base font-semibold text-slate-900">{{ auth()->user()?->name }}</p>
                     </div>
 
@@ -72,4 +72,3 @@
         @stack('scripts')
     </body>
 </html>
-
