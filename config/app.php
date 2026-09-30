@@ -15,7 +15,15 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'cohankygui'),
+    'name' => (function () {
+        $name = (string) env('APP_NAME', 'cohankygui');
+        $normalized = strtoupper(str_replace(['_', '-'], '', $name));
+        if ($normalized === '' || $normalized === 'HINITHANLYKYGUI' || $normalized === 'HINITHANHLYKYGUI') {
+            return 'cohankygui';
+        }
+
+        return $name;
+    })(),
 
     /*
     |--------------------------------------------------------------------------

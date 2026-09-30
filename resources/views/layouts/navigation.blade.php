@@ -11,7 +11,7 @@
 <aside class="fixed inset-y-0 left-0 z-50 w-72 -translate-x-full transform border-r border-slate-800 bg-slate-950 text-white transition-transform duration-200 lg:translate-x-0" :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
     <div class="flex h-full flex-col">
         <div class="flex h-16 items-center gap-3 border-b border-white/10 px-6">
-            <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 text-sm font-bold">K</div>
+            <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 text-sm font-bold">CK</div>
             <div>
                 <p class="text-sm font-semibold">{{ config('app.name', 'cohankygui') }}</p>
                 <p class="text-xs text-slate-400">Quản lý ký gửi</p>
