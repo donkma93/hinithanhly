@@ -14,7 +14,8 @@ trait HasPublicId
             }
 
             $model->public_id = self::formatPublicId($model->getKey());
-            DB::table($model->getTable())
+            $model->getConnection()
+                ->table($model->getTable())
                 ->where($model->getKeyName(), $model->getKey())
                 ->update(['public_id' => $model->public_id]);
         });

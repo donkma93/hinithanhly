@@ -76,7 +76,7 @@ class ProductController extends Controller
             })
         );
 
-        $suppliers = Supplier::query()->orderBy('name')->get(['id', 'public_id', 'name', 'type']);
+        $suppliers = Supplier::query()->orderByDesc('created_at')->orderByDesc('id')->get(['id', 'public_id', 'name', 'type']);
 
         $consignmentExpirySummary = $this->resolveConsignmentExpirySummary();
 
@@ -168,15 +168,19 @@ class ProductController extends Controller
                 break;
         }
 
+        $grammar = DB::connection()->getQueryGrammar();
+        $productsReturnedAt = $grammar->wrap('products.returned_at');
+        $consignmentSentDate = $grammar->wrap('consignment_notes.sent_date');
+
         $products = $products
-            ->orderByRaw('CASE WHEN products.returned_at IS NOT NULL THEN 1 ELSE 0 END')
-            ->orderByRaw('CASE WHEN consignment_notes.sent_date IS NULL THEN 1 ELSE 0 END')
+            ->orderByRaw("CASE WHEN {$productsReturnedAt} IS NOT NULL THEN 1 ELSE 0 END")
+            ->orderByRaw("CASE WHEN {$consignmentSentDate} IS NULL THEN 1 ELSE 0 END")
             ->orderBy('consignment_notes.sent_date')
             ->orderByDesc('products.created_at')
             ->paginate($perPage)
             ->withQueryString();
 
-        $suppliers = Supplier::query()->orderBy('name')->get(['id', 'public_id', 'name', 'type']);
+        $suppliers = Supplier::query()->orderByDesc('created_at')->orderByDesc('id')->get(['id', 'public_id', 'name', 'type']);
 
         return view('products.expiry', [
             'products' => $products,
@@ -295,7 +299,7 @@ class ProductController extends Controller
         return view('products.edit', [
             'product' => $product,
             'categories' => Category::query()->withTrashed()->orderBy('name')->get(['id', 'public_id', 'name']),
-            'suppliers' => Supplier::query()->withTrashed()->orderBy('name')->get(['id', 'public_id', 'name', 'type']),
+            'suppliers' => Supplier::query()->withTrashed()->orderByDesc('created_at')->orderByDesc('id')->get(['id', 'public_id', 'name', 'type']),
             'consignmentOptions' => $this->buildConsignmentOptions(
                 ConsignmentNote::query()->withTrashed()
                     ->whereHas('supplier', fn ($query) => $query->whereIn('type', Supplier::MANUAL_CONSIGNMENT_TYPES))

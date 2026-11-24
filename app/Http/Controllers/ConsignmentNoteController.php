@@ -60,12 +60,14 @@ class ConsignmentNoteController extends Controller
             'consignments' => $consignments,
             'suppliers' => Supplier::query()
                 ->whereIn('type', Supplier::MANUAL_CONSIGNMENT_TYPES)
-                ->orderBy('name')
+                ->orderByDesc('created_at')
+                ->orderByDesc('id')
                 ->get(['id', 'public_id', 'name', 'type']),
             'filterSuppliers' => Supplier::query()
                 ->whereIn('type', Supplier::MANUAL_CONSIGNMENT_TYPES)
                 ->withTrashed()
-                ->orderBy('name')
+                ->orderByDesc('created_at')
+                ->orderByDesc('id')
                 ->get(['id', 'public_id', 'name', 'type', 'deleted_at']),
             'filterSupplierId' => $filterSupplierId,
         ]);
@@ -113,7 +115,8 @@ class ConsignmentNoteController extends Controller
             'consignment' => $consignment,
             'suppliers' => Supplier::query()->withTrashed()
                 ->whereIn('type', Supplier::MANUAL_CONSIGNMENT_TYPES)
-                ->orderBy('name')
+                ->orderByDesc('created_at')
+                ->orderByDesc('id')
                 ->get(['id', 'public_id', 'name', 'type']),
         ]);
     }

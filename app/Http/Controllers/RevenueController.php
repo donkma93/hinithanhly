@@ -7,11 +7,12 @@ use App\Models\Sale;
 use App\Models\SaleItem;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class RevenueController extends Controller
 {
-    private const REPORT_TIMEZONE = 'Asia/Bangkok';
+    private const REPORT_TIMEZONE = 'Asia/Ho_Chi_Minh';
 
     public function __construct()
     {
@@ -21,14 +22,15 @@ class RevenueController extends Controller
     public function index(Request $request): View
     {
         $perPage = $this->resolvePerPage($request);
+        $appTimezone = (string) config('app.timezone', self::REPORT_TIMEZONE);
         $startDateLocal = $request->filled('from')
             ? Carbon::parse((string) $request->input('from'), self::REPORT_TIMEZONE)->startOfDay()
             : now(self::REPORT_TIMEZONE)->startOfMonth();
         $endDateLocal = $request->filled('to')
             ? Carbon::parse((string) $request->input('to'), self::REPORT_TIMEZONE)->endOfDay()
             : now(self::REPORT_TIMEZONE)->endOfDay();
-        $startDate = $startDateLocal->copy()->utc();
-        $endDate = $endDateLocal->copy()->utc();
+        $startDate = $startDateLocal->copy()->timezone($appTimezone);
+        $endDate = $endDateLocal->copy()->timezone($appTimezone);
         $supplierType = trim((string) $request->input('supplier_type'));
         $allowedRevenueSupplierTypes = collect(Supplier::TYPES)
             ->except('ncc_nhieu_san_pham')
@@ -53,7 +55,8 @@ class RevenueController extends Controller
         $suppliersForType = $hasSupplierTypeFilter
             ? Supplier::query()
                 ->where('type', $supplierType)
-                ->orderBy('name')
+                ->orderByDesc('created_at')
+                ->orderByDesc('id')
                 ->get(['id', 'public_id', 'name', 'type'])
             : collect();
 
@@ -145,6 +148,16 @@ class RevenueController extends Controller
                 ->withQueryString();
         }
 
+        $grammar = DB::connection()->getQueryGrammar();
+        $supplierTypeCol = $grammar->wrap('suppliers.type');
+        $supplierIdCol = $grammar->wrap('suppliers.id');
+        $supplierPublicIdCol = $grammar->wrap('suppliers.public_id');
+        $supplierNameCol = $grammar->wrap('suppliers.name');
+        $saleIdCol = $grammar->wrap('sales.id');
+        $salePaymentMethodCol = $grammar->wrap('sales.payment_method');
+        $saleItemLineTotalCol = $grammar->wrap('sale_items.line_total');
+        $saleItemQuantityCol = $grammar->wrap('sale_items.quantity');
+
         $supplierBreakdownRows = SaleItem::query()
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
             ->join('products', 'sale_items.product_id', '=', 'products.id')
@@ -161,17 +174,17 @@ class RevenueController extends Controller
             ->groupBy('suppliers.type', 'suppliers.id', 'suppliers.public_id', 'suppliers.name')
             ->orderBy('suppliers.type')
             ->orderBy('suppliers.name')
-            ->selectRaw('
-                suppliers.type as supplier_type,
-                suppliers.id as supplier_id,
-                suppliers.public_id as supplier_public_id,
-                suppliers.name as supplier_name,
-                COUNT(DISTINCT sales.id) as total_sales,
-                SUM(sale_items.line_total) as total_revenue,
-                SUM(CASE WHEN sales.payment_method = "cash" THEN sale_items.line_total ELSE 0 END) as cash_revenue,
-                SUM(CASE WHEN sales.payment_method = "transfer" THEN sale_items.line_total ELSE 0 END) as transfer_revenue,
-                SUM(sale_items.quantity) as items_count
-            ')
+            ->selectRaw("
+                {$supplierTypeCol} as supplier_type,
+                {$supplierIdCol} as supplier_id,
+                {$supplierPublicIdCol} as supplier_public_id,
+                {$supplierNameCol} as supplier_name,
+                COUNT(DISTINCT {$saleIdCol}) as total_sales,
+                SUM({$saleItemLineTotalCol}) as total_revenue,
+                SUM(CASE WHEN {$salePaymentMethodCol} = 'cash' THEN {$saleItemLineTotalCol} ELSE 0 END) as cash_revenue,
+                SUM(CASE WHEN {$salePaymentMethodCol} = 'transfer' THEN {$saleItemLineTotalCol} ELSE 0 END) as transfer_revenue,
+                SUM({$saleItemQuantityCol}) as items_count
+            ")
             ->get();
 
         $supplierTypeSummaries = $supplierBreakdownRows

@@ -7,15 +7,28 @@ return new class extends Migration
 {
     public function up(): void
     {
-        foreach (['categories', 'suppliers', 'consignment_notes', 'products', 'users'] as $table) {
-            DB::statement("update {$table} set public_id = lpad(cast(id as char), 6, '0')");
-        }
+        $this->padPublicIds(6);
     }
 
     public function down(): void
     {
+        $this->padPublicIds(26);
+    }
+
+    private function padPublicIds(int $length): void
+    {
         foreach (['categories', 'suppliers', 'consignment_notes', 'products', 'users'] as $table) {
-            DB::statement("update {$table} set public_id = lpad(cast(id as char), 26, '0')");
+            DB::table($table)
+                ->orderBy('id')
+                ->chunkById(100, function ($rows) use ($table, $length): void {
+                    foreach ($rows as $row) {
+                        DB::table($table)
+                            ->where('id', $row->id)
+                            ->update([
+                                'public_id' => str_pad((string) $row->id, $length, '0', STR_PAD_LEFT),
+                            ]);
+                    }
+                });
         }
     }
 };

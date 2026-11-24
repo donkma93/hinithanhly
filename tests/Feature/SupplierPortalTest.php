@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Models\Category;
 use App\Models\ConsignmentNote;
 use App\Models\Product;
+use App\Models\Sale;
+use App\Models\SaleItem;
 use App\Models\Supplier;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -15,8 +17,16 @@ class SupplierPortalTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_supplier_portal_searches_by_phone_and_shows_inventory_by_consignment_round_without_prices(): void
+    protected function tearDown(): void
     {
+        Carbon::setTestNow();
+        parent::tearDown();
+    }
+
+    public function test_supplier_portal_searches_by_phone_and_shows_revenue_expiry_and_storage_days(): void
+    {
+        Carbon::setTestNow(Carbon::create(2026, 6, 20, 10, 0, 0, 'Asia/Ho_Chi_Minh'));
+
         $user = User::create([
             'name' => 'Nhân viên tra cứu',
             'email' => 'portal@example.com',
@@ -51,7 +61,7 @@ class SupplierPortalTest extends TestCase
         $mayConsignment = ConsignmentNote::create([
             'responsible_user_id' => $user->id,
             'supplier_id' => $supplier->id,
-            'sent_date' => Carbon::create(2026, 5, 5)->toDateString(),
+            'sent_date' => Carbon::create(2026, 5, 1)->toDateString(),
             'quantity' => 1,
             'notes' => null,
         ]);
@@ -64,7 +74,7 @@ class SupplierPortalTest extends TestCase
             'notes' => null,
         ]);
 
-        Product::create([
+        $shirt = Product::create([
             'consignment_note_id' => $consignment->id,
             'supplier_id' => $supplier->id,
             'category_id' => $category->id,
@@ -81,14 +91,14 @@ class SupplierPortalTest extends TestCase
             'supplier_id' => $supplier->id,
             'category_id' => $category->id,
             'created_by_id' => $user->id,
-            'name' => 'Váy đã hết',
+            'name' => 'Váy đã hết chưa bán',
             'sale_price' => 120000,
             'quantity' => 0,
             'image_path' => null,
             'description' => null,
         ]);
 
-        Product::create([
+        $pants = Product::create([
             'consignment_note_id' => $secondJuneConsignment->id,
             'supplier_id' => $supplier->id,
             'category_id' => $category->id,
@@ -98,6 +108,34 @@ class SupplierPortalTest extends TestCase
             'quantity' => 2,
             'image_path' => null,
             'description' => null,
+        ]);
+
+        $sale = Sale::create([
+            'user_id' => $user->id,
+            'payment_method' => 'cash',
+            'total_amount' => 610000,
+            'items_count' => 2,
+            'completed_at' => Carbon::now(),
+        ]);
+
+        SaleItem::create([
+            'sale_id' => $sale->id,
+            'product_id' => $shirt->id,
+            'product_public_id' => (string) $shirt->public_id,
+            'product_name' => $shirt->name,
+            'quantity' => 2,
+            'unit_price' => 180000,
+            'line_total' => 360000,
+        ]);
+
+        SaleItem::create([
+            'sale_id' => $sale->id,
+            'product_id' => $pants->id,
+            'product_public_id' => (string) $pants->public_id,
+            'product_name' => $pants->name,
+            'quantity' => 1,
+            'unit_price' => 250000,
+            'line_total' => 250000,
         ]);
 
         $response = $this->get(route('home', [
@@ -113,19 +151,24 @@ class SupplierPortalTest extends TestCase
         $response->assertSee('Gọi ngay');
         $response->assertSee('Lần ký gửi 2');
         $response->assertSee('Lần ký gửi 1');
-        $response->assertSee('05/05/2026');
+        $response->assertSee('01/05/2026');
         $response->assertSee('05/06/2026 - 12/06/2026');
-        $response->assertSee('Áo còn tồn');
-        $response->assertSee('Quần còn tồn');
-        $response->assertSee('2 mặt hàng');
-        $response->assertSee('Tồn kho: 5');
-        $response->assertSee('Lần ký gửi này hiện không còn sản phẩm tồn kho.');
-        $response->assertDontSee('Váy đã hết');
-        $response->assertDontSee('180.000');
-        $response->assertDontSee('120.000');
-        $response->assertDontSee('250.000');
-        $response->assertDontSee('Trạng thái thanh toán');
-        $response->assertDontSee('Số tiền');
+        // Aggregate metrics only: sold quantity, stock quantity, revenue, storage, expiry
+        $response->assertSee('SL đã bán');
+        $response->assertSee('SL tồn');
+        $response->assertSee('610.000 ₫');
+        $response->assertSee('15 ngày');
+        $response->assertSee('50 ngày');
+        $response->assertSee('20/07/2026');
+        $response->assertSee('Còn 30 ngày');
+        $response->assertSee('15/06/2026');
+        $response->assertSee('Quá hạn 5 ngày');
+        // Must NOT expose specific product names or per-product sales breakdown
+        $response->assertDontSee('Áo còn tồn');
+        $response->assertDontSee('Quần còn tồn');
+        $response->assertDontSee('Váy đã hết chưa bán');
+        $response->assertDontSee('360.000 ₫');
+        $response->assertDontSee('250.000 ₫');
     }
 
     public function test_supplier_portal_shows_helpful_message_when_phone_is_missing(): void

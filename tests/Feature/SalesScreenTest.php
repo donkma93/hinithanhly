@@ -419,4 +419,88 @@ class SalesScreenTest extends TestCase
         $this->assertSame('transfer', $sale->payment_method);
         $this->assertNull($sale->payment_reference);
     }
+
+    public function test_sales_checkout_records_and_displays_real_vietnam_time_and_suppliers_sort_newest_first(): void
+    {
+        \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::create(2026, 11, 24, 21, 30, 0, 'Asia/Ho_Chi_Minh'));
+
+        try {
+            $user = User::create([
+                'name' => 'Thu ngân Realtime',
+                'email' => 'realtime@example.com',
+                'password' => 'password',
+            ]);
+            $role = \Spatie\Permission\Models\Role::findOrCreate('admin', 'web');
+            foreach (['sales.records.view', 'products.view', 'consignments.view'] as $perm) {
+                $role->givePermissionTo(\App\Models\Permission::findOrCreate($perm, 'web'));
+            }
+            $user->assignRole($role);
+            $this->actingAs($user);
+
+            $category = Category::create(['name' => 'Áo khoác', 'is_active' => true]);
+
+            $olderSupplier = Supplier::create([
+                'responsible_user_id' => $user->id,
+                'type' => 'ncc_it_san_pham',
+                'name' => 'An Nhà Cung Cấp Cũ',
+                'phone' => '0900000001',
+            ]);
+            $olderSupplier->forceFill(['created_at' => now()->subDays(2)])->save();
+
+            $newerSupplier = Supplier::create([
+                'responsible_user_id' => $user->id,
+                'type' => 'ncc_it_san_pham',
+                'name' => 'Zeta Nhà Cung Cấp Mới',
+                'phone' => '0900000002',
+            ]);
+            $newerSupplier->forceFill(['created_at' => now()])->save();
+
+            $consignment = ConsignmentNote::create([
+                'responsible_user_id' => $user->id,
+                'supplier_id' => $newerSupplier->id,
+                'sent_date' => now()->toDateString(),
+                'quantity' => 2,
+            ]);
+
+            $product = Product::create([
+                'consignment_note_id' => $consignment->id,
+                'supplier_id' => $newerSupplier->id,
+                'category_id' => $category->id,
+                'created_by_id' => $user->id,
+                'name' => 'Áo Realtime',
+                'sale_price' => 199000,
+                'quantity' => 2,
+            ]);
+
+            // 1. Checkout records exact real Vietnam time (21:30) and sold-products displays 24/11/2026 21:30
+            $this->postJson(route('sales.checkout'), [
+                'items' => [['id' => $product->id, 'quantity' => 1]],
+                'payment_method' => 'cash',
+            ])->assertOk();
+
+            $sale = Sale::query()->latest('id')->firstOrFail();
+            $this->assertSame('2026-11-24 21:30:00', $sale->completed_at->format('Y-m-d H:i:s'));
+
+            $this->get(route('sold-products.index'))
+                ->assertOk()
+                ->assertSee('24/11/2026 21:30');
+
+            // 2. Supplier search lists newest supplier (Zeta) BEFORE older supplier (An)
+            $productsPage = $this->get(route('products.index'))->assertOk();
+            $productsPage->assertViewHas('suppliers', function ($suppliers) use ($newerSupplier, $olderSupplier): bool {
+                $ids = $suppliers->pluck('id')->all();
+
+                return array_search($newerSupplier->id, $ids, true) < array_search($olderSupplier->id, $ids, true);
+            });
+
+            $consignmentsPage = $this->get(route('consignments.index'))->assertOk();
+            $consignmentsPage->assertViewHas('suppliers', function ($suppliers) use ($newerSupplier, $olderSupplier): bool {
+                $ids = $suppliers->pluck('id')->all();
+
+                return array_search($newerSupplier->id, $ids, true) < array_search($olderSupplier->id, $ids, true);
+            });
+        } finally {
+            \Illuminate\Support\Carbon::setTestNow();
+        }
+    }
 }

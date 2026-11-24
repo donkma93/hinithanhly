@@ -13,12 +13,18 @@ return new class extends Migration
             $table->string('responsible_name')->nullable()->after('supplier_id');
         });
 
-        DB::statement('ALTER TABLE consignment_notes MODIFY responsible_user_id BIGINT UNSIGNED NULL');
+        if (in_array(DB::getDriverName(), ['mysql', 'mariadb'], true)) {
+            $tableName = DB::getTablePrefix().'consignment_notes';
+            DB::statement("ALTER TABLE `{$tableName}` MODIFY responsible_user_id BIGINT UNSIGNED NULL");
+        }
     }
 
     public function down(): void
     {
-        DB::statement('ALTER TABLE consignment_notes MODIFY responsible_user_id BIGINT UNSIGNED NOT NULL');
+        if (in_array(DB::getDriverName(), ['mysql', 'mariadb'], true)) {
+            $tableName = DB::getTablePrefix().'consignment_notes';
+            DB::statement("ALTER TABLE `{$tableName}` MODIFY responsible_user_id BIGINT UNSIGNED NOT NULL");
+        }
 
         Schema::table('consignment_notes', function (Blueprint $table) {
             $table->dropColumn('responsible_name');

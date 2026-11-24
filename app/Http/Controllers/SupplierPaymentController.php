@@ -41,14 +41,21 @@ class SupplierPaymentController extends Controller
             : null;
 
         // Aggregate sales by supplier for the selected period
+        $grammar = DB::connection()->getQueryGrammar();
+        $saleCompletedAtCol = $grammar->wrap('sales.completed_at');
+        $saleCreatedAtCol = $grammar->wrap('sales.created_at');
+        $productSupplierIdCol = $grammar->wrap('products.supplier_id');
+        $saleItemLineTotalCol = $grammar->wrap('sale_items.line_total');
+        $saleItemQuantityCol = $grammar->wrap('sale_items.quantity');
+
         $aggregates = SaleItem::query()
             ->join('products', 'sale_items.product_id', '=', 'products.id')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
-            ->where(function ($query) use ($startDate, $endDate): void {
-                $query->whereBetween(DB::raw('COALESCE(sales.completed_at, sales.created_at)'), [$startDate, $endDate]);
+            ->where(function ($query) use ($startDate, $endDate, $saleCompletedAtCol, $saleCreatedAtCol): void {
+                $query->whereBetween(DB::raw("COALESCE({$saleCompletedAtCol}, {$saleCreatedAtCol})"), [$startDate, $endDate]);
             })
             ->groupBy('products.supplier_id')
-            ->selectRaw('products.supplier_id as supplier_id, SUM(sale_items.line_total) as gross_amount, SUM(sale_items.quantity) as units_sold, COUNT(*) as line_items')
+            ->selectRaw("{$productSupplierIdCol} as supplier_id, SUM({$saleItemLineTotalCol}) as gross_amount, SUM({$saleItemQuantityCol}) as units_sold, COUNT(*) as line_items")
             ->get()
             ->keyBy('supplier_id');
 
@@ -62,7 +69,7 @@ class SupplierPaymentController extends Controller
 
         $supplierDiscountRates = Setting::supplierDiscountRates();
 
-        $supplierRows = Supplier::query()->orderBy('name')
+        $supplierRows = Supplier::query()->orderByDesc('created_at')->orderByDesc('id')
             ->get(['id', 'public_id', 'responsible_name', 'name', 'phone', 'type', 'bank_name', 'bank_account_name', 'bank_account_number'])
             ->map(function (Supplier $s) use ($aggregates, $supplierDiscountRates, $startDate, $endDate) {
                 $agg = $aggregates->get($s->id);
@@ -131,7 +138,8 @@ class SupplierPaymentController extends Controller
 
         return view('supplier-payments.index', [
             'suppliers' => Supplier::query()
-                ->orderBy('name')
+                ->orderByDesc('created_at')
+                ->orderByDesc('id')
                 ->get(['id', 'public_id', 'name', 'phone', 'type', 'bank_name', 'bank_account_name', 'bank_account_number']),
             'selectedSupplier' => $supplier,
             'selectedSupplierRow' => $selectedRow,
@@ -276,11 +284,15 @@ class SupplierPaymentController extends Controller
 
     private function buildSummary(Supplier $supplier, $startDate, $endDate): array
     {
+        $grammar = DB::connection()->getQueryGrammar();
+        $saleCompletedAtCol = $grammar->wrap('sales.completed_at');
+        $saleCreatedAtCol = $grammar->wrap('sales.created_at');
+
         $baseQuery = SaleItem::query()
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
             ->join('products', 'sale_items.product_id', '=', 'products.id')
             ->where('products.supplier_id', $supplier->id)
-            ->whereBetween(DB::raw('COALESCE(sales.completed_at, sales.created_at)'), [$startDate, $endDate]);
+            ->whereBetween(DB::raw("COALESCE({$saleCompletedAtCol}, {$saleCreatedAtCol})"), [$startDate, $endDate]);
 
         $grossAmount = (float) (clone $baseQuery)->sum('sale_items.line_total');
         $unitsSold = (int) (clone $baseQuery)->sum('sale_items.quantity');

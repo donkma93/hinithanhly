@@ -19,29 +19,77 @@
             <form method="POST" action="{{ route('settings.payment.update') }}" class="space-y-6">
                 @csrf
 
-                <div class="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-200 space-y-4">
-                    <h3 class="text-lg font-semibold text-gray-900">Thông tin ngân hàng</h3>
-
+                <div class="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-200 space-y-5">
                     <div>
-                        <label class="block text-sm font-medium text-slate-700">Tên ngân hàng</label>
-                        <select name="bank_name" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900">
-                            <option value="">-- Chọn ngân hàng --</option>
-                            @foreach(config('banks', []) as $code => $label)
-                                <option value="{{ $code }}" @selected(old('bank_name', $bankName) === $code)>{{ $label }}</option>
-                            @endforeach
-                        </select>
+                        <h3 class="text-lg font-semibold text-gray-900">Thông tin ngân hàng nhận thanh toán khách hàng</h3>
+                        <p class="text-sm text-gray-500">Khi thu ngân chọn phương thức <strong>Chuyển khoản</strong> trên trang Bán hàng, hệ thống sẽ tự động tạo mã VietQR theo đúng số tiền và tài khoản ngân hàng của cơ sở tương ứng.</p>
                     </div>
 
-                    <div class="grid gap-4 sm:grid-cols-2">
+                    <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 space-y-4">
+                        @if(!empty($otherBranchBanks))
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="inline-flex items-center rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white">
+                                    {{ $currentBranch['name'] ?? 'Cơ sở hiện tại' }}
+                                </span>
+                                <span class="text-xs text-slate-500">Cơ sở đang đăng nhập</span>
+                            </div>
+                        @endif
+
                         <div>
-                            <label class="block text-sm font-medium text-slate-700">Số tài khoản</label>
-                            <input name="bank_account" value="{{ old('bank_account', $accountNumber) }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" />
+                            <label class="block text-sm font-medium text-slate-700">Tên ngân hàng</label>
+                            <select name="bank_name" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900">
+                                <option value="">-- Chọn ngân hàng --</option>
+                                @foreach(config('banks', []) as $code => $label)
+                                    <option value="{{ $code }}" @selected(old('bank_name', $bankName) === $code)>{{ $label }}</option>
+                                @endforeach
+                            </select>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700">Tên chủ tài khoản</label>
-                            <input name="bank_account_name" value="{{ old('bank_account_name', $accountName) }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" />
+
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">Số tài khoản</label>
+                                <input name="bank_account" value="{{ old('bank_account', $accountNumber) }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" placeholder="Ví dụ: 0123456789" />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">Tên chủ tài khoản</label>
+                                <input name="bank_account_name" value="{{ old('bank_account_name', $accountName) }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" placeholder="Ví dụ: NGUYEN VAN A" />
+                            </div>
                         </div>
                     </div>
+
+                    @if(!empty($otherBranchBanks))
+                        @foreach($otherBranchBanks as $branchBank)
+                            <div class="rounded-2xl border border-sky-200 bg-sky-50/40 p-4 space-y-4">
+                                <div class="flex items-center justify-between gap-2">
+                                    <span class="inline-flex items-center rounded-full bg-sky-700 px-3 py-1 text-xs font-semibold text-white">
+                                        {{ $branchBank['name'] }}
+                                    </span>
+                                    <span class="text-xs text-slate-500">Tài khoản nhận tiền riêng của {{ $branchBank['name'] }}</span>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700">Tên ngân hàng ({{ $branchBank['name'] }})</label>
+                                    <select name="branch_banks[{{ $branchBank['key'] }}][bank_name]" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900">
+                                        <option value="">-- Chọn ngân hàng --</option>
+                                        @foreach(config('banks', []) as $code => $label)
+                                            <option value="{{ $code }}" @selected(old("branch_banks.{$branchBank['key']}.bank_name", $branchBank['bank_name']) === $code)>{{ $label }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div class="grid gap-4 sm:grid-cols-2">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700">Số tài khoản</label>
+                                        <input name="branch_banks[{{ $branchBank['key'] }}][bank_account]" value="{{ old("branch_banks.{$branchBank['key']}.bank_account", $branchBank['bank_account']) }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" placeholder="Ví dụ: 0987654321" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700">Tên chủ tài khoản</label>
+                                        <input name="branch_banks[{{ $branchBank['key'] }}][bank_account_name]" value="{{ old("branch_banks.{$branchBank['key']}.bank_account_name", $branchBank['bank_account_name']) }}" class="mt-1 w-full rounded-xl border-gray-300 focus:border-slate-900 focus:ring-slate-900" placeholder="Ví dụ: NGUYEN VAN B" />
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    @endif
                 </div>
 
                 <div class="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-gray-200 space-y-4">

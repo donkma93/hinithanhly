@@ -10,7 +10,11 @@ use App\Repositories\Contracts\ProductRepositoryInterface;
 use App\Repositories\Contracts\SupplierRepositoryInterface;
 use App\Repositories\ProductRepository;
 use App\Repositories\SupplierRepository;
+use Illuminate\Console\Events\CommandStarting;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+use RuntimeException;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -30,6 +34,24 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Event::listen(CommandStarting::class, function (CommandStarting $event): void {
+            if (! in_array($event->command, ['db:wipe', 'migrate:fresh'], true)) {
+                return;
+            }
+
+            if ($this->app->environment('testing') && ! config('branches.shared_database', false)) {
+                return;
+            }
+
+            $prefix = (string) DB::getTablePrefix();
+            $isSharedDatabase = (bool) config('branches.shared_database', false);
+
+            if ($isSharedDatabase || $prefix !== '') {
+                throw new RuntimeException(
+                    "Lệnh [{$event->command}] bị chặn để bảo vệ database dùng chung giữa nhiều cơ sở (DB_PREFIX='{$prefix}'). "
+                    .'Vui lòng chỉ dùng `php artisan migrate` hoặc backup trước khi thao tác thủ công.'
+                );
+            }
+        });
     }
 }

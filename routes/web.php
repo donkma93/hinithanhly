@@ -41,7 +41,7 @@ Route::get('/ban-hang', [SalesController::class, 'index'])->name('sales.index');
 Route::get('/ban-hang/products/search', [SalesController::class, 'search'])
     ->name('sales.search');
 Route::get('/ban-hang/products/{code}', [SalesController::class, 'lookup'])
-    ->where('code', '[0-9\-]+')
+    ->where('code', '[A-Za-z0-9_\-]+')
     ->name('sales.lookup');
 
 Route::middleware(['auth'])->group(function () {

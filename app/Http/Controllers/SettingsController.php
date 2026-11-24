@@ -3,17 +3,42 @@
 namespace App\Http\Controllers;
 
 use App\Models\Setting;
-use Illuminate\Http\Request;
+use App\Support\BranchManager;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class SettingsController extends Controller
 {
+    public function __construct(private readonly BranchManager $branchManager)
+    {
+    }
+
     public function editPayment(): View
     {
-        $bankName = Setting::resolveBankCode(Setting::get('bank_name', env('APP_BANK_NAME', '')));
-        $accountNumber = Setting::get('bank_account', env('APP_BANK_ACCOUNT', ''));
-        $accountName = Setting::get('bank_account_name', env('APP_BANK_ACCOUNT_NAME', ''));
+        $currentBank = $this->branchManager->readBankSettings(DB::getDefaultConnection(), true);
+        $bankName = $currentBank['bank_code'];
+        $accountNumber = $currentBank['account_number'];
+        $accountName = $currentBank['account_name'];
+
+        $otherBranchBanks = [];
+        foreach ($this->branchManager->availableBranches(['settings']) as $branch) {
+            if ($branch['is_current']) {
+                continue;
+            }
+
+            $bank = $this->branchManager->readBankSettings($branch['connection'], false);
+            $otherBranchBanks[] = [
+                'key' => $branch['key'],
+                'name' => $branch['name'],
+                'bank_name' => $bank['bank_code'],
+                'bank_account' => $bank['account_number'],
+                'bank_account_name' => $bank['account_name'],
+            ];
+        }
+
+        $currentBranch = $this->branchManager->currentBranch();
         $supplierDiscountRates = Setting::supplierDiscountRates();
         $portalCards = Setting::getJson('portal_cards');
         $portalHeroBadge = Setting::get('portal_hero_badge', 'Tra cứu tồn kho ký gửi');
@@ -24,6 +49,8 @@ class SettingsController extends Controller
             'bankName',
             'accountNumber',
             'accountName',
+            'currentBranch',
+            'otherBranchBanks',
             'supplierDiscountRates',
             'portalCards',
             'portalHeroBadge',
@@ -38,6 +65,10 @@ class SettingsController extends Controller
             'bank_name' => ['nullable', 'string', 'max:255'],
             'bank_account' => ['nullable', 'string', 'max:255'],
             'bank_account_name' => ['nullable', 'string', 'max:255'],
+            'branch_banks' => ['nullable', 'array'],
+            'branch_banks.*.bank_name' => ['nullable', 'string', 'max:255'],
+            'branch_banks.*.bank_account' => ['nullable', 'string', 'max:255'],
+            'branch_banks.*.bank_account_name' => ['nullable', 'string', 'max:255'],
             'supplier_discount_cho_tang' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'supplier_discount_khach_si' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'supplier_discount_ncc_it_san_pham' => ['nullable', 'numeric', 'min:0', 'max:100'],
@@ -59,8 +90,30 @@ class SettingsController extends Controller
         ]);
 
         Setting::set('bank_name', Setting::resolveBankCode((string) ($data['bank_name'] ?? '')));
-        Setting::set('bank_account', $data['bank_account'] ?? '');
-        Setting::set('bank_account_name', $data['bank_account_name'] ?? '');
+        Setting::set('bank_account', trim((string) ($data['bank_account'] ?? '')));
+        Setting::set('bank_account_name', trim((string) ($data['bank_account_name'] ?? '')));
+
+        $branchBanksInput = is_array($data['branch_banks'] ?? null) ? $data['branch_banks'] : [];
+        if ($branchBanksInput !== []) {
+            foreach ($this->branchManager->availableBranches(['settings']) as $branch) {
+                if ($branch['is_current']) {
+                    continue;
+                }
+
+                $branchKey = $branch['key'];
+                if (! array_key_exists($branchKey, $branchBanksInput) || ! is_array($branchBanksInput[$branchKey])) {
+                    continue;
+                }
+
+                $branchBankData = $branchBanksInput[$branchKey];
+                $this->branchManager->saveBankSettings(
+                    $branch['connection'],
+                    (string) ($branchBankData['bank_name'] ?? ''),
+                    (string) ($branchBankData['bank_account'] ?? ''),
+                    (string) ($branchBankData['bank_account_name'] ?? '')
+                );
+            }
+        }
 
         foreach (Setting::SUPPLIER_DISCOUNT_KEYS as $type) {
             Setting::set("supplier_discount_{$type}", $data["supplier_discount_{$type}"] ?? 0);

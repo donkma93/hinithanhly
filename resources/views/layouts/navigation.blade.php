@@ -14,7 +14,7 @@
             <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 text-sm font-bold">CK</div>
             <div>
                 <p class="text-sm font-semibold">{{ config('app.name', 'COHANKYGUI') }}</p>
-                <p class="text-xs text-slate-400">Quản lý ký gửi</p>
+                <p class="text-xs text-slate-400">{{ filled(config('branches.current_name')) && config('branches.current_name') !== config('app.name') ? config('branches.current_name') : 'Quản lý ký gửi' }}</p>
             </div>
         </div>
 
